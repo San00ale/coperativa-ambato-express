@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model Usuario {
@@ -12,7 +13,7 @@ model Usuario {
   password     String
   nombre       String
   cedula       String   @unique
-  rol          Rol      @default(CLIENTE)
+  rol          String
   createdAt    DateTime @default(now())
   boletos      Boleto[]
   vendidosChofer Boleto[] @relation("VendidoPorChofer")
@@ -37,7 +38,7 @@ model Frecuencia {
   origen     String
   destino    String
   hora       String
-  tipoViaje  TipoViaje @default(DIRECTO)
+  tipoViaje  String
   activa     Boolean  @default(true)
   createdAt  DateTime @default(now())
   paradas    ParadaFrecuencia[]
@@ -64,54 +65,21 @@ model Ruta {
 }
 
 model Boleto {
-  id                String        @id @default(cuid())
+  id                String   @id @default(cuid())
   rutaId            String
   pasajeroId        String
   asiento           String
   precio            Float
-  descuento         Float         @default(0)
-  tipoPasajero      TipoPasajero
-  metodoPago        MetodoPago
+  descuento         Float    @default(0)
+  tipoPasajero      String
+  metodoPago        String
   comprobanteUrl    String?
-  estado            EstadoBoleto  @default(PENDIENTE_APROBACION)
+  estado            String
   qrUrl             String?
   vendidoPor        String?
   vendidoPorChoferId String?
-  createdAt         DateTime      @default(now())
-  ruta              Ruta          @relation(fields: [rutaId], references: [id])
-  pasajero          Usuario       @relation(fields: [pasajeroId], references: [id])
-  vendidoPorChofer  Usuario?      @relation("VendidoPorChofer", fields: [vendidoPorChoferId], references: [id])
-}
-
-enum Rol {
-  ADMIN
-  OFICINISTA
-  CHOFER
-  CLIENTE
-}
-
-enum TipoViaje {
-  DIRECTO
-  CON_PARADAS
-}
-
-enum TipoPasajero {
-  ADULTO
-  NINO
-  TERCERA_EDAD
-  DISCAPACITADO
-}
-
-enum MetodoPago {
-  TRANSFERENCIA
-  EFECTIVO
-  TARJETA
-  PAYPAL
-}
-
-enum EstadoBoleto {
-  PENDIENTE_APROBACION
-  APROBADO
-  ABORDADO
-  CANCELADO
+  createdAt         DateTime @default(now())
+  ruta              Ruta     @relation(fields: [rutaId], references: [id])
+  pasajero          Usuario  @relation(fields: [pasajeroId], references: [id])
+  vendidoPorChofer  Usuario? @relation("VendidoPorChofer", fields: [vendidoPorChoferId], references: [id])
 }
