@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   try {
@@ -24,13 +22,20 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { numero, placa, chasis, carroceria, marca, capacidad, asientosVIP, fotoUrl } = body
     
+    if (!numero || !placa || !capacidad) {
+      return NextResponse.json(
+        { error: 'Faltan campos requeridos: numero, placa, capacidad' },
+        { status: 400 }
+      )
+    }
+    
     const bus = await prisma.bus.create({
       data: {
         numero,
         placa,
-        chasis,
-        carroceria,
-        marca,
+        chasis: chasis || '',
+        carroceria: carroceria || '',
+        marca: marca || '',
         capacidad: parseInt(capacidad),
         asientosVIP: asientosVIP ? parseInt(asientosVIP) : 0,
         fotoUrl: fotoUrl || null,

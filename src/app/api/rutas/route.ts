@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
 
 export async function GET(request: Request) {
   try {
@@ -13,9 +11,10 @@ export async function GET(request: Request) {
     const where: any = {}
     
     if (fecha) {
+      const fechaObj = new Date(fecha)
       where.fecha = {
-        gte: new Date(fecha),
-        lt: new Date(new Date(fecha).setDate(new Date(fecha).getDate() + 1))
+        gte: new Date(fechaObj.setHours(0, 0, 0, 0)),
+        lt: new Date(new Date(fechaObj).setDate(fechaObj.getDate() + 1))
       }
     }
     
@@ -57,6 +56,13 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
     const { frecuenciaId, fecha, busId } = body
+    
+    if (!frecuenciaId || !fecha || !busId) {
+      return NextResponse.json(
+        { error: 'Faltan campos requeridos: frecuenciaId, fecha, busId' },
+        { status: 400 }
+      )
+    }
     
     const ruta = await prisma.ruta.create({
       data: {

@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   try {
@@ -29,6 +27,13 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { origen, destino, hora, tipoViaje, paradas } = body
     
+    if (!origen || !destino || !hora) {
+      return NextResponse.json(
+        { error: 'Faltan campos requeridos: origen, destino, hora' },
+        { status: 400 }
+      )
+    }
+    
     const frecuencia = await prisma.frecuencia.create({
       data: {
         origen,
@@ -36,7 +41,7 @@ export async function POST(request: Request) {
         hora,
         tipoViaje: tipoViaje || 'DIRECTO',
         activa: true,
-        paradas: paradas ? {
+        paradas: paradas && paradas.length > 0 ? {
           create: paradas.map((ciudad: string, index: number) => ({
             ciudad,
             orden: index + 1
