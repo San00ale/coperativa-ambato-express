@@ -1,0 +1,81 @@
+import { NextResponse } from 'next/server'
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const fecha = searchParams.get('fecha')
+    const origen = searchParams.get('origen')
+    const destino = searchParams.get('destino')
+    
+    const where: any = {}
+    
+    if (fecha) {
+      where.fecha = {
+        gte: new Date(fecha),
+        lt: new Date(new Date(fecha).setDate(new Date(fecha).getDate() + 1))
+      }
+    }
+    
+    if (origen || destino) {
+      where.frecuencia = {}
+      if (origen) where.frecuencia.origen = origen
+      if (destino) where.frecuencia.destino = destino
+    }
+    
+    const rutas = await prisma.ruta.findMany({
+      where,
+      include: {
+        frecuencia: {
+          include: {
+            paradas: {
+              orderBy: { orden: 'asc' }
+            }
+          }
+        },
+        bus: true,
+        boletos: {
+          where: { estado: 'APROBADO' }
+        }
+      },
+      orderBy: { fecha: 'asc' }
+    })
+    
+    return NextResponse.json(rutas)
+  } catch (error) {
+    console.error('Error al obtener rutas:', error)
+    return NextResponse.json(
+      { error: 'Error al obtener la lista de rutas' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json()
+    const { frecuenciaId, fecha, busId } = body
+    
+    const ruta = await prisma.ruta.create({
+      data: {
+        frecuenciaId,
+        fecha: new Date(fecha),
+        busId,
+        completada: false
+      },
+      include: {
+        frecuencia: true,
+        bus: true
+      }
+    })
+    return NextResponse.json(ruta, { status: 201 })
+  } catch (error) {
+    console.error('Error al crear ruta:', error)
+    return NextResponse.json(
+      { error: 'Error al crear la ruta' },
+      { status: 500 }
+    )
+  }
+}
