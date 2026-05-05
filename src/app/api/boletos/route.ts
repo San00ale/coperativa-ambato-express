@@ -103,5 +103,8 @@ export async function GET(request: Request) {
     if (session.user.role === 'CLIENTE') {
       where.pasajeroId = session.user.id
     }
+        if (session.user.role === 'OFICINISTA' && pendientes) {
+      where.estado = 'PENDIENTE_APROBACION'
+    }
     
 }
