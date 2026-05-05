@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import QRCode from 'qrcode'
+import { enviarCorreoQR } from '@/lib/email'
 
 export async function PUT(
   request: Request,
@@ -48,6 +49,16 @@ export async function PUT(
     })
 
     const qrUrl = await QRCode.toDataURL(qrData)
+
+    // Enviar correo al pasajero
+    await enviarCorreoQR(
+      boleto.pasajero.email,
+      boleto.pasajero.nombre,
+      qrUrl,
+      `${boleto.ruta.frecuencia.origen} → ${boleto.ruta.frecuencia.destino}`,
+      boleto.ruta.fecha.toString(),
+      boleto.asiento
+    )
 
     const boletoActualizado = await prisma.boleto.update({
       where: { id },
