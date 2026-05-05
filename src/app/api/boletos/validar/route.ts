@@ -23,3 +23,30 @@ export async function POST(request: Request) {
     } catch {
       return NextResponse.json({ error: 'QR inválido' }, { status: 400 })
     }
+        const boleto = await prisma.boleto.findUnique({
+      where: { id: boletoId },
+      include: {
+        ruta: {
+          include: {
+            frecuencia: true
+          }
+        },
+        pasajero: true
+      }
+    })
+
+    if (!boleto) {
+      return NextResponse.json({ error: 'Boleto no encontrado' }, { status: 404 })
+    }
+
+    if (boleto.estado !== 'APROBADO') {
+      return NextResponse.json({ error: 'El boleto no está aprobado' }, { status: 400 })
+    }
+
+    const fechaViaje = new Date(boleto.ruta.fecha)
+    const hoy = new Date()
+    hoy.setHours(0, 0, 0, 0)
+
+    if (fechaViaje < hoy) {
+      return NextResponse.json({ error: 'El viaje ya pasó' }, { status: 400 })
+    }
