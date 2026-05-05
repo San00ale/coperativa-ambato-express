@@ -9,7 +9,8 @@ export async function POST(request: Request) {
     if (session?.user?.role !== 'CHOFER' && session?.user?.role !== 'ADMIN') {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
-        const body = await request.json()
+
+    const body = await request.json()
     const { qrData } = body
 
     if (!qrData) {
@@ -23,7 +24,8 @@ export async function POST(request: Request) {
     } catch {
       return NextResponse.json({ error: 'QR inválido' }, { status: 400 })
     }
-        const boleto = await prisma.boleto.findUnique({
+
+    const boleto = await prisma.boleto.findUnique({
       where: { id: boletoId },
       include: {
         ruta: {
@@ -50,3 +52,24 @@ export async function POST(request: Request) {
     if (fechaViaje < hoy) {
       return NextResponse.json({ error: 'El viaje ya pasó' }, { status: 400 })
     }
+
+    const boletoActualizado = await prisma.boleto.update({
+      where: { id: boletoId },
+      data: { estado: 'ABORDADO' }
+    })
+
+    return NextResponse.json({
+      message: 'Pasajero validado correctamente',
+      boleto: {
+        id: boletoActualizado.id,
+        asiento: boleto.asiento,
+        pasajero: boleto.pasajero.nombre,
+        cedula: boleto.pasajero.cedula,
+        ruta: `${boleto.ruta.frecuencia.origen} → ${boleto.ruta.frecuencia.destino}`
+      }
+    })
+  } catch (error) {
+    console.error('Error al validar boleto:', error)
+    return NextResponse.json({ error: 'Error al validar el boleto' }, { status: 500 })
+  }
+}
