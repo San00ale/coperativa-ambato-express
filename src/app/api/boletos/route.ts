@@ -11,3 +11,13 @@ export async function POST(request: Request) {
     if (!session) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
+        const body = await request.json()
+    const { rutaId, asiento, precio, tipoPasajero, metodoPago, comprobanteUrl, pasajeroNombre, pasajeroCedula } = body
+
+    if (!rutaId || !asiento || !precio) {
+      return NextResponse.json(
+        { error: 'Faltan campos requeridos: rutaId, asiento, precio' },
+        { status: 400 }
+      )
+    }
+    
