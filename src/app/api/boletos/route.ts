@@ -20,4 +20,18 @@ export async function POST(request: Request) {
         { status: 400 }
       )
     }
+        const boletoExistente = await prisma.boleto.findFirst({
+      where: {
+        rutaId: rutaId,
+        asiento: asiento,
+        estado: { not: 'CANCELADO' }
+      }
+    })
+
+    if (boletoExistente) {
+      return NextResponse.json(
+        { error: 'El asiento ya está ocupado' },
+        { status: 409 }
+      )
+    }
     
