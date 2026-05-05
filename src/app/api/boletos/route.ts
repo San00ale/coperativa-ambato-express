@@ -41,4 +41,22 @@ export async function POST(request: Request) {
     const precioFinal = precio - descuento
 
     const estado = metodoPago === 'TRANSFERENCIA' ? 'PENDIENTE_APROBACION' : 'APROBADO'
+        let pasajeroId = session.user.id
+    if (pasajeroNombre && pasajeroCedula) {
+      let pasajero = await prisma.usuario.findUnique({
+        where: { cedula: pasajeroCedula }
+      })
+      if (!pasajero) {
+        pasajero = await prisma.usuario.create({
+          data: {
+            email: `${pasajeroCedula}@temporal.com`,
+            password: await bcrypt.hash('temporal', 10),
+            nombre: pasajeroNombre,
+            cedula: pasajeroCedula,
+            rol: 'CLIENTE'
+          }
+        })
+      }
+      pasajeroId = pasajero.id
+    }
     
