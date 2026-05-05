@@ -59,4 +59,32 @@ export async function POST(request: Request) {
       }
       pasajeroId = pasajero.id
     }
-    
+        const boleto = await prisma.boleto.create({
+      data: {
+        rutaId,
+        pasajeroId,
+        asiento,
+        precio: precioFinal,
+        descuento,
+        tipoPasajero: tipoPasajero || 'ADULTO',
+        metodoPago,
+        comprobanteUrl: comprobanteUrl || null,
+        estado,
+        vendidoPor: session.user.role === 'CHOFER' ? 'chofer' : 'oficinista'
+      },
+      include: {
+        ruta: {
+          include: {
+            frecuencia: true,
+            bus: true
+          }
+        }
+      }
+    })
+
+    return NextResponse.json(boleto, { status: 201 })
+  } catch (error) {
+    console.error('Error al crear boleto:', error)
+    return NextResponse.json({ error: 'Error al crear el boleto' }, { status: 500 })
+  }
+}
