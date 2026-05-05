@@ -10,3 +10,12 @@ export async function POST(request: Request) {
     if (session?.user?.role !== 'CHOFER' && session?.user?.role !== 'ADMIN') {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
+        const body = await request.json()
+    const { rutaId, asiento, precio, tipoPasajero, metodoPago, pasajeroNombre, pasajeroCedula } = body
+
+    if (!rutaId || !asiento || !precio || !pasajeroNombre || !pasajeroCedula) {
+      return NextResponse.json(
+        { error: 'Faltan campos requeridos: rutaId, asiento, precio, pasajeroNombre, pasajeroCedula' },
+        { status: 400 }
+      )
+    }
