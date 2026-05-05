@@ -50,6 +50,16 @@ export async function PUT(
 
     const qrUrl = await QRCode.toDataURL(qrData)
 
+    // Enviar correo al pasajero
+    await enviarCorreoQR(
+      boleto.pasajero.email,
+      boleto.pasajero.nombre,
+      qrUrl,
+      `${boleto.ruta.frecuencia.origen} → ${boleto.ruta.frecuencia.destino}`,
+      boleto.ruta.fecha.toString(),
+      boleto.asiento
+    )
+
     const boletoActualizado = await prisma.boleto.update({
       where: { id },
       data: {
