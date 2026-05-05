@@ -19,3 +19,25 @@ export async function POST(request: Request) {
         { status: 400 }
       )
     }
+        // Verificar asiento disponible
+    const boletoExistente = await prisma.boleto.findFirst({
+      where: {
+        rutaId: rutaId,
+        asiento: asiento,
+        estado: { not: 'CANCELADO' }
+      }
+    })
+
+    if (boletoExistente) {
+      return NextResponse.json(
+        { error: 'El asiento ya está ocupado' },
+        { status: 409 }
+      )
+    }
+
+    // Calcular descuento (50% para niño, tercera edad, discapacitado)
+    let descuento = 0
+    if (tipoPasajero === 'NINO' || tipoPasajero === 'TERCERA_EDAD' || tipoPasajero === 'DISCAPACITADO') {
+      descuento = precio * 0.5
+    }
+    const precioFinal = precio - descuento
