@@ -13,4 +13,12 @@ export async function enviarCorreoQR(
       from: process.env.RESEND_FROM_EMAIL!,
       to: emailDestino,
       subject: 'Tu boleto de Cooperativa Ambato Express',
-      html: `
+      html: `        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #1e3a8a;">Cooperativa Ambato Express</h1>
+          <h2>¡Tu boleto ha sido aprobado!</h2>
+          
+          <p>Hola <strong>${nombrePasajero}</strong>,</p>
+          
+          <p>Tu pago ha sido confirmado. Aquí están los detalles de tu viaje:</p>
+          
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
