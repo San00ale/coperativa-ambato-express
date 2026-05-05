@@ -87,4 +87,21 @@ export async function POST(request: Request) {
     console.error('Error al crear boleto:', error)
     return NextResponse.json({ error: 'Error al crear el boleto' }, { status: 500 })
   }
+  // GET /api/boletos - Listar boletos según rol del usuario
+export async function GET(request: Request) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const pendientes = searchParams.get('pendientes') === 'true'
+
+    let where: any = {}
+
+    if (session.user.role === 'CLIENTE') {
+      where.pasajeroId = session.user.id
+    }
+    
 }
