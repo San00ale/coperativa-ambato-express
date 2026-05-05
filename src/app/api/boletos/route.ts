@@ -34,4 +34,11 @@ export async function POST(request: Request) {
         { status: 409 }
       )
     }
+        let descuento = 0
+    if (tipoPasajero === 'NINO' || tipoPasajero === 'TERCERA_EDAD' || tipoPasajero === 'DISCAPACITADO') {
+      descuento = precio * 0.5
+    }
+    const precioFinal = precio - descuento
+
+    const estado = metodoPago === 'TRANSFERENCIA' ? 'PENDIENTE_APROBACION' : 'APROBADO'
     
