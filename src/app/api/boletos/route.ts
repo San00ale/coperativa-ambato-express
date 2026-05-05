@@ -11,16 +11,20 @@ export async function POST(request: Request) {
     if (!session) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
-        const body = await request.json()
+
+    const body = await request.json()
     const { rutaId, asiento, precio, tipoPasajero, metodoPago, comprobanteUrl, pasajeroNombre, pasajeroCedula } = body
 
+    // Validar campos requeridos
     if (!rutaId || !asiento || !precio) {
       return NextResponse.json(
         { error: 'Faltan campos requeridos: rutaId, asiento, precio' },
         { status: 400 }
       )
     }
-        const boletoExistente = await prisma.boleto.findFirst({
+
+    // Verificar que el asiento no esté ocupado en esa ruta
+    const boletoExistente = await prisma.boleto.findFirst({
       where: {
         rutaId: rutaId,
         asiento: asiento,
@@ -34,14 +38,19 @@ export async function POST(request: Request) {
         { status: 409 }
       )
     }
-        let descuento = 0
+
+    // Calcular descuento según tipo de pasajero (50% para niño, tercera edad, discapacitado)
+    let descuento = 0
     if (tipoPasajero === 'NINO' || tipoPasajero === 'TERCERA_EDAD' || tipoPasajero === 'DISCAPACITADO') {
       descuento = precio * 0.5
     }
     const precioFinal = precio - descuento
 
+    // Determinar estado según método de pago
     const estado = metodoPago === 'TRANSFERENCIA' ? 'PENDIENTE_APROBACION' : 'APROBADO'
-        let pasajeroId = session.user.id
+
+    // Determinar el pasajero (para venta del chofer)
+    let pasajeroId = session.user.id
     if (pasajeroNombre && pasajeroCedula) {
       let pasajero = await prisma.usuario.findUnique({
         where: { cedula: pasajeroCedula }
@@ -59,7 +68,9 @@ export async function POST(request: Request) {
       }
       pasajeroId = pasajero.id
     }
-        const boleto = await prisma.boleto.create({
+
+    // Crear el boleto
+    const boleto = await prisma.boleto.create({
       data: {
         rutaId,
         pasajeroId,
@@ -87,7 +98,9 @@ export async function POST(request: Request) {
     console.error('Error al crear boleto:', error)
     return NextResponse.json({ error: 'Error al crear el boleto' }, { status: 500 })
   }
-  // GET /api/boletos - Listar boletos según rol del usuario
+}
+
+// GET /api/boletos - Listar boletos según rol del usuario
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions)
@@ -100,11 +113,35 @@ export async function GET(request: Request) {
 
     let where: any = {}
 
+    // Si es cliente, solo ve sus propios boletos
     if (session.user.role === 'CLIENTE') {
       where.pasajeroId = session.user.id
     }
-        if (session.user.role === 'OFICINISTA' && pendientes) {
+    
+    // Si es oficinista y pide pendientes, ve solo los pendientes de aprobación
+    if (session.user.role === 'OFICINISTA' && pendientes) {
       where.estado = 'PENDIENTE_APROBACION'
     }
-    
+
+    const boletos = await prisma.boleto.findMany({
+      where,
+      include: {
+        ruta: {
+          include: {
+            frecuencia: true,
+            bus: true
+          }
+        },
+        pasajero: {
+          select: { nombre: true, cedula: true, email: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+
+    return NextResponse.json(boletos)
+  } catch (error) {
+    console.error('Error al obtener boletos:', error)
+    return NextResponse.json({ error: 'Error al obtener boletos' }, { status: 500 })
+  }
 }
