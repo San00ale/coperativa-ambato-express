@@ -21,4 +21,16 @@ export async function enviarCorreoQR(
           
           <p>Tu pago ha sido confirmado. Aquí están los detalles de tu viaje:</p>
           
-          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">            <tr>
+              <td style="padding: 8px; background: #f3f4f6;"><strong>Ruta:</strong></td>
+              <td style="padding: 8px;">${ruta}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; background: #f3f4f6;"><strong>Fecha:</strong></td>
+              <td style="padding: 8px;">${new Date(fecha).toLocaleDateString('es-EC')}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; background: #f3f4f6;"><strong>Asiento:</strong></td>
+              <td style="padding: 8px;">${asiento}</td>
+            </tr>
+          </table>
