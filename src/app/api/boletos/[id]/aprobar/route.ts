@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import QRCode from 'qrcode'
+import { enviarCorreoQR } from '@/lib/email'
 
 export async function PUT(
   request: Request,
