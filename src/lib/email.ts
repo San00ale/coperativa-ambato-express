@@ -9,4 +9,8 @@ export async function enviarCorreoQR(
   fecha: string,
   asiento: string
 ) {
-  try {
+  try {    const { data, error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL!,
+      to: emailDestino,
+      subject: 'Tu boleto de Cooperativa Ambato Express',
+      html: `
