@@ -7,15 +7,15 @@ import { enviarCorreoQR } from '@/lib/email'
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
+
     const session = await getServerSession(authOptions)
     if (session?.user?.role !== 'OFICINISTA' && session?.user?.role !== 'ADMIN') {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
-
-    const { id } = params
 
     const boleto = await prisma.boleto.findUnique({
       where: { id },
