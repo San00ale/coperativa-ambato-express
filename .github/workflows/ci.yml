@@ -24,3 +24,6 @@ jobs:
 
       - name: Verificar compilación
         run: npm run build
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_FROM_EMAIL: "onboarding@resend.dev"
