@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🚌 Cooperativa Ambato Express
 
-## Getting Started
+Sistema web para la gestión y venta de pasajes de transporte interprovincial en Ecuador.
 
-First, run the development server:
+## 📌 Descripción
+
+Aplicación desarrollada como proyecto académico para la materia de **Gestión de Configuración del Software**. Permite a diferentes roles (administrador, oficinista, chofer, cliente) gestionar la venta de boletos de manera eficiente.
+
+## 🛠️ Tecnologías utilizadas
+
+| Tecnología | Versión | Propósito |
+|------------|---------|-----------|
+| Next.js | 14.x | Framework principal |
+| TypeScript | 5.x | Tipado seguro |
+| Tailwind CSS | 3.x | Estilos responsive |
+| Prisma | 5.22.0 | ORM para base de datos |
+| SQLite | 3.x | Base de datos local |
+| NextAuth | 4.x | Autenticación |
+| QRCode | 1.x | Generación de códigos QR |
+| Cloudinary | - | Subida de comprobantes |
+| Resend | - | Envío de correos |
+
+## 📋 Requisitos previos
+
+- Node.js (versión 20 o superior)
+- Git
+
+## 🚀 Instalación
 
 ```bash
+# Clonar el repositorio
+git clone https://github.com/San00ale/coperativa-ambato-express.git
+cd coperativa-ambato-express
+
+# Instalar dependencias
+npm install
+
+# Configurar variables de entorno
+cp .env.example .env.local
+# Editar .env.local con tus valores
+
+# Generar base de datos
+npx prisma migrate dev --name init
+npx prisma generate
+npx prisma db seed
+
+# Iniciar el proyecto
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+🔐 Credenciales de prueba
+Rol	Correo	Contraseña
+Administrador	admin@coperativa.com	admin123
+Oficinista	oficinista@coperativa.com	ofi123
+Chofer	chofer@coperativa.com	chofer123
+Cliente	cliente@test.com	cliente123
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+📡 APIs disponibles
+Método	Endpoint	Descripción
+POST	/api/boletos	Crear boleto
+GET	/api/boletos/mis-compras	Historial del cliente
+GET	/api/boletos/pendientes	Pagos pendientes (oficinista)
+PUT	/api/boletos/[id]/aprobar	Aprobar pago y generar QR
+POST	/api/ventas-chofer	Venta en ruta (chofer)
+POST	/api/boletos/validar	Validar QR (chofer)
+POST	/api/upload	Subir comprobante
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+👥 Equipo de desarrollo
+Integrante	Rol	GitHub
+San00ale	Líder - Backend	@San00ale
+DavidPe1307	Frontend - Cliente	@DavidPe1307
+killer13233	Frontend - Oficinista	@killer13233
+Jonathan305g	Frontend - Chofer	@Jonathan305g
+Zizheyla	Frontend - Admin	@Zzzheyla
 
-## Learn More
+📅 Entregas
+Fecha	Evento	Tag
+03/05/2026	Backend base	v0.1.0
+06/05/2026	APIs completas	v0.2.0
+14/05/2026	Prototipo funcional	v1.0.0
+22/05/2026	Producto final	v2.0.0
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+📄 Licencia
+MIT License - Ver archivo LICENSE
