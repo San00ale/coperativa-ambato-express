@@ -22,10 +22,12 @@ export default function DashboardPage() {
 
   const role = session.user?.role
 
-  if (role === 'ADMIN') router.push('/admin')
-  else if (role === 'OFICINISTA') router.push('/oficinista')
-  else if (role === 'CHOFER') router.push('/chofer')
-  else if (role === 'CLIENTE') router.push('/cliente')
+  useEffect(() => {
+    if (role === 'ADMIN') router.push('/admin')
+    else if (role === 'OFICINISTA') router.push('/oficinista')
+    else if (role === 'CHOFER') router.push('/chofer')
+    else if (role === 'CLIENTE') router.push('/cliente')
+  }, [role, router])
 
   return <div className="min-h-screen flex items-center justify-center">Redirigiendo...</div>
 }
