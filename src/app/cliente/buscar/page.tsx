@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 
@@ -42,3 +43,25 @@ export default function BuscarRutasPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [buscado, setBuscado] = useState(false);
+const [ciudadesOrigen, setCiudadesOrigen] = useState<string[]>([]);
+  const [ciudadesDestino, setCiudadesDestino] = useState<string[]>([]);
+
+  // Cargar ciudades únicas desde /api/frecuencias al montar el componente
+  useEffect(() => {
+    const cargarCiudades = async () => {
+      try {
+        const res = await fetch("/api/frecuencias");
+        const data: { origen: string; destino: string }[] = await res.json();
+
+        const origenes = [...new Set(data.map((f) => f.origen))].sort();
+        const destinos = [...new Set(data.map((f) => f.destino))].sort();
+
+        setCiudadesOrigen(origenes);
+        setCiudadesDestino(destinos);
+      } catch {
+        // Si falla, los selects quedan vacíos
+        console.error("No se pudieron cargar las ciudades");
+      }
+    };
+    cargarCiudades();
+  }, []);
