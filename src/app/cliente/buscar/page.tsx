@@ -28,3 +28,17 @@ interface Ruta {
   bus: Bus;
   boletos: Boleto[]; 
 }
+
+export default function BuscarRutasPage() {
+  const router = useRouter();
+
+  // Estados del formulario
+  const [origen, setOrigen] = useState("");
+  const [destino, setDestino] = useState("");
+  const [fecha, setFecha] = useState("");
+
+  // Estados de UI
+  const [resultados, setResultados] = useState<Ruta[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [buscado, setBuscado] = useState(false);
