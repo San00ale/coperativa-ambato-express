@@ -43,7 +43,7 @@ export default function BuscarRutasPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [buscado, setBuscado] = useState(false);
-const [ciudadesOrigen, setCiudadesOrigen] = useState<string[]>([]);
+  const [ciudadesOrigen, setCiudadesOrigen] = useState<string[]>([]);
   const [ciudadesDestino, setCiudadesDestino] = useState<string[]>([]);
 
   // Cargar ciudades únicas desde /api/frecuencias al montar el componente
@@ -65,3 +65,41 @@ const [ciudadesOrigen, setCiudadesOrigen] = useState<string[]>([]);
     };
     cargarCiudades();
   }, []);
+    const handleBuscar = async () => {
+    if (!origen || !destino || !fecha) {
+      setError("Por favor completa todos los campos.");
+      return;
+    }
+    if (origen === destino) {
+      setError("El origen y destino no pueden ser iguales.");
+      return;
+    }
+
+    setError("");
+    setLoading(true);
+    setBuscado(false);
+
+    try {
+      const res = await fetch(
+        `/api/rutas?origen=${origen}&destino=${destino}&fecha=${fecha}`
+      );
+      if (!res.ok) throw new Error("Error en la respuesta");
+      const data: Ruta[] = await res.json();
+      setResultados(data);
+      setBuscado(true);
+    } catch {
+      setError("Error al buscar rutas. Intenta de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calcular asientos disponibles: capacidad del bus - boletos APROBADOS
+  const getAsientosDisponibles = (ruta: Ruta) => {
+    return ruta.bus.capacidad - ruta.boletos.length;
+  };
+
+  // Ir a selección de asiento pasando el id de la ruta
+  const handleSeleccionar = (rutaId: string) => {
+    router.push(`/cliente/seleccionar-asiento?rutaId=${rutaId}`);
+  };
