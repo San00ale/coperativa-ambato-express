@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+
+// PUT /api/frecuencias/[id] - Actualizar una frecuencia
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -22,7 +24,8 @@ export async function PUT(
         { status: 400 }
       )
     }
-        const frecuencia = await prisma.frecuencia.update({
+
+    const frecuencia = await prisma.frecuencia.update({
       where: { id },
       data: {
         origen,
@@ -42,6 +45,8 @@ export async function PUT(
     )
   }
 }
+
+// DELETE /api/frecuencias/[id] - Eliminar una frecuencia (soft delete)
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -54,6 +59,7 @@ export async function DELETE(
 
     const { id } = await params
 
+    // Verificar si la frecuencia tiene rutas asociadas
     const rutasAsociadas = await prisma.ruta.count({
       where: { frecuenciaId: id }
     })
@@ -64,3 +70,18 @@ export async function DELETE(
         { status: 409 }
       )
     }
+
+    await prisma.frecuencia.update({
+      where: { id },
+      data: { activa: false }
+    })
+
+    return NextResponse.json({ message: 'Frecuencia eliminada correctamente' })
+  } catch (error) {
+    console.error('Error al eliminar frecuencia:', error)
+    return NextResponse.json(
+      { error: 'Error al eliminar la frecuencia' },
+      { status: 500 }
+    )
+  }
+}
