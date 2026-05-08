@@ -3,12 +3,12 @@ import { prisma } from '@/lib/prisma'
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const body = await request.json()
     const { numero, placa, chasis, carroceria, marca, capacidad, asientosVIP, fotoUrl } = body
-    const { id } = params
+    const { id } = await params
 
     if (!numero || !placa || !capacidad) {
       return NextResponse.json(
@@ -43,21 +43,37 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
+
+    // Get current bus to toggle status
+    const currentBus = await prisma.bus.findUnique({
+      where: { id }
+    })
+
+    if (!currentBus) {
+      return NextResponse.json(
+        { error: 'Bus no encontrado' },
+        { status: 404 }
+      )
+    }
 
     const bus = await prisma.bus.update({
       where: { id },
-      data: { activo: false }
+      data: { activo: !currentBus.activo }
     })
 
-    return NextResponse.json({ message: 'Bus eliminado correctamente' })
+    const action = bus.activo ? 'activado' : 'desactivado'
+    return NextResponse.json({ 
+      message: `Bus ${action} correctamente`,
+      bus 
+    })
   } catch (error) {
-    console.error('Error al eliminar bus:', error)
+    console.error('Error al cambiar estado del bus:', error)
     return NextResponse.json(
-      { error: 'Error al eliminar el bus' },
+      { error: 'Error al cambiar estado del bus' },
       { status: 500 }
     )
   }
