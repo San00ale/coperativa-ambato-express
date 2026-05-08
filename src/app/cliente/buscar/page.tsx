@@ -179,3 +179,57 @@ export default function BuscarRutasPage() {
             {loading ? "Buscando..." : "Buscar"}
           </button>
         </div>
+                {buscado && (
+          <div>
+            <h2 className="text-lg font-semibold text-gray-700 mb-3">
+              Resultados ({resultados.length})
+            </h2>
+
+            {resultados.length === 0 ? (
+              <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
+                No hay rutas disponibles para esa búsqueda.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {resultados.map((ruta) => {
+                  const asientos = getAsientosDisponibles(ruta);
+                  return (
+                    <div
+                      key={ruta.id}
+                      className="bg-white rounded-lg shadow p-4 flex items-center justify-between"
+                    >
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-800">
+                          {ruta.frecuencia.origen} → {ruta.frecuencia.destino}
+                        </p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          🕐 {ruta.frecuencia.hora} &nbsp;|&nbsp; 🚌 Bus #{ruta.bus.numero}
+                        </p>
+                        <p className="text-sm mt-1">
+                          <span className={asientos > 0 ? "text-green-600 font-medium" : "text-red-500 font-medium"}>
+                            {asientos > 0
+                              ? `${asientos} asientos disponibles`
+                              : "Sin asientos disponibles"}
+                          </span>
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => handleSeleccionar(ruta.id)}
+                        disabled={asientos === 0}
+                        className="ml-4 bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Seleccionar
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
