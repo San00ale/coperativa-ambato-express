@@ -41,7 +41,7 @@ export default function BusesPage() {
   })
 
   useEffect(() => {
-    if (session?.user?.role !== 'admin') {
+    if (session?.user?.role !== 'ADMIN') {
       router.push('/login')
       return
     }
