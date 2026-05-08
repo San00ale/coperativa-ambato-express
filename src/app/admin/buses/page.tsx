@@ -108,6 +108,7 @@ export default function BusesPage() {
       const url = esEdicion ? `/api/buses/${busSeleccionado?.id}` : '/api/buses'
       const method = esEdicion ? 'PUT' : 'POST'
       
+      console.log('API Call:', { url, method, data: formData })
       const response = await fetch(url, {
         method,
         headers: {
@@ -119,6 +120,7 @@ export default function BusesPage() {
           asientosVIP: formData.asientosVIP ? parseInt(formData.asientosVIP) : 0,
         }),
       })
+      console.log('API Response:', response.status, await response.clone().json())
 
       if (response.ok) {
         setSuccess(esEdicion ? 'Bus actualizado correctamente' : 'Bus creado correctamente')
@@ -136,21 +138,24 @@ export default function BusesPage() {
   }
 
   const handleEliminar = async (bus: Bus) => {
-    if (!confirm(`¿Estás seguro de eliminar el bus ${bus.numero}?`)) {
+    const action = bus.activo ? 'desactivar' : 'activar'
+    if (!confirm(`¿Estás seguro de ${action} el bus ${bus.numero}?`)) {
       return
     }
 
     try {
+      console.log('DELETE API Call:', { url: `/api/buses/${bus.id}` })
       const response = await fetch(`/api/buses/${bus.id}`, {
         method: 'DELETE',
       })
 
+      console.log('DELETE Response:', response.status, await response.clone().json())
       if (response.ok) {
-        setSuccess('Bus eliminado correctamente')
+        setSuccess(`Bus ${action}do correctamente`)
         cargarBuses()
       } else {
         const errorData = await response.json()
-        setError(errorData.error || 'Error al eliminar el bus')
+        setError(errorData.error || `Error al ${action} el bus`)
       }
     } catch (error) {
       setError('Error de conexión')
@@ -211,13 +216,16 @@ export default function BusesPage() {
                 Marca
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Estado
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Acciones
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {buses.map((bus) => (
-              <tr key={bus.id}>
+              <tr key={bus.id} className={!bus.activo ? 'opacity-50' : ''}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {bus.numero}
                 </td>
@@ -233,6 +241,15 @@ export default function BusesPage() {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {bus.marca}
                 </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    bus.activo 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {bus.activo ? 'En servicio' : 'Fuera de servicio'}
+                  </span>
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button
                     onClick={() => handleEditar(bus)}
@@ -240,12 +257,21 @@ export default function BusesPage() {
                   >
                     Editar
                   </button>
-                  <button
-                    onClick={() => handleEliminar(bus)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    Eliminar
-                  </button>
+                  {bus.activo ? (
+                    <button
+                      onClick={() => handleEliminar(bus)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      Desactivar
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleEliminar(bus)}
+                      className="text-green-600 hover:text-green-900"
+                    >
+                      Activar
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
