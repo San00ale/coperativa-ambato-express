@@ -64,6 +64,7 @@ export default function BuscarRutasPage() {
     };
     cargarCiudades();
   }, []);
+  
     const handleBuscar = async () => {
     if (!origen || !destino || !fecha) {
       setError("Por favor completa todos los campos.");
