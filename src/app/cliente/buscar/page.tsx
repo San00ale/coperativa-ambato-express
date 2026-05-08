@@ -103,3 +103,79 @@ export default function BuscarRutasPage() {
   const handleSeleccionar = (rutaId: string) => {
     router.push(`/cliente/seleccionar-asiento?rutaId=${rutaId}`);
   };
+  return (
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-3xl mx-auto">
+
+        <h1 className="text-2xl font-bold text-gray-800 mb-6">
+          Buscar Rutas
+        </h1>
+
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            {/* Origen */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Origen
+              </label>
+              <select
+                value={origen}
+                onChange={(e) => setOrigen(e.target.value)}
+                className="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Selecciona ciudad</option>
+                {ciudadesOrigen.map((ciudad) => (
+                  <option key={ciudad} value={ciudad}>
+                    {ciudad}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Destino */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Destino
+              </label>
+              <select
+                value={destino}
+                onChange={(e) => setDestino(e.target.value)}
+                className="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Selecciona ciudad</option>
+                {ciudadesDestino.map((ciudad) => (
+                  <option key={ciudad} value={ciudad}>
+                    {ciudad}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Fecha */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Fecha
+              </label>
+              <input
+                type="date"
+                value={fecha}
+                onChange={(e) => setFecha(e.target.value)}
+                min={new Date().toISOString().split("T")[0]}
+                className="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          {error && (
+            <p className="text-red-500 text-sm mt-3">{error}</p>
+          )}
+
+          <button
+            onClick={handleBuscar}
+            disabled={loading}
+            className="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-md font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          >
+            {loading ? "Buscando..." : "Buscar"}
+          </button>
+        </div>
