@@ -22,3 +22,45 @@ export async function PUT(
         { status: 400 }
       )
     }
+        const frecuencia = await prisma.frecuencia.update({
+      where: { id },
+      data: {
+        origen,
+        destino,
+        hora,
+        tipoViaje: tipoViaje || 'DIRECTO',
+        activa: activa !== undefined ? activa : true
+      }
+    })
+
+    return NextResponse.json(frecuencia)
+  } catch (error) {
+    console.error('Error al actualizar frecuencia:', error)
+    return NextResponse.json(
+      { error: 'Error al actualizar la frecuencia' },
+      { status: 500 }
+    )
+  }
+}
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (session?.user?.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
+    const { id } = await params
+
+    const rutasAsociadas = await prisma.ruta.count({
+      where: { frecuenciaId: id }
+    })
+
+    if (rutasAsociadas > 0) {
+      return NextResponse.json(
+        { error: 'No se puede eliminar la frecuencia porque tiene rutas asociadas' },
+        { status: 409 }
+      )
+    }
