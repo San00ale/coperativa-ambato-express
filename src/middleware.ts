@@ -6,16 +6,19 @@ export default withAuth(
     const token = req.nextauth.token;
     const path = req.nextUrl.pathname;
     
-    if (path.startsWith("/admin") && token?.role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/", req.url));
+    // Debug: Log the token to see what's happening
+    console.log('Middleware - Path:', path, 'Token:', token ? 'exists' : 'missing', 'Role:', token?.role);
+    
+    if (path.startsWith("/admin") && (!token || token.role !== "ADMIN")) {
+      return NextResponse.redirect(new URL("/login", req.url));
     }
     
-    if (path.startsWith("/oficinista") && token?.role !== "OFICINISTA") {
-      return NextResponse.redirect(new URL("/", req.url));
+    if (path.startsWith("/oficinista") && (!token || token.role !== "OFICINISTA")) {
+      return NextResponse.redirect(new URL("/login", req.url));
     }
     
-    if (path.startsWith("/chofer") && token?.role !== "CHOFER") {
-      return NextResponse.redirect(new URL("/", req.url));
+    if (path.startsWith("/chofer") && (!token || token.role !== "CHOFER")) {
+      return NextResponse.redirect(new URL("/login", req.url));
     }
     
     return NextResponse.next();
