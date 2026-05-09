@@ -88,3 +88,101 @@ export default function MisComprasPage() {
       </div>
     );
   }
+  return (
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-3xl mx-auto">
+
+        <h1 className="text-2xl font-bold text-gray-800 mb-6">
+          Mis Compras
+        </h1>
+
+        {boletos.length === 0 ? (
+          <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+            <p className="text-lg">No tienes compras aún.</p>
+            <p className="text-sm mt-1">Busca una ruta y compra tu boleto.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {boletos.map((boleto) => {
+              const badge = getEstadoBadge(boleto.estado);
+              return (
+                <div
+                  key={boleto.id}
+                  className="bg-white rounded-lg shadow p-5"
+                >
+                  {/* Encabezado del boleto */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className="font-semibold text-gray-800 text-lg">
+                        {boleto.ruta.frecuencia.origen} → {boleto.ruta.frecuencia.destino}
+                      </p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        🕐 {boleto.ruta.frecuencia.hora} &nbsp;|&nbsp;
+                        📅 {new Date(boleto.ruta.fecha).toLocaleDateString("es-EC")} &nbsp;|&nbsp;
+                        🚌 Bus #{boleto.ruta.bus.numero}
+                      </p>
+                    </div>
+                    {/* Badge de estado */}
+                    <span className={`text-xs font-medium px-3 py-1 rounded-full border ${badge.clase}`}>
+                      {badge.texto}
+                    </span>
+                  </div>
+
+                  {/* Detalles del boleto */}
+                  <div className="grid grid-cols-3 gap-3 text-sm text-gray-600 border-t pt-3">
+                    <div>
+                      <p className="text-xs text-gray-400">Asiento</p>
+                      <p className="font-medium text-gray-800">{boleto.asiento}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">Tipo pasajero</p>
+                      <p className="font-medium text-gray-800">{getTipoPasajero(boleto.tipoPasajero)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">Precio pagado</p>
+                      <p className="font-medium text-green-600">${boleto.precio.toFixed(2)}</p>
+                    </div>
+                  </div>
+
+                  {/* QR si está aprobado */}
+                  {boleto.estado === "APROBADO" && boleto.qrUrl && (
+                    <div className="mt-4 border-t pt-4 flex flex-col items-center">
+                      <p className="text-sm font-medium text-gray-700 mb-2">
+                        🎫 Tu código QR
+                      </p>
+                      <img
+                        src={boleto.qrUrl}
+                        alt="Código QR del boleto"
+                        className="w-40 h-40 object-contain border rounded-md"
+                      />
+                    </div>
+                  )}
+
+                  {/* Mensaje si está pendiente */}
+                  {boleto.estado === "PENDIENTE_APROBACION" && (
+                    <div className="mt-4 border-t pt-4">
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 text-sm text-yellow-700">
+                        ⏳ Tu boleto está en revisión. El oficinista aprobará tu comprobante pronto.
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Mensaje si está cancelado */}
+                  {boleto.estado === "CANCELADO" && (
+                    <div className="mt-4 border-t pt-4">
+                      <div className="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-700">
+                        ❌ Este boleto fue cancelado.
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
