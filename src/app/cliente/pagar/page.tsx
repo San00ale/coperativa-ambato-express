@@ -73,4 +73,130 @@ export default function PagarPage() {
     setArchivo(file);
     setArchivoPreview(URL.createObjectURL(file));
   };
+if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <p className="text-gray-500">Cargando...</p>
+      </div>
+    );
+  }
 
+  return (
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-xl mx-auto">
+
+        <h1 className="text-2xl font-bold text-gray-800 mb-6">
+          Confirmar Compra
+        </h1>
+
+        {/* Resumen de la ruta */}
+        {ruta && (
+          <div className="bg-white rounded-lg shadow p-4 mb-6">
+            <p className="font-semibold text-gray-800">
+              {ruta.frecuencia.origen} → {ruta.frecuencia.destino}
+            </p>
+            <p className="text-sm text-gray-500 mt-1">
+              🕐 {ruta.frecuencia.hora} &nbsp;|&nbsp;
+              💺 Asiento {asiento} &nbsp;|&nbsp;
+              📅 {new Date(ruta.fecha).toLocaleDateString("es-EC")}
+            </p>
+          </div>
+        )}
+
+        <div className="bg-white rounded-lg shadow p-6 space-y-5">
+
+          {/* Nombre */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nombre completo
+            </label>
+            <input
+              type="text"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              placeholder="Ej: Juan Pérez"
+              className="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Cédula */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Cédula
+            </label>
+            <input
+              type="text"
+              value={cedula}
+              onChange={(e) => setCedula(e.target.value)}
+              placeholder="Ej: 1804123456"
+              maxLength={10}
+              className="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Tipo de pasajero */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Tipo de pasajero
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {TIPOS_PASAJERO.map((tipo) => (
+                <button
+                  key={tipo.value}
+                  onClick={() => setTipoPasajero(tipo.value)}
+                  className={`p-3 rounded-md border text-left text-sm transition-colors ${
+                    tipoPasajero === tipo.value
+                      ? "border-blue-500 bg-blue-50 text-blue-700"
+                      : "border-gray-300 hover:border-gray-400"
+                  }`}
+                >
+                  <p className="font-medium">{tipo.label}</p>
+                  <p className="text-xs text-gray-500">{tipo.descuento}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Precio */}
+          <div className="bg-gray-50 rounded-md p-3 flex justify-between items-center">
+            <span className="text-sm text-gray-600">Precio a pagar:</span>
+            <span className="text-lg font-bold text-green-600">
+              ${precioFinal.toFixed(2)}
+            </span>
+          </div>
+
+          {/* Comprobante */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Comprobante de transferencia
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleArchivoChange}
+              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            />
+            {archivoPreview && (
+              <img
+                src={archivoPreview}
+                alt="Preview comprobante"
+                className="mt-3 w-full max-h-48 object-contain rounded-md border"
+              />
+            )}
+          </div>
+
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+
+          <button
+            onClick={handleConfirmar}
+            disabled={enviando}
+            className="w-full bg-green-600 text-white py-3 rounded-md font-semibold hover:bg-green-700 disabled:opacity-50 transition-colors"
+          >
+            {enviando ? "Procesando..." : "✅ Confirmar Compra"}
+          </button>
+
+        </div>
+      </div>
+    </div>
+  );
+}
