@@ -30,6 +30,7 @@ interface Ruta {
   fecha: string;
   frecuencia: Frecuencia;
 }
+
 export default function PagarPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -73,7 +74,66 @@ export default function PagarPage() {
     setArchivo(file);
     setArchivoPreview(URL.createObjectURL(file));
   };
-if (loading) {
+
+  const handleConfirmar = async () => {
+    if (!nombre.trim() || !cedula.trim()) {
+      setError("Por favor completa nombre y cédula.");
+      return;
+    }
+    if (cedula.length < 10) {
+      setError("La cédula debe tener al menos 10 dígitos.");
+      return;
+    }
+    if (!archivo) {
+      setError("Por favor sube el comprobante de transferencia.");
+      return;
+    }
+
+    setError("");
+    setEnviando(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", archivo);
+
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!uploadRes.ok) throw new Error("Error al subir el comprobante");
+      const { url: comprobanteUrl } = await uploadRes.json();
+
+      const boletoRes = await fetch("/api/boletos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rutaId,
+          asiento,
+          precio: PRECIO_BASE,
+          tipoPasajero,
+          metodoPago: "TRANSFERENCIA",
+          comprobanteUrl,
+          pasajeroNombre: nombre,
+          pasajeroCedula: cedula,
+        }),
+      });
+
+      if (!boletoRes.ok) {
+        const data = await boletoRes.json();
+        throw new Error(data.error || "Error al crear el boleto");
+      }
+
+      router.push("/cliente/mis-compras");
+
+    } catch (err: any) {
+      setError(err.message || "Error inesperado. Intenta de nuevo.");
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <p className="text-gray-500">Cargando...</p>
@@ -89,7 +149,6 @@ if (loading) {
           Confirmar Compra
         </h1>
 
-        {/* Resumen de la ruta */}
         {ruta && (
           <div className="bg-white rounded-lg shadow p-4 mb-6">
             <p className="font-semibold text-gray-800">
@@ -105,7 +164,6 @@ if (loading) {
 
         <div className="bg-white rounded-lg shadow p-6 space-y-5">
 
-          {/* Nombre */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Nombre completo
@@ -119,7 +177,6 @@ if (loading) {
             />
           </div>
 
-          {/* Cédula */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Cédula
@@ -134,7 +191,6 @@ if (loading) {
             />
           </div>
 
-          {/* Tipo de pasajero */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Tipo de pasajero
@@ -157,7 +213,6 @@ if (loading) {
             </div>
           </div>
 
-          {/* Precio */}
           <div className="bg-gray-50 rounded-md p-3 flex justify-between items-center">
             <span className="text-sm text-gray-600">Precio a pagar:</span>
             <span className="text-lg font-bold text-green-600">
@@ -165,7 +220,6 @@ if (loading) {
             </span>
           </div>
 
-          {/* Comprobante */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Comprobante de transferencia
