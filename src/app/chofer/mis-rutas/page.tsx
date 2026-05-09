@@ -172,7 +172,7 @@ export default function MisRutasPage() {
       {/* Error State */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
           <div>
             <h3 className="font-semibold text-red-900">Error al cargar las rutas</h3>
             <p className="text-red-700 text-sm">{error}</p>
@@ -210,9 +210,9 @@ export default function MisRutasPage() {
                 <div className="flex-1 w-full">
                   <div className="flex items-center gap-3 mb-3">
                     {ruta.completada ? (
-                      <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0" />
+                      <CheckCircle2 className="w-6 h-6 text-green-600 shrink-0" />
                     ) : (
-                      <Circle className="w-6 h-6 text-blue-600 flex-shrink-0" />
+                      <Circle className="w-6 h-6 text-blue-600 shrink-0" />
                     )}
                     <div className="flex-1">
                       <h3 className="text-lg sm:text-xl font-bold text-gray-900">
