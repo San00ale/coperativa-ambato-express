@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
-import { AlertCircle, Loader, Bus, Ticket, Credit2, DollarSign, CheckCircle2 } from 'lucide-react'
+import { AlertCircle, Loader, Bus, Ticket, CreditCard, DollarSign, CheckCircle2 } from 'lucide-react'
 import AsientosGrid from '@/components/AsientosGrid'
 
 interface Bus {
@@ -414,7 +414,7 @@ export default function VenderEnRutaPage() {
                       className="w-4 h-4"
                     />
                     <span className="flex items-center gap-2 flex-1">
-                      <Credit2 size={18} className="text-blue-600" />
+                      <CreditCard size={18} className="text-blue-600" />
                       <span className="font-medium text-gray-900">Tarjeta</span>
                     </span>
                   </label>
