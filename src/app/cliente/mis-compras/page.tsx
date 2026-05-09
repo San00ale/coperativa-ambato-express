@@ -28,6 +28,27 @@ interface Boleto {
   createdAt: string;
   ruta: Ruta;
 }
+export default function MisComprasPage() {
+  const [boletos, setBoletos] = useState<Boleto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const cargarCompras = async () => {
+      try {
+        const res = await fetch("/api/boletos/mis-compras");
+        if (!res.ok) throw new Error("Error al obtener compras");
+        const data: Boleto[] = await res.json();
+        setBoletos(data);
+      } catch {
+        setError("No se pudo cargar el historial de compras.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    cargarCompras();
+  }, []);
  // Color y texto según estado del boleto
   const getEstadoBadge = (estado: string) => {
     switch (estado) {
