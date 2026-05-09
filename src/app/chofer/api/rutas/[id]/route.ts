@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 export async function PATCH(
@@ -48,12 +48,13 @@ export async function PATCH(
 }
 
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { id } = params
+const { id } = await context.params
 
+  try {
+    
     const ruta = await prisma.ruta.findUnique({
       where: { id },
       include: {
