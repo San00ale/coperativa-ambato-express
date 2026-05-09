@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params
   try {
-    const { id } = params
+
     const body = await request.json()
     const { completada } = body
 
@@ -37,7 +38,7 @@ export async function PATCH(
       }
     })
 
-    return NextResponse.json(ruta)
+    return NextResponse.json({ok:true})
   } catch (error) {
     console.error('Error al actualizar ruta:', error)
     return NextResponse.json(
