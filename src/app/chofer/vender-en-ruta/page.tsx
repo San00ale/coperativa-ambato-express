@@ -235,7 +235,7 @@ export default function VenderEnRutaPage() {
       {/* Error Message */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
           <div>
             <h3 className="font-semibold text-red-900">Error</h3>
             <p className="text-red-700 text-sm">{error}</p>
@@ -246,7 +246,7 @@ export default function VenderEnRutaPage() {
       {/* Success Message */}
       {mensajeExito && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3 animate-in">
-          <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+          <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
           <div>
             <h3 className="font-semibold text-green-900">Boleto Emitido</h3>
             <p className="text-green-700 text-sm">{mensajeExito}</p>
