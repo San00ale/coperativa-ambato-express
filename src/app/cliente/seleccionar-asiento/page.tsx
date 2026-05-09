@@ -61,3 +61,31 @@ export default function SeleccionarAsientoPage() {
 
     cargarRuta();
   }, [rutaId]);
+  const asientosOcupados = ruta?.boletos.map((b) => b.asiento) ?? [];
+
+  const getEstadoAsiento = (numero: string) => {
+    if (numero === asientoSeleccionado) return "seleccionado";
+    if (asientosOcupados.includes(numero)) return "ocupado";
+    return "disponible";
+  };
+
+  const handleClickAsiento = (numero: string) => {
+    if (asientosOcupados.includes(numero)) return;
+    setAsientoSeleccionado((prev) => (prev === numero ? "" : numero));
+  };
+
+  const handleContinuar = () => {
+    if (!asientoSeleccionado) {
+      setError("Por favor selecciona un asiento.");
+      return;
+    }
+    router.push(
+      `/cliente/pagar?rutaId=${rutaId}&asiento=${asientoSeleccionado}`
+    );
+  };
+
+  const generarAsientos = (capacidad: number) => {
+    return Array.from({ length: capacidad }, (_, i) =>
+      String(i + 1).padStart(2, "0")
+    );
+  };
