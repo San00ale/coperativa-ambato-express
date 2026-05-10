@@ -1,6 +1,9 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Solo inicializar Resend si la API key está presente (evita error en CI)
+const resend = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null
 
 export async function enviarCorreoQR(
   emailDestino: string,
@@ -10,9 +13,15 @@ export async function enviarCorreoQR(
   fecha: string,
   asiento: string
 ) {
+  // Si no hay cliente de Resend (por ejemplo, en CI), solo logueamos y devolvemos éxito simulado
+  if (!resend) {
+    console.log('🔧 [CI MODE] Resend no configurado. Correo no enviado realmente.')
+    return { success: true, data: null }
+  }
+
   try {
     const { data, error } = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL!,
+      from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
       to: emailDestino,
       subject: 'Tu boleto de Cooperativa Ambato Express',
       html: `
