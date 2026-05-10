@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -31,7 +32,8 @@ interface Ruta {
   frecuencia: Frecuencia;
 }
 
-export default function PagarPage() {
+// Componente interno que usa useSearchParams (debe estar envuelto en Suspense)
+function PagarContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const rutaId = searchParams.get("rutaId");
@@ -144,7 +146,6 @@ export default function PagarPage() {
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-xl mx-auto">
-
         <h1 className="text-2xl font-bold text-gray-800 mb-6">
           Confirmar Compra
         </h1>
@@ -163,7 +164,6 @@ export default function PagarPage() {
         )}
 
         <div className="bg-white rounded-lg shadow p-6 space-y-5">
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Nombre completo
@@ -248,9 +248,17 @@ export default function PagarPage() {
           >
             {enviando ? "Procesando..." : "✅ Confirmar Compra"}
           </button>
-
         </div>
       </div>
     </div>
+  );
+}
+
+// Componente principal envuelto en Suspense (requerido por Next.js para useSearchParams)
+export default function PagarPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Cargando...</div>}>
+      <PagarContent />
+    </Suspense>
   );
 }
