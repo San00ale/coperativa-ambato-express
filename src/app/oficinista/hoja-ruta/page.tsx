@@ -21,6 +21,7 @@ interface Ruta {
   busId: string
   bus: { placa: string }
   frecuencia: { origen: string; destino: string; hora: string }
+  precio?: number        // ← nuevo campo opcional
 }
 
 export default function HojaRuta() {
@@ -30,6 +31,7 @@ export default function HojaRuta() {
   const [frecuenciaId, setFrecuenciaId] = useState('')
   const [busId, setBusId] = useState('')
   const [fecha, setFecha] = useState('')
+  const [precio, setPrecio] = useState('')           // ← nuevo estado
   const [cargando, setCargando] = useState(false)
   const [mensaje, setMensaje] = useState('')
   const [reasignando, setReasignando] = useState<string | null>(null)
@@ -51,8 +53,8 @@ export default function HojaRuta() {
   }
 
   async function crearRuta() {
-    if (!frecuenciaId || !busId || !fecha) {
-      setMensaje('Completa todos los campos')
+    if (!frecuenciaId || !busId || !fecha || !precio) {
+      setMensaje('Completa todos los campos (frecuencia, bus, fecha, precio)')
       return
     }
     setCargando(true)
@@ -61,13 +63,19 @@ export default function HojaRuta() {
       const res = await fetch('/api/rutas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ frecuenciaId, busId, fecha }),
+        body: JSON.stringify({
+          frecuenciaId,
+          busId,
+          fecha,
+          precio: parseFloat(precio)      // ← se envía el precio
+        }),
       })
       if (res.ok) {
         setMensaje('✅ Ruta creada correctamente')
         setFrecuenciaId('')
         setBusId('')
         setFecha('')
+        setPrecio('')                     // ← limpiar precio
         cargarRutasHoy()
       } else {
         const err = await res.json()
@@ -112,7 +120,7 @@ export default function HojaRuta() {
         {/* Formulario crear ruta */}
         <div className="bg-white rounded-xl shadow p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-700 mb-4">Crear nueva ruta</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-gray-600 mb-1">Frecuencia</label>
               <select
@@ -152,6 +160,18 @@ export default function HojaRuta() {
                 onChange={e => setFecha(e.target.value)}
               />
             </div>
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Precio ($)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                value={precio}
+                onChange={e => setPrecio(e.target.value)}
+                placeholder="Ej: 5.00"
+              />
+            </div>
           </div>
           <button
             onClick={crearRuta}
@@ -171,13 +191,14 @@ export default function HojaRuta() {
             <div className="space-y-3">
               {rutas.map(ruta => (
                 <div key={ruta.id} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <p className="font-semibold text-gray-800">
                         {ruta.frecuencia.origen} → {ruta.frecuencia.destino}
                       </p>
                       <p className="text-sm text-gray-500">
                         {ruta.frecuencia.hora} · Bus: {ruta.bus?.placa}
+                        {ruta.precio && ` · Precio: $${ruta.precio.toFixed(2)}`}
                       </p>
                     </div>
                     <button
@@ -190,9 +211,9 @@ export default function HojaRuta() {
 
                   {/* Panel reasignación */}
                   {reasignando === ruta.id && (
-                    <div className="mt-3 pt-3 border-t flex gap-3 items-center">
+                    <div className="mt-3 pt-3 border-t flex flex-wrap gap-3 items-center">
                       <select
-                        className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        className="flex-1 min-w-[150px] border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
                         value={nuevoBusId}
                         onChange={e => setNuevoBusId(e.target.value)}
                       >
