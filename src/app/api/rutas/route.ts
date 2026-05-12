@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 export async function GET(request: Request) {
   try {
@@ -54,21 +56,27 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const session = await getServerSession(authOptions)
+    if (session?.user?.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
     const body = await request.json()
-    const { frecuenciaId, fecha, busId } = body
-    
-    if (!frecuenciaId || !fecha || !busId) {
+    const { frecuenciaId, fecha, busId, precio } = body
+
+    if (!frecuenciaId || !fecha || !busId || precio === undefined) {
       return NextResponse.json(
-        { error: 'Faltan campos requeridos: frecuenciaId, fecha, busId' },
+        { error: 'Faltan campos requeridos: frecuenciaId, fecha, busId, precio' },
         { status: 400 }
       )
     }
-    
+
     const ruta = await prisma.ruta.create({
       data: {
         frecuenciaId,
         fecha: new Date(fecha),
         busId,
+        precio: parseFloat(precio),
         completada: false
       },
       include: {
