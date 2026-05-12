@@ -28,6 +28,7 @@ interface Ruta {
   frecuenciaId: string
   busId: string
   fecha: string
+  precio?: number          // ← Campo opcional para compatibilidad
   frecuencia: Frecuencia
   bus: Bus
 }
@@ -43,11 +44,12 @@ export default function RutasPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  // Formulario
+  // Formulario (incluye precio)
   const [formData, setFormData] = useState({
     frecuenciaId: '',
     busId: '',
-    fecha: ''
+    fecha: '',
+    precio: ''          // ← nuevo campo
   })
 
   useEffect(() => {
@@ -60,21 +62,18 @@ export default function RutasPage() {
 
   const cargarDatos = async () => {
     try {
-      // Cargar rutas
       const rutasResponse = await fetch('/api/rutas')
       if (rutasResponse.ok) {
         const rutasData = await rutasResponse.json()
         setRutas(rutasData)
       }
 
-      // Cargar frecuencias
       const frecuenciasResponse = await fetch('/api/frecuencias')
       if (frecuenciasResponse.ok) {
         const frecuenciasData = await frecuenciasResponse.json()
         setFrecuencias(frecuenciasData.filter((f: Frecuencia) => f.activa))
       }
 
-      // Cargar buses
       const busesResponse = await fetch('/api/buses')
       if (busesResponse.ok) {
         const busesData = await busesResponse.json()
@@ -89,10 +88,7 @@ export default function RutasPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+    setFormData(prev => ({ ...prev, [name]: value }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -104,19 +100,18 @@ export default function RutasPage() {
     try {
       const response = await fetch('/api/rutas', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           frecuenciaId: formData.frecuenciaId,
           busId: formData.busId,
           fecha: formData.fecha,
+          precio: parseFloat(formData.precio)   // ← se envía el precio como número
         }),
       })
 
       if (response.ok) {
         setSuccess('Ruta creada correctamente')
-        setFormData({ frecuenciaId: '', busId: '', fecha: '' })
+        setFormData({ frecuenciaId: '', busId: '', fecha: '', precio: '' })
         await cargarDatos()
       } else {
         const errorData = await response.json()
@@ -135,10 +130,7 @@ export default function RutasPage() {
     }
 
     try {
-      const response = await fetch(`/api/rutas/${ruta.id}`, {
-        method: 'DELETE',
-      })
-
+      const response = await fetch(`/api/rutas/${ruta.id}`, { method: 'DELETE' })
       if (response.ok) {
         await cargarDatos()
       } else {
@@ -164,10 +156,7 @@ export default function RutasPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
-          <Link
-            href="/admin"
-            className="text-gray-600 hover:text-gray-800 flex items-center"
-          >
+          <Link href="/admin" className="text-gray-600 hover:text-gray-800 flex items-center">
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
@@ -177,17 +166,8 @@ export default function RutasPage() {
         </div>
       </div>
 
-      {error && (
-        <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="mb-4 p-4 bg-green-100 text-green-700 rounded">
-          {success}
-        </div>
-      )}
+      {error && <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">{error}</div>}
+      {success && <div className="mb-4 p-4 bg-green-100 text-green-700 rounded">{success}</div>}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Formulario de creación */}
@@ -196,9 +176,7 @@ export default function RutasPage() {
             <h2 className="text-lg font-semibold mb-4">Crear Nueva Ruta</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label htmlFor="frecuenciaId" className="block text-sm font-medium text-gray-700 mb-2">
-                  Frecuencia *
-                </label>
+                <label htmlFor="frecuenciaId" className="block text-sm font-medium text-gray-700 mb-2">Frecuencia *</label>
                 <select
                   id="frecuenciaId"
                   name="frecuenciaId"
@@ -208,18 +186,14 @@ export default function RutasPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Seleccionar frecuencia...</option>
-                  {frecuencias.map((frecuencia) => (
-                    <option key={frecuencia.id} value={frecuencia.id}>
-                      {frecuencia.origen} - {frecuencia.destino} ({frecuencia.hora})
-                    </option>
+                  {frecuencias.map(f => (
+                    <option key={f.id} value={f.id}>{f.origen} - {f.destino} ({f.hora})</option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label htmlFor="busId" className="block text-sm font-medium text-gray-700 mb-2">
-                  Bus *
-                </label>
+                <label htmlFor="busId" className="block text-sm font-medium text-gray-700 mb-2">Bus *</label>
                 <select
                   id="busId"
                   name="busId"
@@ -229,18 +203,14 @@ export default function RutasPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Seleccionar bus...</option>
-                  {buses.map((bus) => (
-                    <option key={bus.id} value={bus.id}>
-                      Bus {bus.numero} ({bus.placa}) - {bus.marca}
-                    </option>
+                  {buses.map(b => (
+                    <option key={b.id} value={b.id}>Bus {b.numero} ({b.placa}) - {b.marca}</option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label htmlFor="fecha" className="block text-sm font-medium text-gray-700 mb-2">
-                  Fecha *
-                </label>
+                <label htmlFor="fecha" className="block text-sm font-medium text-gray-700 mb-2">Fecha *</label>
                 <input
                   type="date"
                   id="fecha"
@@ -250,6 +220,25 @@ export default function RutasPage() {
                   required
                   min={new Date().toISOString().split('T')[0]}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* NUEVO CAMPO PRECIO */}
+              <div>
+                <label htmlFor="precio" className="block text-sm font-medium text-gray-700 mb-2">
+                  Precio ($) *
+                </label>
+                <input
+                  type="number"
+                  id="precio"
+                  name="precio"
+                  value={formData.precio}
+                  onChange={handleInputChange}
+                  required
+                  step="0.01"
+                  min="0"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Ej: 5.00"
                 />
               </div>
 
@@ -274,18 +263,11 @@ export default function RutasPage() {
               <table className="min-w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Ruta
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Bus
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Fecha
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Acciones
-                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ruta</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bus</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -300,44 +282,24 @@ export default function RutasPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <div className="font-medium text-gray-900">
-                          Bus {ruta.bus.numero}
-                        </div>
-                        <div className="text-gray-500">
-                          {ruta.bus.placa} • {ruta.bus.marca}
-                        </div>
+                        <div className="font-medium text-gray-900">Bus {ruta.bus.numero}</div>
+                        <div className="text-gray-500">{ruta.bus.placa} • {ruta.bus.marca}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {new Date(ruta.fecha).toLocaleDateString('es-ES', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: 'numeric'
-                        })}
+                        {new Date(ruta.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {ruta.precio ? `$${ruta.precio.toFixed(2)}` : '—'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <Link
-                          href={`/admin/rutas/editar/${ruta.id}`}
-                          className="text-indigo-600 hover:text-indigo-900 mr-4"
-                        >
-                          Editar
-                        </Link>
-                        <button
-                          onClick={() => handleEliminar(ruta)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          Eliminar
-                        </button>
+                        <Link href={`/admin/rutas/editar/${ruta.id}`} className="text-indigo-600 hover:text-indigo-900 mr-4">Editar</Link>
+                        <button onClick={() => handleEliminar(ruta)} className="text-red-600 hover:text-red-900">Eliminar</button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-
-              {rutas.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  No hay rutas creadas
-                </div>
-              )}
+              {rutas.length === 0 && <div className="text-center py-8 text-gray-500">No hay rutas creadas</div>}
             </div>
           </div>
         </div>
