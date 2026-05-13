@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -81,6 +82,10 @@ export default function LoginPage() {
           oficinista@coperativa.com / ofi123<br />
           chofer@coperativa.com / chofer123<br />
           cliente@test.com / cliente123
+        </p>
+
+        <p className="text-center text-sm text-gray-600 mt-4">
+          ¿No tienes cuenta? <Link href="/registro" className="text-blue-600 hover:underline">Regístrate aquí</Link>
         </p>
       </div>
     </div>
