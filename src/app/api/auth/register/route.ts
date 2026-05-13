@@ -29,7 +29,6 @@ export async function POST(request: Request) {
         cedula,
         password: hashedPassword,
         rol: 'CLIENTE',
-        activo: true
       }
     })
 
