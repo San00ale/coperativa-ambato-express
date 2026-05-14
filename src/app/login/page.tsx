@@ -35,8 +35,8 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-md w-96">
-        <h1 className="text-2xl font-bold mb-6 text-center">Cooperativa Ambato Express</h1>
-        <h2 className="text-xl mb-4 text-center">Iniciar Sesión</h2>
+        <h1 className="text-2xl font-bold text-gray-900 mb-6 text-center">Cooperativa Ambato Express</h1>
+        <h2 className="text-xl mb-4 text-gray-900 text-center">Iniciar Sesión</h2>
         
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4">
@@ -46,23 +46,23 @@ export default function LoginPage() {
         
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-black mb-2">Correo electrónico</label>
+            <label className="block text-gray-900 mb-2">Correo electrónico</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
               required
             />
           </div>
           
           <div className="mb-6">
-            <label className="block text-black mb-2">Contraseña</label>
+            <label className="block text-gray-900 mb-2">Contraseña</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
               required
             />
           </div>
