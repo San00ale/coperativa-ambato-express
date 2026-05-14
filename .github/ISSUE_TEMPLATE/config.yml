@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📚 Documentación del Proyecto
+    url: https://github.com/San00ale/coperativa-ambato-express#readme
+    about: Lee la documentación principal del proyecto
+  - name: 💬 Discusiones
+    url: https://github.com/San00ale/coperativa-ambato-express/discussions
+    about: Haz preguntas generales en discusiones
