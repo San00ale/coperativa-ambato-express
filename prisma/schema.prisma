@@ -14,6 +14,7 @@ model Usuario {
   nombre       String
   cedula       String   @unique
   rol          String
+  activo       Boolean @default(true)
   createdAt    DateTime @default(now())
   boletos      Boleto[]
   vendidosChofer Boleto[] @relation("VendidoPorChofer")
