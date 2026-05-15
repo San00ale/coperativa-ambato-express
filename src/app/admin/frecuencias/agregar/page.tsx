@@ -133,7 +133,7 @@ export default function AgregarFrecuenciaPage() {
                   value={formData.origen}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
                   placeholder="Ej: Ambato"
                 />
               </div>
@@ -149,7 +149,7 @@ export default function AgregarFrecuenciaPage() {
                   value={formData.destino}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
                   placeholder="Ej: Quito"
                 />
               </div>
@@ -167,7 +167,7 @@ export default function AgregarFrecuenciaPage() {
                   value={formData.hora}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
                 />
               </div>
 
@@ -180,7 +180,7 @@ export default function AgregarFrecuenciaPage() {
                   name="tipoViaje"
                   value={formData.tipoViaje}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
                 >
                   <option value="DIRECTO">Directo</option>
                   <option value="CON_PARADAS">Con Paradas</option>
