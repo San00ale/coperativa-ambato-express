@@ -8,8 +8,8 @@ export default function AdminPage() {
   const router = useRouter()
   const { data: session } = useSession()
   
-  return ( 
-    <div className="p-8"> 
+  return (
+    <div className="p-8 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-bold mb-6">Panel de Administrador</h1> 
       
       <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
