@@ -313,7 +313,7 @@ export default function BusesPage() {
                     required
                     value={formData.numero}
                     onChange={(e) => setFormData({ ...formData, numero: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
                 </div>
 
@@ -326,7 +326,7 @@ export default function BusesPage() {
                     required
                     value={formData.placa}
                     onChange={(e) => setFormData({ ...formData, placa: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
                 </div>
 
@@ -338,7 +338,7 @@ export default function BusesPage() {
                     type="text"
                     value={formData.chasis}
                     onChange={(e) => setFormData({ ...formData, chasis: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
                 </div>
 
@@ -350,7 +350,7 @@ export default function BusesPage() {
                     type="text"
                     value={formData.carroceria}
                     onChange={(e) => setFormData({ ...formData, carroceria: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
                 </div>
 
@@ -362,7 +362,7 @@ export default function BusesPage() {
                     type="text"
                     value={formData.marca}
                     onChange={(e) => setFormData({ ...formData, marca: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
                 </div>
 
@@ -376,7 +376,7 @@ export default function BusesPage() {
                     min="1"
                     value={formData.capacidad}
                     onChange={(e) => setFormData({ ...formData, capacidad: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
                 </div>
 
@@ -389,7 +389,7 @@ export default function BusesPage() {
                     min="0"
                     value={formData.asientosVIP}
                     onChange={(e) => setFormData({ ...formData, asientosVIP: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
                 </div>
 
@@ -401,7 +401,7 @@ export default function BusesPage() {
                     type="url"
                     value={formData.fotoUrl}
                     onChange={(e) => setFormData({ ...formData, fotoUrl: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
                 </div>
 
@@ -442,7 +442,7 @@ export default function BusesPage() {
                     required
                     value={formData.numero}
                     onChange={(e) => setFormData({ ...formData, numero: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
                 </div>
 
@@ -455,7 +455,7 @@ export default function BusesPage() {
                     required
                     value={formData.placa}
                     onChange={(e) => setFormData({ ...formData, placa: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
                 </div>
 
@@ -467,7 +467,7 @@ export default function BusesPage() {
                     type="text"
                     value={formData.chasis}
                     onChange={(e) => setFormData({ ...formData, chasis: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
                 </div>
 
@@ -479,7 +479,7 @@ export default function BusesPage() {
                     type="text"
                     value={formData.carroceria}
                     onChange={(e) => setFormData({ ...formData, carroceria: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
                 </div>
 
@@ -491,7 +491,7 @@ export default function BusesPage() {
                     type="text"
                     value={formData.marca}
                     onChange={(e) => setFormData({ ...formData, marca: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
                 </div>
 
@@ -505,7 +505,7 @@ export default function BusesPage() {
                     min="1"
                     value={formData.capacidad}
                     onChange={(e) => setFormData({ ...formData, capacidad: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
                 </div>
 
@@ -518,7 +518,7 @@ export default function BusesPage() {
                     min="0"
                     value={formData.asientosVIP}
                     onChange={(e) => setFormData({ ...formData, asientosVIP: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
                 </div>
 
@@ -530,7 +530,7 @@ export default function BusesPage() {
                     type="url"
                     value={formData.fotoUrl}
                     onChange={(e) => setFormData({ ...formData, fotoUrl: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
                 </div>
 
