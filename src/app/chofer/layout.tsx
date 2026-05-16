@@ -45,21 +45,21 @@ export default function ChoferLayout({
               <div className="hidden md:flex gap-4">
                 <Link
                   href="/chofer/mis-rutas"
-                  className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition"
+                  className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-black hover:bg-gray-100 transition"
                 >
                   <MapPin size={18} />
                   Mis Rutas
                 </Link>
                 <Link
                   href="/chofer/vender-en-ruta"
-                  className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition"
+                  className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-black hover:bg-gray-100 transition"
                 >
                   <Ticket size={18} />
                   Vender Boletos
                 </Link>
                 <Link
                   href="/chofer/escanear"
-                  className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition"
+                  className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-black hover:bg-gray-100 transition"
                 >
                   <QrCode size={18} />
                   Escanear
@@ -96,21 +96,21 @@ export default function ChoferLayout({
             <div className="md:hidden pb-4 space-y-2">
               <Link
                 href="/chofer/mis-rutas"
-                className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 w-full"
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-black hover:bg-gray-100 w-full"
               >
                 <MapPin size={18} />
                 Mis Rutas
               </Link>
               <Link
                 href="/chofer/vender-en-ruta"
-                className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 w-full"
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-black hover:bg-gray-100 w-full"
               >
                 <Ticket size={18} />
                 Vender Boletos
               </Link>
               <Link
                 href="/chofer/escanear"
-                className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 w-full"
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-black hover:bg-gray-100 w-full"
               >
                 <QrCode size={18} />
                 Escanear Abordaje
