@@ -62,6 +62,7 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions)
+    console.log('GET /api/admin/usuarios - Session:', session?.user?.role)
     if (session?.user?.role !== 'ADMIN') {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
@@ -76,6 +77,7 @@ export async function GET(request: Request) {
       where.rol = { in: ['CHOFER', 'OFICINISTA'] }
     }
 
+    console.log('GET /api/admin/usuarios - Where:', where)
     const usuarios = await prisma.usuario.findMany({
       where,
       select: {
@@ -89,6 +91,7 @@ export async function GET(request: Request) {
       orderBy: { nombre: 'asc' }
     })
 
+    console.log('GET /api/admin/usuarios - Usuarios encontrados:', usuarios.length)
     return NextResponse.json(usuarios)
   } catch (error) {
     console.error('Error al obtener usuarios:', error)
