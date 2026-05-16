@@ -21,6 +21,8 @@ export const authOptions: NextAuthOptions = {
         });
         
         if (!usuario) return null;
+
+        if (!usuario.activo) return null;
         
         const passwordValida = await bcrypt.compare(credentials.password, usuario.password);
         
