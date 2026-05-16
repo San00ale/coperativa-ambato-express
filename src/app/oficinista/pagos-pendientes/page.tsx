@@ -62,7 +62,7 @@ export default function PagosPendientes() {
                   <p className="font-semibold text-gray-900">{boleto.pasajero.nombre}</p>
                   <p className="text-sm text-gray-500">CI: {boleto.pasajero.cedula}</p>
                   <p className="text-sm text-gray-600">
-                    {boleto.ruta.frecuencia.origen} → {boleto.ruta.frecuencia.destino} · {boleto.ruta.fecha} {boleto.ruta.frecuencia.hora}
+                    {boleto.ruta.frecuencia.origen} → {boleto.ruta.frecuencia.destino} · {new Date(boleto.ruta.fecha).toLocaleDateString('es-EC')} {boleto.ruta.frecuencia.hora}
                   </p>
                   <p className="text-sm text-gray-600">Asiento: <span className="font-medium">{boleto.asiento}</span></p>
                 </div>
