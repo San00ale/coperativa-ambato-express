@@ -1,9 +1,9 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { QrCode, CheckCircle2, AlertCircle, Loader, Camera, X, RotateCcw } from 'lucide-react'
-import { Html5QrcodeScanner } from 'html5-qrcode'
+import { Html5Qrcode } from 'html5-qrcode'
 
 interface PasajeroInfo {
   nombre: string
@@ -23,61 +23,68 @@ export default function EscanearPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [pasajeroActual, setPasajeroActual] = useState<PasajeroInfo | null>(null)
   const [validando, setValidando] = useState(false)
-  const qrcodeRegionId = 'html5qr-code-full-region'
-
-  // Solicitar permiso de cámara al cargar
-  useEffect(() => {
-    const requestCameraPermission = async () => {
-      try {
-        await navigator.mediaDevices.getUserMedia({ video: true })
-        setCameraPermission('granted')
-      } catch (err) {
-        setCameraPermission('denied')
-        setError('Permiso de cámara denegado. No se puede usar el escaneo.')
-      }
-    }
-
-    requestCameraPermission()
-  }, [])
-
-  // Inicializar scanner cuando se otorga permiso
-  useEffect(() => {
-    if (cameraPermission !== 'granted' || scanner) return
-
-    let newScanner: Html5QrcodeScanner | null = null
-
-    try {
-      newScanner = new Html5QrcodeScanner(
-        qrcodeRegionId,
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          rememberLastUsedCamera: true,
-          showTorchButtonIfSupported: true,
-        },
-        false
-      )
-
-      newScanner.render(onScanSuccess, onScanFailure)
-      setScanner(newScanner)
-      setScanning(true)
-    } catch (err) {
-      setError('Error al inicializar la cámara')
-      console.error('Error initializing scanner:', err)
-    }
-
-    return () => {
-      if (newScanner) {
-        newScanner.clear().catch((err: unknown) => console.error('Error clearing scanner:', err))
-      }
-    }
-  }, [cameraPermission])
-
+  const QR_REGION_ID = 'html5qr-code-full-region'
+  const html5QrcodeRef = useRef<Html5Qrcode | null>(null)
+  const regionRef = useRef<HTMLDivElement | null>(null)
+  const startingRef = useRef(false)
   
-  const onScanSuccess = async (decodedText: string) => {
+  const onScanSuccess = useCallback(async (decodedText: string) => {
     try {
       setLoading(true)
       setError(null)
+      if (html5QrcodeRef.current?.isScanning) {
+      await html5QrcodeRef.current.stop()
+      setScanning(false)
+    }
+
+    const startScanner = useCallback(async () => {
+  if (startingRef.current || html5QrcodeRef.current?.isScanning) return
+  startingRef.current = true
+  try {
+    const qr = new Html5Qrcode(QR_REGION_ID)
+    html5QrcodeRef.current = qr
+    await qr.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      onScanSuccess,
+      onScanFailure
+    )
+    setScanning(true)
+  } catch (err) {
+    setError('Error al inicializar la cámara')
+    console.error('Error initializing scanner:', err)
+  } finally {
+    startingRef.current = false
+  }
+}, [onScanSuccess, onScanFailure])
+
+// useEffect permiso (igual que antes)
+useEffect(() => {
+  const requestCameraPermission = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+      stream.getTracks().forEach((t) => t.stop()) // liberar stream de prueba
+      setCameraPermission('granted')
+    } catch {
+      setCameraPermission('denied')
+      setError('Permiso de cámara denegado. No se puede usar el escaneo.')
+    }
+  }
+  requestCameraPermission()
+}, [])
+
+// useEffect arranque del scanner — EL CAMBIO CLAVE
+useEffect(() => {
+  if (cameraPermission !== 'granted') return
+  const timer = setTimeout(() => { startScanner() }, 0) // espera un tick al DOM
+  return () => {
+    clearTimeout(timer)
+    if (html5QrcodeRef.current?.isScanning) {
+      html5QrcodeRef.current.stop().catch(console.error)
+    }
+  }
+}, [cameraPermission, startScanner])
+
 
       // El QR contiene JSON con los datos del boleto
       // Enviar como está (qrData es el contenido del QR)
@@ -133,14 +140,14 @@ export default function EscanearPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const onScanFailure = (error: string) => {
+  const onScanFailure = useCallback((error: string) => {
     // Ignorar errores de detección que no son críticos
     if (!error.includes('No QR code found')) {
       console.debug('QR Scan error:', error)
     }
-  }
+  }, [])
 
   const handleConfirmarValidacion = async () => {
     if (!pasajeroActual) return
