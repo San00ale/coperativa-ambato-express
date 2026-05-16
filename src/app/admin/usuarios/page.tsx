@@ -44,13 +44,17 @@ export default function UsuariosPage() {
   const cargarUsuarios = async () => {
     try {
       const response = await fetch('/api/admin/usuarios')
+      console.log('Response status:', response.status)
       if (response.ok) {
         const data = await response.json()
         setUsuarios(data)
       } else {
-        setError('Error al cargar los usuarios')
+        const errorData = await response.json()
+        console.error('Error response:', errorData)
+        setError(errorData.error || 'Error al cargar los usuarios')
       }
     } catch (error) {
+      console.error('Error de conexión:', error)
       setError('Error de conexión')
     } finally {
       setLoading(false)
