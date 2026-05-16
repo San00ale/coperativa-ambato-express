@@ -3,14 +3,59 @@
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
 
-export default function AdminPage() { 
+interface Boleto {
+  id: string
+  precio: number
+  estado: string
+  createdAt: string
+}
+
+export default function AdminPage() {
   const router = useRouter()
   const { data: session } = useSession()
+  const [boletosHoy, setBoletosHoy] = useState<number>(0)
+  const [ingresosHoy, setIngresosHoy] = useState<number>(0)
+  const [loadingEstadisticas, setLoadingEstadisticas] = useState(true)
+
+  useEffect(() => {
+    cargarEstadisticas()
+  }, [])
+
+  const cargarEstadisticas = async () => {
+    try {
+      const response = await fetch('/api/boletos')
+      if (response.ok) {
+        const data: Boleto[] = await response.json()
+        
+        // Filtrar boletos de hoy con estado APROBADO o ABORDADO
+        const hoy = new Date()
+        hoy.setHours(0, 0, 0, 0)
+        
+        const boletosFiltrados = data.filter(boleto => {
+          const fechaBoleto = new Date(boleto.createdAt)
+          fechaBoleto.setHours(0, 0, 0, 0)
+          
+          return (
+            fechaBoleto.getTime() === hoy.getTime() &&
+            (boleto.estado === 'APROBADO' || boleto.estado === 'ABORDADO')
+          )
+        })
+        
+        setBoletosHoy(boletosFiltrados.length)
+        setIngresosHoy(boletosFiltrados.reduce((total, boleto) => total + boleto.precio, 0))
+      }
+    } catch (error) {
+      console.error('Error al cargar estadísticas:', error)
+    } finally {
+      setLoadingEstadisticas(false)
+    }
+  }
   
-  return ( 
-    <div className="p-8"> 
-      <h1 className="text-2xl font-bold mb-6">Panel de Administrador</h1> 
+  return (
+    <div className="p-8 bg-gray-50 min-h-screen">
+      <h1 className="text-2xl font-bold mb-6 text-gray-900">Panel de Administrador</h1> 
       
       <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Link 
@@ -72,12 +117,20 @@ export default function AdminPage() {
           <div className="border-l-4 border-green-500 pl-4">
             <h3 className="font-medium text-gray-900">Ventas</h3>
             <p className="text-gray-600 text-sm mt-1">Reportes y estadísticas</p>
-            <button
-              className="mt-3 px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition text-sm"
-              disabled
-            >
-              Próximamente
-            </button>
+            <div className="mt-3 space-y-2">
+              {loadingEstadisticas ? (
+                <p className="text-gray-500 text-sm">Cargando estadísticas...</p>
+              ) : (
+                <>
+                  <p className="text-gray-900 font-semibold">
+                    Boletos vendidos hoy: {boletosHoy}
+                  </p>
+                  <p className="text-gray-900 font-semibold">
+                    Ingresos totales hoy: ${ingresosHoy.toFixed(2)}
+                  </p>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
