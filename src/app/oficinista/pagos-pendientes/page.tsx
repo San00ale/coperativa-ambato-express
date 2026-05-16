@@ -37,7 +37,7 @@ export default function PagosPendientes() {
   )
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div>
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">Pagos Pendientes de Aprobación</h1>
 
