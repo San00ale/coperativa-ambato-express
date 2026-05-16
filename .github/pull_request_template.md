@@ -259,11 +259,9 @@ Usar uno de los siguientes prefijos:
 
 - 
 - 
-- 
 
 ### Preguntas abiertas:
 
-- 
 - 
 
 ---
