@@ -16,7 +16,7 @@ interface PasajeroInfo {
 export default function EscanearPage() {
   const { data: session } = useSession()
   const [cameraPermission, setCameraPermission] = useState<'pending' | 'granted' | 'denied'>('pending')
-  const [scanner, setScanner] = useState<Html5QrcodeScanner | null>(null)
+  const [scanner, setScanner] = useState<Html5Qrcode | null>(null)
   const [scanning, setScanning] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -25,155 +25,151 @@ export default function EscanearPage() {
   const [validando, setValidando] = useState(false)
   const QR_REGION_ID = 'html5qr-code-full-region'
   const html5QrcodeRef = useRef<Html5Qrcode | null>(null)
-  const regionRef = useRef<HTMLDivElement | null>(null)
   const startingRef = useRef(false)
-  
-  const onScanSuccess = useCallback(async (decodedText: string) => {
-    try {
-      setLoading(true)
-      setError(null)
-      if (html5QrcodeRef.current?.isScanning) {
-      await html5QrcodeRef.current.stop()
-      setScanning(false)
-    }
 
-    const startScanner = useCallback(async () => {
-  if (startingRef.current || html5QrcodeRef.current?.isScanning) return
-  startingRef.current = true
-  try {
-    const qr = new Html5Qrcode(QR_REGION_ID)
-    html5QrcodeRef.current = qr
-    await qr.start(
-      { facingMode: 'environment' },
-      { fps: 10, qrbox: { width: 250, height: 250 } },
-      onScanSuccess,
-      onScanFailure
-    )
-    setScanning(true)
-  } catch (err) {
-    setError('Error al inicializar la cámara')
-    console.error('Error initializing scanner:', err)
-  } finally {
-    startingRef.current = false
-  }
-}, [onScanSuccess, onScanFailure])
-
-// useEffect permiso (igual que antes)
-useEffect(() => {
-  const requestCameraPermission = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true })
-      stream.getTracks().forEach((t) => t.stop()) // liberar stream de prueba
-      setCameraPermission('granted')
-    } catch {
-      setCameraPermission('denied')
-      setError('Permiso de cámara denegado. No se puede usar el escaneo.')
-    }
-  }
-  requestCameraPermission()
-}, [])
-
-// useEffect arranque del scanner — EL CAMBIO CLAVE
-useEffect(() => {
-  if (cameraPermission !== 'granted') return
-  const timer = setTimeout(() => { startScanner() }, 0) // espera un tick al DOM
-  return () => {
-    clearTimeout(timer)
-    if (html5QrcodeRef.current?.isScanning) {
-      html5QrcodeRef.current.stop().catch(console.error)
-    }
-  }
-}, [cameraPermission, startScanner])
-
-
-      // El QR contiene JSON con los datos del boleto
-      // Enviar como está (qrData es el contenido del QR)
-      const response = await fetch('/api/boletos/validar', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          qrData: decodedText.trim(),
-        }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Error al procesar el boleto')
-      }
-
-      const result = await response.json()
-
-      if (!result.boleto && !result.pasajero) {
-        throw new Error(result.error || result.message || 'Error al procesar el boleto')
-      }
-
-      // Adaptar respuesta del API
-      const boletoData = result.boleto || {
-        asiento: result.asiento,
-        pasajero: {
-          nombre: result.pasajero,
-          cedula: result.cedula
-        },
-        tipoPasajero: result.tipo || 'ADULTO',
-        metodoPago: result.pago || 'EFECTIVO'
-      }
-
-      // Mostrar información del pasajero
-      setPasajeroActual({
-        nombre: boletoData.pasajero.nombre || result.pasajero,
-        cedula: boletoData.pasajero.cedula || result.cedula,
-        asiento: boletoData.asiento,
-        tipo: boletoData.tipoPasajero || 'ADULTO',
-        metodoPago: boletoData.metodoPago || 'EFECTIVO',
-      })
-
-      // Pausar scanner mientras se muestra resultado
-      if (scanner) {
-        await scanner.pause()
-        setScanning(false)
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al procesar el QR')
-      setPasajeroActual(null)
-    } finally {
-      setLoading(false)
+  const onScanFailure = useCallback((errorMessage: string) => {
+    if (!errorMessage.includes('No QR code found')) {
+      console.debug('QR Scan error:', errorMessage)
     }
   }, [])
 
-  const onScanFailure = useCallback((error: string) => {
-    // Ignorar errores de detección que no son críticos
-    if (!error.includes('No QR code found')) {
-      console.debug('QR Scan error:', error)
-    }
-  }, [])
+  const onScanSuccess = useCallback(
+    async (decodedText: string) => {
+      try {
+        setLoading(true)
+        setError(null)
 
-  const handleConfirmarValidacion = async () => {
-    if (!pasajeroActual) return
-
-    try {
-      setValidando(true)
-      setError(null)
-
-      // En la respuesta anterior ya se validó, aquí solo confirmamos
-      setSuccessMessage(`✓ ${pasajeroActual.nombre} ha abordado correctamente`)
-
-      // Limpiar después de 3 segundos y reiniciar scanner
-      setTimeout(() => {
-        setPasajeroActual(null)
-        setSuccessMessage(null)
-        if (scanner && !scanning) {
-          scanner.resume()
-          setScanning(true)
+        if (scanning && html5QrcodeRef.current) {
+          await html5QrcodeRef.current.stop()
+          setScanning(false)
         }
-      }, 3000)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al confirmar')
-    } finally {
-      setValidando(false)
+
+        const response = await fetch('/api/boletos/validar', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            qrData: decodedText.trim(),
+          }),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Error al procesar el boleto')
+        }
+
+        const result = await response.json()
+
+        if (!result.boleto && !result.pasajero) {
+          throw new Error(result.error || result.message || 'Error al procesar el boleto')
+        }
+
+        const boletoData = result.boleto || {
+          asiento: result.asiento,
+          pasajero: {
+            nombre: result.pasajero,
+            cedula: result.cedula,
+          },
+          tipoPasajero: result.tipo || 'ADULTO',
+          metodoPago: result.pago || 'EFECTIVO',
+        }
+
+        setPasajeroActual({
+          nombre: boletoData.pasajero.nombre || result.pasajero,
+          cedula: boletoData.pasajero.cedula || result.cedula,
+          asiento: boletoData.asiento,
+          tipo: boletoData.tipoPasajero || 'ADULTO',
+          metodoPago: boletoData.metodoPago || 'EFECTIVO',
+        })
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error al procesar el QR')
+        setPasajeroActual(null)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [scanning]
+  )
+
+  const startScanner = useCallback(
+    async () => {
+      if (startingRef.current || scanning) return
+
+      startingRef.current = true
+
+      try {
+        const qr = new Html5Qrcode(QR_REGION_ID)
+        html5QrcodeRef.current = qr
+        setScanner(qr)
+
+        await qr.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          onScanSuccess,
+          onScanFailure
+        )
+
+        setScanning(true)
+      } catch (err) {
+        setError('Error al inicializar la cámara')
+        console.error('Error initializing scanner:', err)
+      } finally {
+        startingRef.current = false
+      }
+    },
+    [onScanSuccess, onScanFailure, scanning]
+  )
+
+  useEffect(() => {
+    const requestCameraPermission = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+        stream.getTracks().forEach((track) => track.stop())
+        setCameraPermission('granted')
+      } catch {
+        setCameraPermission('denied')
+        setError('Permiso de cámara denegado. No se puede usar el escaneo.')
+      }
     }
-  }
+
+    requestCameraPermission()
+  }, [])
+
+  useEffect(() => {
+    if (cameraPermission !== 'granted') return
+
+    startScanner()
+
+    return () => {
+      if (html5QrcodeRef.current && scanning) {
+        html5QrcodeRef.current.stop().catch(console.error)
+      }
+    }
+  }, [cameraPermission, scanning, startScanner])
+
+  const handleConfirmarValidacion = useCallback(
+    async () => {
+      if (!pasajeroActual) return
+
+      try {
+        setValidando(true)
+        setError(null)
+        setSuccessMessage(`✓ ${pasajeroActual.nombre} ha abordado correctamente`)
+
+        setTimeout(async () => {
+          setPasajeroActual(null)
+          setSuccessMessage(null)
+          await startScanner()
+        }, 3000)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error al confirmar')
+      } finally {
+        setValidando(false)
+      }
+    },
+    [pasajeroActual, startScanner]
+  )
 
   const handleReiniciar = async () => {
     setPasajeroActual(null)
@@ -217,10 +213,8 @@ useEffect(() => {
     )
   }
 
-  
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
           <QrCode className="w-8 h-8 text-blue-600" />
@@ -231,7 +225,6 @@ useEffect(() => {
         </p>
       </div>
 
-      {/* Error Message */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
@@ -239,16 +232,12 @@ useEffect(() => {
             <h3 className="font-semibold text-red-900">Error</h3>
             <p className="text-red-700 text-sm">{error}</p>
           </div>
-          <button
-            onClick={() => setError(null)}
-            className="text-red-600 hover:text-red-900"
-          >
+          <button onClick={() => setError(null)} className="text-red-600 hover:text-red-900">
             <X size={20} />
           </button>
         </div>
       )}
 
-      {/* Success Message */}
       {successMessage && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3 animate-in">
           <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
@@ -260,24 +249,21 @@ useEffect(() => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Scanner - Columna Izquierda */}
         <div className="lg:col-span-2">
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-            {/* Camera View */}
             <div className="bg-black aspect-video relative">
               {scanning && cameraPermission === 'granted' ? (
-                <div id={qrcodeRegionId} className="w-full h-full"></div>
+                <div id={QR_REGION_ID} className="w-full h-full" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center flex-col gap-4">
+                <div className="absolute inset-0 flex items-center justify-center flex-col gap-4">
                   <Camera className="w-12 h-12 text-gray-600" />
-                  <p className="text-gray-600 text-center">
-                    {scanning ? 'Inicializando cámara...' : 'Cámara inactiva'}
+                  <p className="text-gray-400 text-center">
+                    {loading ? 'Procesando QR...' : 'Inicializando cámara...'}
                   </p>
                 </div>
               )}
             </div>
 
-            {/* Instrucciones */}
             <div className="bg-blue-50 border-t border-blue-200 p-4">
               <p className="text-sm text-blue-800">
                 💡 <strong>Instrucciones:</strong> Apunta el código QR del boleto hacia la cámara.
@@ -287,14 +273,12 @@ useEffect(() => {
           </div>
         </div>
 
-        {/* Información del Pasajero - Columna Derecha */}
         <div className="lg:col-span-1">
           <div className="bg-white border border-gray-200 rounded-lg p-6 sticky top-20">
             {pasajeroActual ? (
               <div className="space-y-6">
                 <h2 className="text-lg font-semibold text-gray-900">Pasajero Detectado</h2>
 
-                {/* Tarjeta de Datos */}
                 <div className="bg-linear-to-br from-blue-50 to-blue-100 rounded-lg p-4 space-y-3">
                   <div>
                     <div className="text-xs text-blue-700 font-semibold">NOMBRE</div>
@@ -322,7 +306,6 @@ useEffect(() => {
                   </div>
                 </div>
 
-                {/* Botones de Acción */}
                 <div className="space-y-2">
                   <button
                     onClick={handleConfirmarValidacion}
@@ -352,11 +335,8 @@ useEffect(() => {
                   </button>
                 </div>
 
-                {/* Estado de Verificación */}
                 <div className="bg-green-50 border border-green-200 rounded p-3">
-                  <p className="text-sm text-green-800">
-                    ✓ Boleto válido y aprobado
-                  </p>
+                  <p className="text-sm text-green-800">✓ Boleto válido y aprobado</p>
                 </div>
               </div>
             ) : (
@@ -364,9 +344,7 @@ useEffect(() => {
                 <QrCode className="w-12 h-12 text-gray-400 mx-auto" />
                 <div>
                   <p className="text-gray-600 font-medium">Esperando lectura de QR</p>
-                  <p className="text-gray-500 text-sm">
-                    Apunta el código QR del boleto a la cámara
-                  </p>
+                  <p className="text-gray-500 text-sm">Apunta el código QR del boleto a la cámara</p>
                 </div>
               </div>
             )}
@@ -374,27 +352,20 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* Instrucciones Generales */}
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
         <h2 className="font-semibold text-gray-900 mb-4">ℹ️ Información</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <h3 className="font-medium text-gray-900 mb-2">📱 Escaneo</h3>
-            <p className="text-sm text-gray-600">
-              Coloca el código QR del boleto frente a la cámara. El dispositivo detectará automáticamente el código.
-            </p>
+            <p className="text-sm text-gray-600">Coloca el código QR del boleto frente a la cámara. El dispositivo detectará automáticamente el código.</p>
           </div>
           <div>
             <h3 className="font-medium text-gray-900 mb-2">✓ Validación</h3>
-            <p className="text-sm text-gray-600">
-              Verifica que el nombre y asiento del pasajero sean correctos antes de confirmar el abordaje.
-            </p>
+            <p className="text-sm text-gray-600">Verifica que el nombre y asiento del pasajero sean correctos antes de confirmar el abordaje.</p>
           </div>
           <div>
             <h3 className="font-medium text-gray-900 mb-2">💾 Registro</h3>
-            <p className="text-sm text-gray-600">
-              Al confirmar, se registra el abordaje en el sistema con fecha y hora exacta.
-            </p>
+            <p className="text-sm text-gray-600">Al confirmar, se registra el abordaje en el sistema con fecha y hora exacta.</p>
           </div>
         </div>
       </div>
