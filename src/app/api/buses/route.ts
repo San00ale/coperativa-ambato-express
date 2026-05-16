@@ -4,7 +4,6 @@ import { prisma } from '@/lib/prisma'
 export async function GET() {
   try {
     const buses = await prisma.bus.findMany({
-      where: { activo: true },
       orderBy: { numero: 'asc' }
     })
     return NextResponse.json(buses)
@@ -45,6 +44,25 @@ export async function POST(request: Request) {
     return NextResponse.json(bus, { status: 201 })
   } catch (error) {
     console.error('Error al crear bus:', error)
+    
+    // Handle specific Prisma errors
+    if (error instanceof Error) {
+      if (error.message.includes('Unique constraint')) {
+        if (error.message.includes('numero')) {
+          return NextResponse.json(
+            { error: 'El número de bus ya existe' },
+            { status: 400 }
+          )
+        }
+        if (error.message.includes('placa')) {
+          return NextResponse.json(
+            { error: 'La placa ya existe' },
+            { status: 400 }
+          )
+        }
+      }
+    }
+    
     return NextResponse.json(
       { error: 'Error al crear el bus' },
       { status: 500 }
