@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import AdminHeader from '@/components/AdminHeader'
 
 interface Parada {
   id: string
@@ -85,19 +86,17 @@ export default function FrecuenciasPage() {
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-4">
-          <Link
-            href="/admin"
-            className="text-gray-600 hover:text-gray-800 flex items-center"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Volver al Dashboard
-          </Link>
-          <h1 className="text-2xl font-bold">Gestión de Frecuencias</h1>
-        </div>
+      <div className="mb-6">
+        <AdminHeader title="Gestión de Frecuencias" />
+      </div>
+      <div className="mb-6">
+        <Link
+          href="/admin/frecuencias/agregar"
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+        >
+          Agregar Frecuencia
+        </Link>
+      </div>
         <Link
           href="/admin/frecuencias/agregar"
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"

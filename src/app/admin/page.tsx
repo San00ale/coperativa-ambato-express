@@ -3,14 +3,13 @@
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
+import AdminHeader from '@/components/AdminHeader'
 
-export default function AdminPage() { 
+export default function AdminPage() {
   const router = useRouter()
   const { data: session } = useSession()
-  
-  return (
     <div className="p-8 bg-gray-50 min-h-screen">
-      <h1 className="text-2xl font-bold mb-6 text-gray-900">Panel de Administrador</h1> 
+      <AdminHeader title="Panel de Administrador" showBackButton={false} />
       
       <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Link 
