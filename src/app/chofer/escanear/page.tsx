@@ -252,16 +252,15 @@ export default function EscanearPage() {
         <div className="lg:col-span-2">
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
             <div className="bg-black aspect-video relative">
-              {scanning && cameraPermission === 'granted' ? (
-                <div id={QR_REGION_ID} className="w-full h-full" />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center flex-col gap-4">
-                  <Camera className="w-12 h-12 text-gray-600" />
-                  <p className="text-gray-400 text-center">
+              <div id={QR_REGION_ID} className="w-full h-full" />
+              {!scanning || cameraPermission !== 'granted' ? (
+                <div className="absolute inset-0 flex items-center justify-center flex-col gap-4 bg-black/70">
+                  <Camera className="w-12 h-12 text-gray-200" />
+                  <p className="text-gray-200 text-center">
                     {loading ? 'Procesando QR...' : 'Inicializando cámara...'}
                   </p>
                 </div>
-              )}
+              ) : null}
             </div>
 
             <div className="bg-blue-50 border-t border-blue-200 p-4">
