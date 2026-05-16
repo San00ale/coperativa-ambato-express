@@ -43,8 +43,8 @@ export default function HojaRuta() {
     cargarRutasHoy()
   }, [])
 
-  async function cargarRutasHoy() {
-    const hoy = new Date().toISOString().split('T')[0]
+   async function cargarRutasHoy() {
+  const hoy = new Date().toLocaleDateString('en-CA')
     try {
       const res = await fetch(`/api/rutas?fecha=${hoy}`)
       const data = await res.json()
