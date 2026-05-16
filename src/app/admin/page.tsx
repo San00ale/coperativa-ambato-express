@@ -111,7 +111,7 @@ export default function AdminPage() {
       </div>
       
       <div className="bg-white rounded-lg shadow p-6 mt-8">
-        <h2 className="text-lg font-semibold mb-4">Gestión del Sistema</h2>
+        <h2 className="text-lg font-semibold mb-4 text-gray-900">Gestión del Sistema</h2>
         
         <div className="space-y-4">
           <div className="border-l-4 border-green-500 pl-4">
