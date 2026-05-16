@@ -54,15 +54,9 @@ export default function FrecuenciasPage() {
   }
 
   const handleEliminar = async (frecuencia: Frecuencia) => {
-    if (!confirm(`¿Estás seguro de eliminar la frecuencia ${frecuencia.origen}-${frecuencia.destino} ${frecuencia.hora}?`)) {
-      return
-    }
-
+    if (!confirm(`¿Estás seguro de eliminar la frecuencia ${frecuencia.origen}-${frecuencia.destino} ${frecuencia.hora}?`)) return
     try {
-      const response = await fetch(`/api/frecuencias/${frecuencia.id}`, {
-        method: 'DELETE',
-      })
-
+      const response = await fetch(`/api/frecuencias/${frecuencia.id}`, { method: 'DELETE' })
       if (response.ok) {
         await cargarFrecuencias()
       } else {
@@ -85,10 +79,11 @@ export default function FrecuenciasPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-gray-50 min-h-screen">
       <div className="mb-6">
         <AdminHeader title="Gestión de Frecuencias" />
       </div>
+
       <div className="mb-6">
         <Link
           href="/admin/frecuencias/agregar"
@@ -108,79 +103,40 @@ export default function FrecuenciasPage() {
         <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Origen
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Destino
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Hora
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Tipo de Viaje
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Paradas
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Estado
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Acciones
-              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Origen</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destino</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hora</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo de Viaje</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paradas</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {frecuencias.map((frecuencia) => (
               <tr key={frecuencia.id} className={!frecuencia.activa ? 'opacity-50' : ''}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {frecuencia.origen}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {frecuencia.destino}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {frecuencia.hora}
-                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{frecuencia.origen}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{frecuencia.destino}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{frecuencia.hora}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    frecuencia.tipoViaje === 'DIRECTO' 
-                      ? 'bg-blue-100 text-blue-800' 
-                      : 'bg-purple-100 text-purple-800'
-                  }`}>
+                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${frecuencia.tipoViaje === 'DIRECTO' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
                     {frecuencia.tipoViaje === 'DIRECTO' ? 'Directo' : 'Con Paradas'}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {frecuencia.tipoViaje === 'CON_PARADAS' && frecuencia.paradas && frecuencia.paradas.length > 0
                     ? frecuencia.paradas.map(p => p.ciudad).join(', ')
-                    : '-'
-                  }
+                    : '-'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    frecuencia.activa 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }`}>
+                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${frecuencia.activa ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                     {frecuencia.activa ? 'Activa' : 'Inactiva'}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <Link
-                    href={`/admin/frecuencias/editar/${frecuencia.id}`}
-                    className="text-indigo-600 hover:text-indigo-900 mr-4"
-                  >
-                    Editar
-                  </Link>
+                  <Link href={`/admin/frecuencias/editar/${frecuencia.id}`} className="text-indigo-600 hover:text-indigo-900 mr-4">Editar</Link>
                   {frecuencia.activa ? (
-                    <button
-                      onClick={() => handleEliminar(frecuencia)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      Eliminar
-                    </button>
+                    <button onClick={() => handleEliminar(frecuencia)} className="text-red-600 hover:text-red-900">Eliminar</button>
                   ) : (
                     <span className="text-gray-400">Inactiva</span>
                   )}
@@ -189,12 +145,7 @@ export default function FrecuenciasPage() {
             ))}
           </tbody>
         </table>
-
-        {frecuencias.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            No hay frecuencias registradas
-          </div>
-        )}
+        {frecuencias.length === 0 && <div className="text-center py-8 text-gray-500">No hay frecuencias registradas</div>}
       </div>
     </div>
   )

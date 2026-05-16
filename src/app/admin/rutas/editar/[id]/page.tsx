@@ -206,7 +206,7 @@ export default function EditarRutaPage() {
                 value={formData.frecuenciaId}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
               >
                 <option value="">Seleccionar frecuencia...</option>
                 {frecuencias.map((frecuencia) => (
@@ -227,7 +227,7 @@ export default function EditarRutaPage() {
                 value={formData.busId}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
               >
                 <option value="">Seleccionar bus...</option>
                 {buses.map((bus) => (
@@ -250,7 +250,7 @@ export default function EditarRutaPage() {
                 onChange={handleInputChange}
                 required
                 min={new Date().toISOString().split('T')[0]}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
               />
             </div>
 

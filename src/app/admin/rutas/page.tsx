@@ -29,7 +29,7 @@ interface Ruta {
   frecuenciaId: string
   busId: string
   fecha: string
-  precio?: number          // ← Campo opcional para compatibilidad
+  precio?: number
   frecuencia: Frecuencia
   bus: Bus
 }
@@ -45,12 +45,11 @@ export default function RutasPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  // Formulario (incluye precio)
   const [formData, setFormData] = useState({
     frecuenciaId: '',
     busId: '',
     fecha: '',
-    precio: ''          // ← nuevo campo
+    precio: ''
   })
 
   useEffect(() => {
@@ -106,7 +105,7 @@ export default function RutasPage() {
           frecuenciaId: formData.frecuenciaId,
           busId: formData.busId,
           fecha: formData.fecha,
-          precio: parseFloat(formData.precio)   // ← se envía el precio como número
+          precio: parseFloat(formData.precio)
         }),
       })
 
@@ -154,7 +153,7 @@ export default function RutasPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-gray-50 min-h-screen">
       <div className="mb-6">
         <AdminHeader title="Gestión de Rutas" />
       </div>
@@ -176,7 +175,7 @@ export default function RutasPage() {
                   value={formData.frecuenciaId}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 >
                   <option value="">Seleccionar frecuencia...</option>
                   {frecuencias.map(f => (
@@ -193,7 +192,7 @@ export default function RutasPage() {
                   value={formData.busId}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 >
                   <option value="">Seleccionar bus...</option>
                   {buses.map(b => (
@@ -212,11 +211,10 @@ export default function RutasPage() {
                   onChange={handleInputChange}
                   required
                   min={new Date().toISOString().split('T')[0]}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 />
               </div>
 
-              {/* NUEVO CAMPO PRECIO */}
               <div>
                 <label htmlFor="precio" className="block text-sm font-medium text-gray-700 mb-2">
                   Precio ($) *
@@ -230,7 +228,7 @@ export default function RutasPage() {
                   required
                   step="0.01"
                   min="0"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   placeholder="Ej: 5.00"
                 />
               </div>
