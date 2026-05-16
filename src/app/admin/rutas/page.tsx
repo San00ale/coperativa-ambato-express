@@ -153,7 +153,7 @@ export default function RutasPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
           <Link href="/admin" className="text-gray-600 hover:text-gray-800 flex items-center">
