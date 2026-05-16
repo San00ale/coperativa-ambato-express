@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import AdminHeader from '@/components/AdminHeader'
 
 interface Frecuencia {
   id: string
@@ -28,7 +29,7 @@ interface Ruta {
   frecuenciaId: string
   busId: string
   fecha: string
-  precio?: number          // ← Campo opcional para compatibilidad
+  precio?: number
   frecuencia: Frecuencia
   bus: Bus
 }
@@ -44,12 +45,11 @@ export default function RutasPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  // Formulario (incluye precio)
   const [formData, setFormData] = useState({
     frecuenciaId: '',
     busId: '',
     fecha: '',
-    precio: ''          // ← nuevo campo
+    precio: ''
   })
 
   useEffect(() => {
@@ -105,7 +105,7 @@ export default function RutasPage() {
           frecuenciaId: formData.frecuenciaId,
           busId: formData.busId,
           fecha: formData.fecha,
-          precio: parseFloat(formData.precio)   // ← se envía el precio como número
+          precio: parseFloat(formData.precio)
         }),
       })
 
@@ -153,17 +153,9 @@ export default function RutasPage() {
   }
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-4">
-          <Link href="/admin" className="text-gray-600 hover:text-gray-800 flex items-center">
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Volver al Dashboard
-          </Link>
-          <h1 className="text-2xl font-bold">Gestión de Rutas</h1>
-        </div>
+    <div className="p-8 bg-gray-50 min-h-screen">
+      <div className="mb-6">
+        <AdminHeader title="Gestión de Rutas" />
       </div>
 
       {error && <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">{error}</div>}
@@ -183,7 +175,7 @@ export default function RutasPage() {
                   value={formData.frecuenciaId}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 >
                   <option value="">Seleccionar frecuencia...</option>
                   {frecuencias.map(f => (
@@ -200,7 +192,7 @@ export default function RutasPage() {
                   value={formData.busId}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 >
                   <option value="">Seleccionar bus...</option>
                   {buses.map(b => (
@@ -219,11 +211,10 @@ export default function RutasPage() {
                   onChange={handleInputChange}
                   required
                   min={new Date().toISOString().split('T')[0]}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 />
               </div>
 
-              {/* NUEVO CAMPO PRECIO */}
               <div>
                 <label htmlFor="precio" className="block text-sm font-medium text-gray-700 mb-2">
                   Precio ($) *
@@ -237,7 +228,7 @@ export default function RutasPage() {
                   required
                   step="0.01"
                   min="0"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   placeholder="Ej: 5.00"
                 />
               </div>

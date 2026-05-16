@@ -3,14 +3,20 @@
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
+import AdminHeader from '@/components/AdminHeader'
 
-export default function AdminPage() { 
+export default function AdminPage() {
   const router = useRouter()
   const { data: session } = useSession()
-  
-  return ( 
-    <div className="p-8"> 
-      <h1 className="text-2xl font-bold mb-6">Panel de Administrador</h1> 
+
+  if (!session) {
+    router.push('/login')
+    return null
+  }
+
+  return (
+    <div className="p-8 bg-gray-50 min-h-screen">
+      <AdminHeader title="Panel de Administrador" showBackButton={false} />
       
       <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Link 
@@ -67,20 +73,16 @@ export default function AdminPage() {
       
       <div className="bg-white rounded-lg shadow p-6 mt-8">
         <h2 className="text-lg font-semibold mb-4">Gestión del Sistema</h2>
-        
         <div className="space-y-4">
           <div className="border-l-4 border-green-500 pl-4">
             <h3 className="font-medium text-gray-900">Ventas</h3>
             <p className="text-gray-600 text-sm mt-1">Reportes y estadísticas</p>
-            <button
-              className="mt-3 px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition text-sm"
-              disabled
-            >
+            <button className="mt-3 px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition text-sm" disabled>
               Próximamente
             </button>
           </div>
         </div>
       </div>
-    </div> 
+    </div>
   )
 }
