@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -7,10 +7,7 @@ import { authOptions } from '@/lib/auth'
  * POST /api/rutas/[id]/asignar-chofer
  * Asigna o desasigna un chofer a una ruta
  */
-export async function POST(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, context: { params: any }) {
   try {
     // Verificar que es ADMIN
     const session = await getServerSession(authOptions)
@@ -23,7 +20,11 @@ export async function POST(
     }
 
     const { choferId } = await request.json()
-    const rutaId = params.id
+    // Normalizar params: en algunas versiones/contextos Next.js lo provee como Promise
+    const params = context.params && typeof context.params.then === 'function'
+      ? await context.params
+      : context.params
+    const rutaId = params?.id
 
     if (!rutaId) {
       return NextResponse.json(
