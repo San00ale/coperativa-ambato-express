@@ -173,7 +173,7 @@ function PagarContent() {
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               placeholder="Ej: Juan Pérez"
-              className="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 rounded-md p-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"  
             />
           </div>
 
@@ -187,7 +187,7 @@ function PagarContent() {
               onChange={(e) => setCedula(e.target.value)}
               placeholder="Ej: 1804123456"
               maxLength={10}
-              className="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 rounded-md p-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"  
             />
           </div>
 
