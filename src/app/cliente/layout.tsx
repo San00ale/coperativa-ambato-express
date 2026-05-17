@@ -1,9 +1,9 @@
 'use client'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { LogOut, Search, ShoppingBag } from 'lucide-react'
+import { Menu, X, LogOut, Search, ShoppingBag } from 'lucide-react'
 
 export default function ClienteLayout({
   children,
@@ -12,6 +12,7 @@ export default function ClienteLayout({
 }) {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -79,7 +80,43 @@ export default function ClienteLayout({
               </button>
             </div>
 
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden"
+            >
+              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+
           </div>
+
+          {/* Mobile Menu */}
+          {isMobileMenuOpen && (
+            <div className="md:hidden pb-4 space-y-2">
+              <Link
+                href="/cliente/buscar"
+                className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 w-full"
+              >
+                <Search size={18} />
+                Buscar Rutas
+              </Link>
+              <Link
+                href="/cliente/mis-compras"
+                className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 w-full"
+              >
+                <ShoppingBag size={18} />
+                Mis Compras
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 w-full rounded-md"
+              >
+                <LogOut size={18} />
+                Cerrar sesión
+              </button>
+            </div>
+          )}
+
         </div>
       </nav>
 
