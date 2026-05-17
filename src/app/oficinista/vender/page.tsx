@@ -103,7 +103,7 @@ export default function VenderBoleto() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div>
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">Venta de Boletos</h1>
 
@@ -128,7 +128,8 @@ export default function VenderBoleto() {
             <div>
               <label className="block text-sm text-gray-600 mb-1">Origen</label>
               <input
-                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+               className="w-full border rounded-lg px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400" 
+
                 value={origen}
                 onChange={e => setOrigen(e.target.value)}
                 placeholder="Ej: Ambato"
@@ -137,7 +138,7 @@ export default function VenderBoleto() {
             <div>
               <label className="block text-sm text-gray-600 mb-1">Destino</label>
               <input
-                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full border rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 value={destino}
                 onChange={e => setDestino(e.target.value)}
                 placeholder="Ej: Quito"
@@ -147,7 +148,7 @@ export default function VenderBoleto() {
               <label className="block text-sm text-gray-600 mb-1">Fecha</label>
               <input
                 type="date"
-                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full border rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 value={fecha}
                 onChange={e => setFecha(e.target.value)}
               />

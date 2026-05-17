@@ -43,8 +43,8 @@ export default function HojaRuta() {
     cargarRutasHoy()
   }, [])
 
-  async function cargarRutasHoy() {
-    const hoy = new Date().toISOString().split('T')[0]
+   async function cargarRutasHoy() {
+  const hoy = new Date().toLocaleDateString('en-CA')
     try {
       const res = await fetch(`/api/rutas?fecha=${hoy}`)
       const data = await res.json()
@@ -113,7 +113,7 @@ export default function HojaRuta() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div>
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">Hoja de Ruta</h1>
 
