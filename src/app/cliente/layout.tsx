@@ -30,6 +30,8 @@ export default function ClienteLayout({
         Cargando...
       </div>
     )
+  } if (status === 'unauthenticated') {
+    return null
   }
 
   const handleLogout = () => {
