@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
+import { signOut } from 'next-auth/react'
 
 interface Parada {
   id: string
@@ -167,14 +168,25 @@ export default function EditarFrecuenciaPage() {
   return (
     <div className="p-8">
       <div className="max-w-2xl mx-auto">
-        <div className="flex items-center mb-6">
-          <Link 
-            href="/admin/frecuencias" 
-            className="text-blue-600 hover:text-blue-800 mr-4"
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center">
+            <Link
+              href="/admin/frecuencias"
+              className="text-blue-600 hover:text-blue-800 mr-4"
+            >
+              ← Volver
+            </Link>
+            <h1 className="text-2xl font-bold">Editar Frecuencia</h1>
+          </div>
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition flex items-center space-x-2"
           >
-            ← Volver
-          </Link>
-          <h1 className="text-2xl font-bold">Editar Frecuencia</h1>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span>Cerrar Sesión</span>
+          </button>
         </div>
 
         {error && (
@@ -197,7 +209,7 @@ export default function EditarFrecuenciaPage() {
                   value={formData.origen}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
                   placeholder="Ej: Ambato"
                 />
               </div>
@@ -213,7 +225,7 @@ export default function EditarFrecuenciaPage() {
                   value={formData.destino}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
                   placeholder="Ej: Quito"
                 />
               </div>
@@ -231,7 +243,7 @@ export default function EditarFrecuenciaPage() {
                   value={formData.hora}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
                 />
               </div>
 
@@ -244,7 +256,7 @@ export default function EditarFrecuenciaPage() {
                   name="tipoViaje"
                   value={formData.tipoViaje}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
                 >
                   <option value="DIRECTO">Directo</option>
                   <option value="CON_PARADAS">Con Paradas</option>

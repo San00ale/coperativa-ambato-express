@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
+import AdminHeader from '@/components/AdminHeader'
 
 interface Boleto {
   id: string
@@ -20,8 +21,12 @@ export default function AdminPage() {
   const [loadingEstadisticas, setLoadingEstadisticas] = useState(true)
 
   useEffect(() => {
+    if (session?.user?.role !== 'ADMIN') {
+      router.push('/login')
+      return
+    }
     cargarEstadisticas()
-  }, [])
+  }, [session, router])
 
   const cargarEstadisticas = async () => {
     try {
@@ -29,14 +34,12 @@ export default function AdminPage() {
       if (response.ok) {
         const data: Boleto[] = await response.json()
         
-        // Filtrar boletos de hoy con estado APROBADO o ABORDADO
         const hoy = new Date()
         hoy.setHours(0, 0, 0, 0)
         
         const boletosFiltrados = data.filter(boleto => {
           const fechaBoleto = new Date(boleto.createdAt)
           fechaBoleto.setHours(0, 0, 0, 0)
-          
           return (
             fechaBoleto.getTime() === hoy.getTime() &&
             (boleto.estado === 'APROBADO' || boleto.estado === 'ABORDADO')
@@ -52,10 +55,15 @@ export default function AdminPage() {
       setLoadingEstadisticas(false)
     }
   }
-  
+
+  if (!session) {
+    router.push('/login')
+    return null
+  }
+
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
-      <h1 className="text-2xl font-bold mb-6 text-gray-900">Panel de Administrador</h1> 
+      <AdminHeader title="Panel de Administrador" showBackButton={false} />
       
       <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Link 
@@ -112,7 +120,6 @@ export default function AdminPage() {
       
       <div className="bg-white rounded-lg shadow p-6 mt-8">
         <h2 className="text-lg font-semibold mb-4 text-gray-900">Gestión del Sistema</h2>
-        
         <div className="space-y-4">
           <div className="border-l-4 border-green-500 pl-4">
             <h3 className="font-medium text-gray-900">Ventas</h3>
@@ -134,6 +141,6 @@ export default function AdminPage() {
           </div>
         </div>
       </div>
-    </div> 
+    </div>
   )
 }
