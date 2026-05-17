@@ -116,6 +116,23 @@ export default function AdminPage() {
             </div>
           </div>
         </Link>
+
+        <Link 
+          href="/admin/usuarios"
+          className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow border border-gray-200"
+        >
+          <div className="flex items-center space-x-3">
+            <div className="p-3 bg-orange-100 rounded-lg">
+              <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Gestión de Usuarios</h3>
+              <p className="text-sm text-gray-600">Administrar choferes y oficinistas</p>
+            </div>
+          </div>
+        </Link>
       </div>
       
       <div className="bg-white rounded-lg shadow p-6 mt-8">
