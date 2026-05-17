@@ -4,7 +4,7 @@ import Link from 'next/link'
 
 export default function DashboardOficinista() {
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div>
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-800 mb-2">Panel Oficinista</h1>
         <p className="text-gray-500 mb-8">Cooperativa Ambato Express</p>

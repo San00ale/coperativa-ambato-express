@@ -5,12 +5,18 @@ import { authOptions } from '@/lib/auth'
 
 export async function GET(request: Request) {
   try {
+    const session = await getServerSession(authOptions)
+
     const { searchParams } = new URL(request.url)
     const fecha = searchParams.get('fecha')
     const origen = searchParams.get('origen')
     const destino = searchParams.get('destino')
     
     const where: any = {}
+
+    if (session?.user?.role === 'CHOFER') {
+      where.choferId = session.user.id
+    }
     
     if (fecha) {
       const fechaObj = new Date(fecha)
@@ -57,7 +63,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
-    if (session?.user?.role !== 'ADMIN') {
+    if (session?.user?.role !== 'ADMIN' && session?.user?.role !== 'OFICINISTA') {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 

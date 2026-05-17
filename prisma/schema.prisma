@@ -14,9 +14,11 @@ model Usuario {
   nombre       String
   cedula       String   @unique
   rol          String
+  activo       Boolean  @default(true)
   createdAt    DateTime @default(now())
   boletos      Boleto[]
   vendidosChofer Boleto[] @relation("VendidoPorChofer")
+  rutasAsignadas      Ruta[]   @relation("ChofersRutas")
 }
 
 model Bus {
@@ -63,6 +65,10 @@ model Ruta {
   frecuencia  Frecuencia @relation(fields: [frecuenciaId], references: [id])
   bus         Bus       @relation(fields: [busId], references: [id])
   boletos     Boleto[]
+  choferId      String?
+  chofer        Usuario?   @relation("ChofersRutas", fields: [choferId], references: [id])
+
+  @@index([choferId])
 }
 
 model Boleto {

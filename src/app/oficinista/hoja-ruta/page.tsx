@@ -43,8 +43,8 @@ export default function HojaRuta() {
     cargarRutasHoy()
   }, [])
 
-  async function cargarRutasHoy() {
-    const hoy = new Date().toISOString().split('T')[0]
+   async function cargarRutasHoy() {
+  const hoy = new Date().toLocaleDateString('en-CA')
     try {
       const res = await fetch(`/api/rutas?fecha=${hoy}`)
       const data = await res.json()
@@ -113,7 +113,7 @@ export default function HojaRuta() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div>
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">Hoja de Ruta</h1>
 
@@ -124,7 +124,7 @@ export default function HojaRuta() {
             <div>
               <label className="block text-sm text-gray-600 mb-1">Frecuencia</label>
               <select
-                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full border rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 value={frecuenciaId}
                 onChange={e => setFrecuenciaId(e.target.value)}
               >
@@ -139,7 +139,7 @@ export default function HojaRuta() {
             <div>
               <label className="block text-sm text-gray-600 mb-1">Bus</label>
               <select
-                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full border rounded-lg px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 value={busId}
                 onChange={e => setBusId(e.target.value)}
               >
@@ -155,7 +155,7 @@ export default function HojaRuta() {
               <label className="block text-sm text-gray-600 mb-1">Fecha</label>
               <input
                 type="date"
-                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full border rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 value={fecha}
                 onChange={e => setFecha(e.target.value)}
               />
@@ -166,7 +166,7 @@ export default function HojaRuta() {
                 type="number"
                 step="0.01"
                 min="0"
-                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full border rounded-lg px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 value={precio}
                 onChange={e => setPrecio(e.target.value)}
                 placeholder="Ej: 5.00"

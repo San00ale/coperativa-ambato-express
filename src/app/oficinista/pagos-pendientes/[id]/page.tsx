@@ -5,17 +5,22 @@ import { useParams, useRouter } from 'next/navigation'
 
 interface Boleto {
   id: string
-  pasajero: string
-  cedula: string
-  ruta: {
-    origen: string
-    destino: string
-    fecha: string
-    hora: string
+  pasajero: {
+    nombre: string
+    cedula: string
+    email: string
   }
-  asiento: number
+  ruta: {
+    frecuencia: {
+      origen: string
+      destino: string
+      hora: string
+    }
+    fecha: string
+  }
+  asiento: string
   precio: number
-  comprobante: string
+  comprobanteUrl: string | null
   estado: string
 }
 
@@ -62,19 +67,19 @@ export default function DetallePago() {
   }
 
   if (cargando) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="flex items-center justify-center min-h-[40vh]">
       <p className="text-gray-500">Cargando detalle...</p>
     </div>
   )
 
   if (!boleto) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="flex items-center justify-center min-h-[40vh]">
       <p className="text-red-500">Boleto no encontrado</p>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div>
       <div className="max-w-2xl mx-auto">
         <button
           onClick={() => router.back()}
@@ -83,18 +88,18 @@ export default function DetallePago() {
           ← Volver a pagos pendientes
         </button>
 
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">Detalle de Pago</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Detalle de Pago</h1>
 
         {/* Info del boleto */}
         <div className="bg-white rounded-xl shadow p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-700 mb-4">Información del boleto</h2>
           <div className="grid grid-cols-2 gap-3 text-sm">
-            <div><span className="text-gray-500">Pasajero:</span> <span className="font-medium">{boleto.pasajero}</span></div>
-            <div><span className="text-gray-500">Cédula:</span> <span className="font-medium">{boleto.cedula}</span></div>
-            <div><span className="text-gray-500">Ruta:</span> <span className="font-medium">{boleto.ruta.origen} → {boleto.ruta.destino}</span></div>
-            <div><span className="text-gray-500">Fecha:</span> <span className="font-medium">{boleto.ruta.fecha}</span></div>
-            <div><span className="text-gray-500">Hora:</span> <span className="font-medium">{boleto.ruta.hora}</span></div>
-            <div><span className="text-gray-500">Asiento:</span> <span className="font-medium">{boleto.asiento}</span></div>
+            <div><span className="text-gray-500">Pasajero:</span> <span className="font-medium text-gray-900">{boleto.pasajero.nombre}</span></div>
+            <div><span className="text-gray-500">Cédula:</span> <span className="font-medium text-gray-900">{boleto.pasajero.cedula}</span></div>
+            <div><span className="text-gray-500">Ruta:</span> <span className="font-medium text-gray-900">{boleto.ruta.frecuencia.origen} → {boleto.ruta.frecuencia.destino}</span></div>
+            <div><span className="text-gray-500">Fecha:</span> <span className="font-medium text-gray-900">{new Date(boleto.ruta.fecha).toLocaleDateString('es-EC')}</span></div>
+            <div><span className="text-gray-500">Hora:</span> <span className="font-medium text-gray-900">{boleto.ruta.frecuencia.hora}</span></div>
+            <div><span className="text-gray-500">Asiento:</span> <span className="font-medium text-gray-900">{boleto.asiento}</span></div>
             <div><span className="text-gray-500">Total:</span> <span className="font-bold text-blue-600">${boleto.precio.toFixed(2)}</span></div>
             <div>
               <span className="text-gray-500">Estado:</span>{' '}
@@ -106,10 +111,10 @@ export default function DetallePago() {
         {/* Comprobante */}
         <div className="bg-white rounded-xl shadow p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-700 mb-4">Comprobante de pago</h2>
-          {boleto.comprobante ? (
+          {boleto.comprobanteUrl ? (
             <div>
               <img
-                src={boleto.comprobante}
+                src={boleto.comprobanteUrl}
                 alt="Comprobante de pago"
                 className="w-full max-h-64 object-contain rounded-lg border cursor-pointer hover:opacity-90 transition"
                 onClick={() => setImagenGrande(true)}
@@ -123,7 +128,7 @@ export default function DetallePago() {
           )}
         </div>
 
-         {/* Botón aprobar */}
+        {/* Botón aprobar */}
         {mensaje ? (
           <div className={`rounded-lg p-4 text-center font-medium mb-4
             ${mensaje.startsWith('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
@@ -140,14 +145,14 @@ export default function DetallePago() {
         )}
 
         {/* Modal imagen grande */}
-        {imagenGrande && (
+        {imagenGrande && boleto.comprobanteUrl && (
           <div
             className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50"
             onClick={() => setImagenGrande(false)}
           >
             <div className="max-w-3xl w-full p-4">
               <img
-                src={boleto.comprobante}
+                src={boleto.comprobanteUrl}
                 alt="Comprobante grande"
                 className="w-full rounded-lg"
               />

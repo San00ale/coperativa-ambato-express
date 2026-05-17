@@ -5,15 +5,20 @@ import Link from 'next/link'
 
 interface Boleto {
   id: string
-  pasajero: string
-  cedula: string
-  ruta: {
-    origen: string
-    destino: string
-    fecha: string
-    hora: string
+  pasajero: {
+    nombre: string
+    cedula: string
+    email: string
   }
-  asiento: number
+  ruta: {
+    frecuencia: {
+      origen: string
+      destino: string
+      hora: string
+    }
+    fecha: string
+  }
+  asiento: string
   precio: number
   estado: string
 }
@@ -31,15 +36,15 @@ export default function PagosPendientes() {
   }, [])
 
   if (cargando) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="flex items-center justify-center min-h-[40vh]">
       <p className="text-gray-500">Cargando pagos pendientes...</p>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div>
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">Pagos Pendientes de Aprobación</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Pagos Pendientes de Aprobación</h1>
 
         {mensaje && (
           <div className="bg-red-100 text-red-800 rounded-lg p-4 mb-4">{mensaje}</div>
@@ -54,10 +59,10 @@ export default function PagosPendientes() {
             {boletos.map(boleto => (
               <div key={boleto.id} className="bg-white rounded-xl shadow p-5 flex items-center justify-between">
                 <div className="space-y-1">
-                  <p className="font-semibold text-gray-800">{boleto.pasajero}</p>
-                  <p className="text-sm text-gray-500">CI: {boleto.cedula}</p>
+                  <p className="font-semibold text-gray-900">{boleto.pasajero.nombre}</p>
+                  <p className="text-sm text-gray-500">CI: {boleto.pasajero.cedula}</p>
                   <p className="text-sm text-gray-600">
-                    {boleto.ruta.origen} → {boleto.ruta.destino} · {boleto.ruta.fecha} {boleto.ruta.hora}
+                    {boleto.ruta.frecuencia.origen} → {boleto.ruta.frecuencia.destino} · {new Date(boleto.ruta.fecha).toLocaleDateString('es-EC')} {boleto.ruta.frecuencia.hora}
                   </p>
                   <p className="text-sm text-gray-600">Asiento: <span className="font-medium">{boleto.asiento}</span></p>
                 </div>
@@ -83,4 +88,3 @@ export default function PagosPendientes() {
     </div>
   )
 }
-
