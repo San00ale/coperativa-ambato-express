@@ -124,7 +124,7 @@ export default function HojaRuta() {
             <div>
               <label className="block text-sm text-gray-600 mb-1">Frecuencia</label>
               <select
-                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full border rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 value={frecuenciaId}
                 onChange={e => setFrecuenciaId(e.target.value)}
               >
@@ -139,7 +139,7 @@ export default function HojaRuta() {
             <div>
               <label className="block text-sm text-gray-600 mb-1">Bus</label>
               <select
-                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full border rounded-lg px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 value={busId}
                 onChange={e => setBusId(e.target.value)}
               >
