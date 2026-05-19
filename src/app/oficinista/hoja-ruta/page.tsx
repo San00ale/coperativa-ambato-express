@@ -61,7 +61,13 @@ export default function HojaRuta() {
     try {
       const res = await fetch(`/api/rutas?fecha=${hoy}`)
       const data = await res.json()
-      setRutas(data)
+      if (Array.isArray(data)) {
+        setRutas(data)
+      } else {
+        console.error('La API devolvió un objeto inesperado:', data)
+        setRutas([])
+        setMensaje('Error al cargar las rutas: respuesta inválida')
+      }
     } catch (error) {
       console.error('Error al cargar rutas:', error)
       setMensaje('Error al cargar las rutas de hoy')
@@ -237,7 +243,6 @@ export default function HojaRuta() {
                       Reasignar bus
                     </button>
                   </div>
-
                   {reasignando === ruta.id && (
                     <div className="mt-3 pt-3 border-t flex flex-wrap gap-3 items-center">
                       <select
