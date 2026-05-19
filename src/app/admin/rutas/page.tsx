@@ -24,12 +24,19 @@ interface Bus {
   activo: boolean
 }
 
+interface Chofer {
+  id: string
+  nombre: string
+}
+
 interface Ruta {
   id: string
   frecuenciaId: string
   busId: string
   fecha: string
   precio?: number
+  choferId?: string | null
+  chofer?: { nombre: string }
   frecuencia: Frecuencia
   bus: Bus
 }
@@ -40,16 +47,19 @@ export default function RutasPage() {
   const [rutas, setRutas] = useState<Ruta[]>([])
   const [frecuencias, setFrecuencias] = useState<Frecuencia[]>([])
   const [buses, setBuses] = useState<Bus[]>([])
+  const [choferes, setChoferes] = useState<Chofer[]>([])   // ← nuevo
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
+  // Formulario (incluye precio y choferId)
   const [formData, setFormData] = useState({
     frecuenciaId: '',
     busId: '',
     fecha: '',
-    precio: ''
+    precio: '',
+    choferId: ''          // ← nuevo campo
   })
 
   useEffect(() => {
@@ -79,6 +89,13 @@ export default function RutasPage() {
         const busesData = await busesResponse.json()
         setBuses(busesData.filter((b: Bus) => b.activo))
       }
+
+      // Cargar lista de choferes (rol CHOFER)
+      const choferesResponse = await fetch('/api/admin/usuarios?rol=CHOFER')
+      if (choferesResponse.ok) {
+        const choferesData = await choferesResponse.json()
+        setChoferes(choferesData)
+      }
     } catch (error) {
       setError('Error de conexión')
     } finally {
@@ -105,13 +122,14 @@ export default function RutasPage() {
           frecuenciaId: formData.frecuenciaId,
           busId: formData.busId,
           fecha: formData.fecha,
-          precio: parseFloat(formData.precio)
+          precio: parseFloat(formData.precio),
+          choferId: formData.choferId || null   // ← enviar choferId
         }),
       })
 
       if (response.ok) {
         setSuccess('Ruta creada correctamente')
-        setFormData({ frecuenciaId: '', busId: '', fecha: '', precio: '' })
+        setFormData({ frecuenciaId: '', busId: '', fecha: '', precio: '', choferId: '' })
         await cargarDatos()
       } else {
         const errorData = await response.json()
@@ -216,9 +234,7 @@ export default function RutasPage() {
               </div>
 
               <div>
-                <label htmlFor="precio" className="block text-sm font-medium text-gray-700 mb-2">
-                  Precio ($) *
-                </label>
+                <label htmlFor="precio" className="block text-sm font-medium text-gray-700 mb-2">Precio ($) *</label>
                 <input
                   type="number"
                   id="precio"
@@ -231,6 +247,23 @@ export default function RutasPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   placeholder="Ej: 5.00"
                 />
+              </div>
+
+              {/* Selector de chofer (opcional) */}
+              <div>
+                <label htmlFor="choferId" className="block text-sm font-medium text-gray-700 mb-2">Chofer (opcional)</label>
+                <select
+                  id="choferId"
+                  name="choferId"
+                  value={formData.choferId}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                >
+                  <option value="">Seleccionar chofer...</option>
+                  {choferes.map(chofer => (
+                    <option key={chofer.id} value={chofer.id}>{chofer.nombre}</option>
+                  ))}
+                </select>
               </div>
 
               <button
@@ -258,6 +291,7 @@ export default function RutasPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bus</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chofer</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                   </tr>
                 </thead>
@@ -281,6 +315,9 @@ export default function RutasPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {ruta.precio ? `$${ruta.precio.toFixed(2)}` : '—'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {ruta.chofer?.nombre || '—'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <Link href={`/admin/rutas/editar/${ruta.id}`} className="text-indigo-600 hover:text-indigo-900 mr-4">Editar</Link>
