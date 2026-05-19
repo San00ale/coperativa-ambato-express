@@ -21,7 +21,7 @@ interface Ruta {
   busId: string
   bus: { placa: string }
   frecuencia: { origen: string; destino: string; hora: string }
-  precio?: number        // ← nuevo campo opcional
+  precio?: number
 }
 
 export default function HojaRuta() {
@@ -31,11 +31,14 @@ export default function HojaRuta() {
   const [frecuenciaId, setFrecuenciaId] = useState('')
   const [busId, setBusId] = useState('')
   const [fecha, setFecha] = useState('')
-  const [precio, setPrecio] = useState('')           // ← nuevo estado
+  const [precio, setPrecio] = useState('')
   const [cargando, setCargando] = useState(false)
   const [mensaje, setMensaje] = useState('')
   const [reasignando, setReasignando] = useState<string | null>(null)
   const [nuevoBusId, setNuevoBusId] = useState('')
+
+  // Obtener fecha local en formato YYYY-MM-DD (sin zona horaria)
+  const obtenerFechaLocal = () => new Date().toLocaleDateString('en-CA')
 
   useEffect(() => {
     fetch('/api/frecuencias').then(r => r.json()).then(setFrecuencias).catch(() => {})
@@ -43,13 +46,16 @@ export default function HojaRuta() {
     cargarRutasHoy()
   }, [])
 
-   async function cargarRutasHoy() {
-  const hoy = new Date().toLocaleDateString('en-CA')
+  async function cargarRutasHoy() {
+    const hoy = obtenerFechaLocal()
     try {
       const res = await fetch(`/api/rutas?fecha=${hoy}`)
       const data = await res.json()
       setRutas(data)
-    } catch {}
+    } catch (error) {
+      console.error('Error al cargar rutas:', error)
+      setMensaje('Error al cargar las rutas de hoy')
+    }
   }
 
   async function crearRuta() {
@@ -67,7 +73,7 @@ export default function HojaRuta() {
           frecuenciaId,
           busId,
           fecha,
-          precio: parseFloat(precio)      // ← se envía el precio
+          precio: parseFloat(precio)
         }),
       })
       if (res.ok) {
@@ -75,8 +81,8 @@ export default function HojaRuta() {
         setFrecuenciaId('')
         setBusId('')
         setFecha('')
-        setPrecio('')                     // ← limpiar precio
-        cargarRutasHoy()
+        setPrecio('')
+        await cargarRutasHoy()  // Recargar listado inmediatamente
       } else {
         const err = await res.json()
         setMensaje(err.error || 'Error al crear ruta')
@@ -103,7 +109,7 @@ export default function HojaRuta() {
         setMensaje('✅ Bus reasignado correctamente')
         setReasignando(null)
         setNuevoBusId('')
-        cargarRutasHoy()
+        await cargarRutasHoy()
       } else {
         setMensaje('Error al reasignar bus')
       }
@@ -139,7 +145,7 @@ export default function HojaRuta() {
             <div>
               <label className="block text-sm text-gray-600 mb-1">Bus</label>
               <select
-                className="w-full border rounded-lg px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full border rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 value={busId}
                 onChange={e => setBusId(e.target.value)}
               >
@@ -209,7 +215,6 @@ export default function HojaRuta() {
                     </button>
                   </div>
 
-                  {/* Panel reasignación */}
                   {reasignando === ruta.id && (
                     <div className="mt-3 pt-3 border-t flex flex-wrap gap-3 items-center">
                       <select
