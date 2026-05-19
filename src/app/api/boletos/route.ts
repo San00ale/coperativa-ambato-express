@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { rutaId, asiento, precio, tipoPasajero, metodoPago, comprobanteUrl, pasajeroNombre, pasajeroCedula } = body
+    let { rutaId, asiento, precio, tipoPasajero, metodoPago, comprobanteUrl, pasajeroNombre, pasajeroCedula } = body
 
     // Validar campos requeridos
     if (!rutaId || !asiento || !precio) {
@@ -22,6 +22,9 @@ export async function POST(request: Request) {
         { status: 400 }
       )
     }
+
+    // Convertir asiento a string (Prisma espera String)
+    asiento = String(asiento)
 
     // Verificar que el asiento no esté ocupado en esa ruta
     const boletoExistente = await prisma.boleto.findFirst({
