@@ -21,9 +21,10 @@ export default function UsuariosPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  
+
   // Modal agregar usuario
   const [showAgregarModal, setShowAgregarModal] = useState(false)
+  const [modalError, setModalError] = useState('')  // ← error específico del modal
   const [formData, setFormData] = useState({
     nombre: '',
     email: '',
@@ -44,17 +45,14 @@ export default function UsuariosPage() {
   const cargarUsuarios = async () => {
     try {
       const response = await fetch('/api/admin/usuarios')
-      console.log('Response status:', response.status)
       if (response.ok) {
         const data = await response.json()
         setUsuarios(data)
       } else {
         const errorData = await response.json()
-        console.error('Error response:', errorData)
         setError(errorData.error || 'Error al cargar los usuarios')
       }
     } catch (error) {
-      console.error('Error de conexión:', error)
       setError('Error de conexión')
     } finally {
       setLoading(false)
@@ -62,15 +60,14 @@ export default function UsuariosPage() {
   }
 
   const handleAgregar = () => {
+    setModalError('')        // limpiar error del modal
     setShowAgregarModal(true)
-    setError('')
-    setSuccess('')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitting(true)
-    setError('')
+    setModalError('')        // limpiar antes de enviar
 
     try {
       const response = await fetch('/api/admin/usuarios', {
@@ -92,10 +89,10 @@ export default function UsuariosPage() {
         await cargarUsuarios()
       } else {
         const errorData = await response.json()
-        setError(errorData.error || 'Error al crear usuario')
+        setModalError(errorData.error || 'Error al crear usuario')
       }
     } catch (error) {
-      setError('Error de conexión')
+      setModalError('Error de conexión')
     } finally {
       setSubmitting(false)
     }
@@ -174,24 +171,12 @@ export default function UsuariosPage() {
         <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Nombre
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Email
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Cédula
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Rol
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Estado
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Acciones
-              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cédula</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -256,9 +241,7 @@ export default function UsuariosPage() {
               <h3 className="text-lg font-medium text-gray-900 mb-4">Agregar Nuevo Usuario</h3>
               <form onSubmit={handleSubmit}>
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nombre *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
                   <input
                     type="text"
                     required
@@ -269,9 +252,7 @@ export default function UsuariosPage() {
                 </div>
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
                   <input
                     type="email"
                     required
@@ -283,9 +264,7 @@ export default function UsuariosPage() {
                 </div>
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Cédula *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cédula *</label>
                   <input
                     type="text"
                     required
@@ -298,22 +277,18 @@ export default function UsuariosPage() {
                 </div>
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Contraseña *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña *</label>
                   <input
                     type="password"
                     required
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
                 </div>
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Rol *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Rol *</label>
                   <select
                     required
                     value={formData.rol}
@@ -324,6 +299,13 @@ export default function UsuariosPage() {
                     <option value="OFICINISTA">Oficinista</option>
                   </select>
                 </div>
+
+                {/* Mostrar error dentro del modal */}
+                {modalError && (
+                  <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-sm">
+                    {modalError}
+                  </div>
+                )}
 
                 <div className="flex justify-end space-x-3">
                   <button
