@@ -43,6 +43,7 @@ export async function GET(request: Request) {
           }
         },
         bus: true,
+        chofer: true,   // ← incluir datos del chofer (nombre, etc.)
         boletos: {
           where: { estado: 'APROBADO' }
         }
@@ -68,7 +69,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { frecuenciaId, fecha, busId, precio } = body
+    const { frecuenciaId, fecha, busId, precio, choferId } = body
 
     if (!frecuenciaId || !fecha || !busId || precio === undefined) {
       return NextResponse.json(
@@ -77,17 +78,29 @@ export async function POST(request: Request) {
       )
     }
 
+    // Validar que el choferId exista y sea de rol CHOFER (si se proporciona)
+    if (choferId) {
+      const chofer = await prisma.usuario.findUnique({
+        where: { id: choferId, rol: 'CHOFER' }
+      })
+      if (!chofer) {
+        return NextResponse.json({ error: 'Chofer no válido' }, { status: 400 })
+      }
+    }
+
     const ruta = await prisma.ruta.create({
       data: {
         frecuenciaId,
         fecha: new Date(fecha),
         busId,
         precio: parseFloat(precio),
+        choferId: choferId || null,
         completada: false
       },
       include: {
         frecuencia: true,
-        bus: true
+        bus: true,
+        chofer: true   // para que la respuesta incluya los datos del chofer
       }
     })
     return NextResponse.json(ruta, { status: 201 })
