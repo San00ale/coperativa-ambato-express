@@ -35,7 +35,7 @@ export default function VenderBoleto() {
   const [fecha, setFecha] = useState('')
   const [rutas, setRutas] = useState<Ruta[]>([])
   const [rutaSeleccionada, setRutaSeleccionada] = useState<Ruta | null>(null)
-  const [asientoSeleccionado, setAsientoSeleccionado] = useState<number | null>(null)
+  const [asientosSeleccionados, setAsientosSeleccionados] = useState<number[]>([])
   const [nombre, setNombre] = useState('')
   const [cedula, setCedula] = useState('')
   const [tipoPasajero, setTipoPasajero] = useState<TipoPasajero>('ADULTO')
@@ -51,9 +51,9 @@ export default function VenderBoleto() {
     DISCAPACITADO: 0.5,
   }
 
-  const precioFinal = rutaSeleccionada
-    ? rutaSeleccionada.precio * (1 - DESCUENTO[tipoPasajero])
-    : 0
+  const precioBase = rutaSeleccionada ? rutaSeleccionada.precio : 0
+  const precioConDescuento = precioBase * (1 - DESCUENTO[tipoPasajero])
+  const precioTotal = precioConDescuento * asientosSeleccionados.length
 
   async function buscarRutas() {
     if (!origen || !destino || !fecha) {
@@ -94,7 +94,7 @@ export default function VenderBoleto() {
       const disponibles = Array.from({ length: capacidad }, (_, i) => i + 1)
         .filter(asiento => !ocupados.includes(asiento))
       setRutaSeleccionada({ ...rutaCompleta, asientosDisponibles: disponibles })
-      setAsientoSeleccionado(null)
+      setAsientosSeleccionados([])
       setPaso(2)
     } catch {
       setMensaje('No se pudieron cargar los asientos')
@@ -103,39 +103,56 @@ export default function VenderBoleto() {
     }
   }
 
-  async function emitirBoleto() {
-    if (!rutaSeleccionada || !asientoSeleccionado || !nombre || !cedula) {
-      setMensaje('Completa todos los datos del pasajero')
+  const toggleAsiento = (asiento: number) => {
+    if (asientosSeleccionados.includes(asiento)) {
+      setAsientosSeleccionados(asientosSeleccionados.filter(a => a !== asiento))
+    } else {
+      setAsientosSeleccionados([...asientosSeleccionados, asiento])
+    }
+  }
+
+  async function emitirBoletos() {
+    if (!rutaSeleccionada || asientosSeleccionados.length === 0 || !nombre || !cedula) {
+      setMensaje('Selecciona al menos un asiento y completa los datos del pasajero')
       return
     }
     setCargando(true)
     setMensaje('')
-    try {
-      const res = await fetch('/api/boletos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          rutaId: rutaSeleccionada.id,
-          asiento: asientoSeleccionado,
-          nombre,
-          cedula,
-          tipoPasajero,
-          metodoPago,
-          precio: precioFinal,
-        }),
-      })
-      if (res.ok) {
-        setMensaje('✅ Boleto emitido correctamente')
-        setTimeout(() => router.push('/oficinista'), 2000)
-      } else {
-        const err = await res.json()
-        setMensaje(err.error || 'Error al emitir boleto')
+
+    let errores = 0
+    for (const asiento of asientosSeleccionados) {
+      try {
+        const res = await fetch('/api/boletos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            rutaId: rutaSeleccionada.id,
+            asiento,
+            nombre,
+            cedula,
+            tipoPasajero,
+            metodoPago,
+            precio: precioBase,
+          }),
+        })
+        if (!res.ok) {
+          const err = await res.json()
+          setMensaje(`Error en asiento ${asiento}: ${err.error || 'Error al emitir'}`)
+          errores++
+        }
+      } catch {
+        setMensaje(`Error de conexión en asiento ${asiento}`)
+        errores++
       }
-    } catch {
-      setMensaje('Error al conectar con el servidor')
-    } finally {
-      setCargando(false)
     }
+
+    if (errores === 0) {
+      setMensaje(`✅ ${asientosSeleccionados.length} boleto(s) emitido(s) correctamente`)
+      setTimeout(() => router.push('/oficinista'), 2000)
+    } else {
+      setMensaje(`⚠️ Se emitieron ${asientosSeleccionados.length - errores} de ${asientosSeleccionados.length} boletos. Revisa los errores.`)
+    }
+    setCargando(false)
   }
 
   return (
@@ -144,7 +161,7 @@ export default function VenderBoleto() {
         <h1 className="text-2xl font-bold text-gray-800 mb-6">Venta de Boletos</h1>
 
         <div className="flex items-center mb-8 gap-2">
-          {['Buscar ruta', 'Seleccionar asiento', 'Datos pasajero'].map((label, i) => (
+          {['Buscar ruta', 'Seleccionar asiento(s)', 'Datos pasajero'].map((label, i) => (
             <div key={i} className="flex items-center gap-2">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
                 ${paso > i + 1 ? 'bg-green-500 text-white' : paso === i + 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
@@ -156,7 +173,7 @@ export default function VenderBoleto() {
           ))}
         </div>
 
-        {/* Paso 1: Buscar ruta */}
+        {/* PASO 1: Buscar ruta */}
         <div className="bg-white rounded-xl shadow p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-700 mb-4">Buscar ruta</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -197,7 +214,7 @@ export default function VenderBoleto() {
           </button>
         </div>
 
-        {/* Paso 2: Resultados y selección de asiento */}
+        {/* PASO 2: Resultados y selección de asientos */}
         {rutas.length > 0 && (
           <div className="bg-white rounded-xl shadow p-6 mb-6">
             <h2 className="text-lg font-semibold text-gray-700 mb-4">Rutas disponibles</h2>
@@ -227,7 +244,12 @@ export default function VenderBoleto() {
 
             {rutaSeleccionada && rutaSeleccionada.asientosDisponibles && (
               <div>
-                <h3 className="text-md font-semibold text-gray-600 mb-3">Selecciona un asiento</h3>
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-md font-semibold text-gray-600">Selecciona uno o varios asientos</h3>
+                  <span className="text-sm text-gray-500">
+                    Elegidos: {asientosSeleccionados.length}
+                  </span>
+                </div>
                 <div className="bg-gray-100 rounded-lg p-4">
                   <div className="w-full h-6 bg-gray-300 rounded mb-4 flex items-center justify-center text-xs text-gray-600">
                     FRENTE DEL BUS
@@ -235,14 +257,15 @@ export default function VenderBoleto() {
                   <div className="grid grid-cols-4 gap-2 max-w-xs mx-auto">
                     {Array.from({ length: rutaSeleccionada.bus.capacidad || 40 }, (_, i) => i + 1).map(num => {
                       const disponible = rutaSeleccionada.asientosDisponibles!.includes(num)
+                      const seleccionado = asientosSeleccionados.includes(num)
                       return (
                         <button
                           key={num}
                           disabled={!disponible}
-                          onClick={() => { setAsientoSeleccionado(num); setPaso(3) }}
+                          onClick={() => toggleAsiento(num)}
                           className={`h-10 rounded text-sm font-medium transition
                             ${!disponible ? 'bg-red-200 text-red-400 cursor-not-allowed' :
-                              asientoSeleccionado === num ? 'bg-blue-600 text-white' :
+                              seleccionado ? 'bg-blue-600 text-white' :
                               'bg-green-100 text-green-700 hover:bg-green-200'}`}
                         >
                           {num}
@@ -256,13 +279,23 @@ export default function VenderBoleto() {
                     <span className="flex items-center gap-1"><span className="w-3 h-3 bg-blue-600 rounded inline-block" /> Seleccionado</span>
                   </div>
                 </div>
+                {asientosSeleccionados.length > 0 && (
+                  <div className="mt-4 text-right">
+                    <button
+                      onClick={() => setPaso(3)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium"
+                    >
+                      Continuar con {asientosSeleccionados.length} asiento(s)
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
         )}
 
-        {/* Paso 3: Datos del pasajero */}
-        {asientoSeleccionado && rutaSeleccionada && (
+        {/* PASO 3: Datos del pasajero (común para todos los asientos) */}
+        {asientosSeleccionados.length > 0 && rutaSeleccionada && paso === 3 && (
           <div className="bg-white rounded-xl shadow p-6 mb-6">
             <h2 className="text-lg font-semibold text-gray-700 mb-4">Datos del pasajero</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -285,7 +318,7 @@ export default function VenderBoleto() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Tipo de pasajero</label>
+                <label className="block text-sm text-gray-600 mb-1">Tipo de pasajero (aplica a todos)</label>
                 <select
                   className="w-full border rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   value={tipoPasajero}
@@ -316,21 +349,22 @@ export default function VenderBoleto() {
                 <p>Ruta: <span className="font-medium">{rutaSeleccionada.frecuencia.origen} → {rutaSeleccionada.frecuencia.destino}</span></p>
                 <p>Hora: <span className="font-medium">{rutaSeleccionada.frecuencia.hora}</span></p>
                 <p>Bus: <span className="font-medium">{rutaSeleccionada.bus.numero} ({rutaSeleccionada.bus.placa})</span></p>
-                <p>Asiento: <span className="font-medium">{asientoSeleccionado}</span></p>
-                <p>Precio base: <span className="font-medium">${rutaSeleccionada.precio.toFixed(2)}</span></p>
+                <p>Asientos: <span className="font-medium">{asientosSeleccionados.join(', ')}</span></p>
+                <p>Cantidad: <span className="font-medium">{asientosSeleccionados.length}</span></p>
+                <p>Precio unitario: <span className="font-medium">${precioBase.toFixed(2)}</span></p>
                 {DESCUENTO[tipoPasajero] > 0 && (
-                  <p>Descuento: <span className="font-medium text-green-600">-{DESCUENTO[tipoPasajero] * 100}%</span></p>
+                  <p>Descuento: <span className="font-medium text-green-600">-{DESCUENTO[tipoPasajero] * 100}% por pasajero</span></p>
                 )}
-                <p className="text-lg font-bold text-blue-900 pt-1">Total: ${precioFinal.toFixed(2)}</p>
+                <p className="text-lg font-bold text-blue-900 pt-1">Total: ${precioTotal.toFixed(2)}</p>
               </div>
             </div>
 
             <button
-              onClick={emitirBoleto}
+              onClick={emitirBoletos}
               disabled={cargando}
               className="mt-4 w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold text-lg disabled:opacity-50"
             >
-              {cargando ? 'Emitiendo...' : '🎫 Emitir boleto'}
+              {cargando ? 'Emitiendo...' : `🎫 Emitir ${asientosSeleccionados.length} boleto(s)`}
             </button>
           </div>
         )}
