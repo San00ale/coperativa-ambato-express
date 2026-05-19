@@ -30,6 +30,7 @@ export default function DetallePago() {
   const [boleto, setBoleto] = useState<Boleto | null>(null)
   const [cargando, setCargando] = useState(true)
   const [aprobando, setAprobando] = useState(false)
+  const [rechazando, setRechazando] = useState(false)
   const [mensaje, setMensaje] = useState('')
   const [imagenGrande, setImagenGrande] = useState(false)
 
@@ -63,6 +64,29 @@ export default function DetallePago() {
       setMensaje('Error al conectar con el servidor')
     } finally {
       setAprobando(false)
+    }
+  }
+
+  async function rechazarPago() {
+    if (!confirm('¿Estás seguro de rechazar este pago? El asiento quedará libre.')) return
+    setRechazando(true)
+    setMensaje('')
+    try {
+      const res = await fetch(`/api/boletos/${id}/rechazar`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      if (res.ok) {
+        setMensaje('❌ Pago rechazado. El asiento ha sido liberado.')
+        setTimeout(() => router.push('/oficinista/pagos-pendientes'), 2000)
+      } else {
+        const err = await res.json()
+        setMensaje(err.error || 'Error al rechazar el pago')
+      }
+    } catch {
+      setMensaje('Error al conectar con el servidor')
+    } finally {
+      setRechazando(false)
     }
   }
 
@@ -128,20 +152,30 @@ export default function DetallePago() {
           )}
         </div>
 
-        {/* Botón aprobar */}
+        {/* Botones */}
         {mensaje ? (
           <div className={`rounded-lg p-4 text-center font-medium mb-4
-            ${mensaje.startsWith('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+            ${mensaje.startsWith('✅') ? 'bg-green-100 text-green-800' : 
+              mensaje.startsWith('❌') ? 'bg-red-100 text-red-800' : 'bg-red-100 text-red-800'}`}>
             {mensaje}
           </div>
         ) : (
-          <button
-            onClick={aprobarPago}
-            disabled={aprobando}
-            className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold text-lg disabled:opacity-50"
-          >
-            {aprobando ? 'Aprobando...' : '✅ Aprobar pago'}
-          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={aprobarPago}
+              disabled={aprobando || rechazando}
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold text-lg disabled:opacity-50"
+            >
+              {aprobando ? 'Aprobando...' : '✅ Aprobar pago'}
+            </button>
+            <button
+              onClick={rechazarPago}
+              disabled={aprobando || rechazando}
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-semibold text-lg disabled:opacity-50"
+            >
+              {rechazando ? 'Rechazando...' : '❌ Rechazar pago'}
+            </button>
+          </div>
         )}
 
         {/* Modal imagen grande */}
