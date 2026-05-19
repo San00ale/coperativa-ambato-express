@@ -19,10 +19,9 @@ export async function GET(request: Request) {
     }
     
     if (fecha) {
-      const fechaObj = new Date(fecha)
+      // Usar startsWith para comparar la fecha como string (formato ISO: YYYY-MM-DD)
       where.fecha = {
-        gte: new Date(fechaObj.setHours(0, 0, 0, 0)),
-        lt: new Date(new Date(fechaObj).setDate(fechaObj.getDate() + 1))
+        startsWith: fecha
       }
     }
     
@@ -43,7 +42,7 @@ export async function GET(request: Request) {
           }
         },
         bus: true,
-        chofer: true,   // ← incluir datos del chofer (nombre, etc.)
+        chofer: true,
         boletos: {
           where: { estado: 'APROBADO' }
         }
@@ -78,7 +77,6 @@ export async function POST(request: Request) {
       )
     }
 
-    // Validar que el choferId exista y sea de rol CHOFER (si se proporciona)
     if (choferId) {
       const chofer = await prisma.usuario.findUnique({
         where: { id: choferId, rol: 'CHOFER' }
@@ -100,7 +98,7 @@ export async function POST(request: Request) {
       include: {
         frecuencia: true,
         bus: true,
-        chofer: true   // para que la respuesta incluya los datos del chofer
+        chofer: true
       }
     })
     return NextResponse.json(ruta, { status: 201 })
