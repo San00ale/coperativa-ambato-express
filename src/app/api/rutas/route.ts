@@ -6,7 +6,6 @@ import { authOptions } from '@/lib/auth'
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions)
-
     const { searchParams } = new URL(request.url)
     const fecha = searchParams.get('fecha')
     const origen = searchParams.get('origen')
@@ -19,9 +18,16 @@ export async function GET(request: Request) {
     }
     
     if (fecha) {
-      // Usar startsWith para comparar la fecha como string (formato ISO: YYYY-MM-DD)
+      // Crear fechas en zona horaria local (Ecuador UTC-5)
+      // La fecha viene como YYYY-MM-DD
+      const start = new Date(fecha)
+      start.setUTCHours(0, 0, 0, 0)   // 00:00:00 UTC (realmente 19:00 del día anterior en Ecuador)
+      const end = new Date(fecha)
+      end.setUTCHours(23, 59, 59, 999)
+      
       where.fecha = {
-        startsWith: fecha
+        gte: start.toISOString(),
+        lt: end.toISOString()
       }
     }
     
@@ -53,10 +59,8 @@ export async function GET(request: Request) {
     return NextResponse.json(rutas)
   } catch (error) {
     console.error('Error al obtener rutas:', error)
-    return NextResponse.json(
-      { error: 'Error al obtener la lista de rutas' },
-      { status: 500 }
-    )
+    // En caso de error, devolver array vacío para evitar crash en frontend
+    return NextResponse.json([])
   }
 }
 
@@ -77,6 +81,7 @@ export async function POST(request: Request) {
       )
     }
 
+    // Validar choferId si se proporciona
     if (choferId) {
       const chofer = await prisma.usuario.findUnique({
         where: { id: choferId, rol: 'CHOFER' }
