@@ -63,7 +63,8 @@ export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions)
     console.log('GET /api/admin/usuarios - Session:', session?.user?.role)
-    if (session?.user?.role !== 'ADMIN') {
+    // Permitir acceso a ADMIN y a OFICINISTA
+    if (session?.user?.role !== 'ADMIN' && session?.user?.role !== 'OFICINISTA') {
       console.log('GET /api/admin/usuarios - No autorizado')
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }

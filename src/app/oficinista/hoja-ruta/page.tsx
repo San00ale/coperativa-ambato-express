@@ -15,41 +15,63 @@ interface Bus {
   capacidad: number
 }
 
+interface Chofer {
+  id: string
+  nombre: string
+}
+
 interface Ruta {
   id: string
   fecha: string
   busId: string
   bus: { placa: string }
   frecuencia: { origen: string; destino: string; hora: string }
-  precio?: number        // ← nuevo campo opcional
+  precio?: number
 }
 
 export default function HojaRuta() {
   const [frecuencias, setFrecuencias] = useState<Frecuencia[]>([])
   const [buses, setBuses] = useState<Bus[]>([])
+  const [choferes, setChoferes] = useState<Chofer[]>([])
   const [rutas, setRutas] = useState<Ruta[]>([])
   const [frecuenciaId, setFrecuenciaId] = useState('')
   const [busId, setBusId] = useState('')
   const [fecha, setFecha] = useState('')
-  const [precio, setPrecio] = useState('')           // ← nuevo estado
+  const [precio, setPrecio] = useState('')
+  const [choferId, setChoferId] = useState('')
   const [cargando, setCargando] = useState(false)
   const [mensaje, setMensaje] = useState('')
   const [reasignando, setReasignando] = useState<string | null>(null)
   const [nuevoBusId, setNuevoBusId] = useState('')
 
+  const obtenerFechaLocal = () => new Date().toLocaleDateString('en-CA')
+
   useEffect(() => {
     fetch('/api/frecuencias').then(r => r.json()).then(setFrecuencias).catch(() => {})
     fetch('/api/buses').then(r => r.json()).then(setBuses).catch(() => {})
+    fetch('/api/admin/usuarios?rol=CHOFER')
+      .then(r => r.json())
+      .then(setChoferes)
+      .catch(() => {})
     cargarRutasHoy()
   }, [])
 
-   async function cargarRutasHoy() {
-  const hoy = new Date().toLocaleDateString('en-CA')
+  async function cargarRutasHoy() {
+    const hoy = obtenerFechaLocal()
     try {
       const res = await fetch(`/api/rutas?fecha=${hoy}`)
       const data = await res.json()
-      setRutas(data)
-    } catch {}
+      if (Array.isArray(data)) {
+        setRutas(data)
+      } else {
+        console.error('La API devolvió un objeto inesperado:', data)
+        setRutas([])
+        setMensaje('Error al cargar las rutas: respuesta inválida')
+      }
+    } catch (error) {
+      console.error('Error al cargar rutas:', error)
+      setMensaje('Error al cargar las rutas de hoy')
+    }
   }
 
   async function crearRuta() {
@@ -67,7 +89,8 @@ export default function HojaRuta() {
           frecuenciaId,
           busId,
           fecha,
-          precio: parseFloat(precio)      // ← se envía el precio
+          precio: parseFloat(precio),
+          choferId: choferId || null
         }),
       })
       if (res.ok) {
@@ -75,8 +98,9 @@ export default function HojaRuta() {
         setFrecuenciaId('')
         setBusId('')
         setFecha('')
-        setPrecio('')                     // ← limpiar precio
-        cargarRutasHoy()
+        setPrecio('')
+        setChoferId('')
+        await cargarRutasHoy()
       } else {
         const err = await res.json()
         setMensaje(err.error || 'Error al crear ruta')
@@ -103,7 +127,7 @@ export default function HojaRuta() {
         setMensaje('✅ Bus reasignado correctamente')
         setReasignando(null)
         setNuevoBusId('')
-        cargarRutasHoy()
+        await cargarRutasHoy()
       } else {
         setMensaje('Error al reasignar bus')
       }
@@ -117,7 +141,6 @@ export default function HojaRuta() {
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">Hoja de Ruta</h1>
 
-        {/* Formulario crear ruta */}
         <div className="bg-white rounded-xl shadow p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-700 mb-4">Crear nueva ruta</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -139,7 +162,7 @@ export default function HojaRuta() {
             <div>
               <label className="block text-sm text-gray-600 mb-1">Bus</label>
               <select
-                className="w-full border rounded-lg px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full border rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 value={busId}
                 onChange={e => setBusId(e.target.value)}
               >
@@ -172,6 +195,19 @@ export default function HojaRuta() {
                 placeholder="Ej: 5.00"
               />
             </div>
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Chofer</label>
+              <select
+                className="w-full border rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                value={choferId}
+                onChange={e => setChoferId(e.target.value)}
+              >
+                <option value="">Seleccionar chofer...</option>
+                {choferes.map(c => (
+                  <option key={c.id} value={c.id}>{c.nombre}</option>
+                ))}
+              </select>
+            </div>
           </div>
           <button
             onClick={crearRuta}
@@ -182,7 +218,6 @@ export default function HojaRuta() {
           </button>
         </div>
 
-        {/* Listado de rutas del día */}
         <div className="bg-white rounded-xl shadow p-6">
           <h2 className="text-lg font-semibold text-gray-700 mb-4">Rutas de hoy</h2>
           {rutas.length === 0 ? (
@@ -208,8 +243,6 @@ export default function HojaRuta() {
                       Reasignar bus
                     </button>
                   </div>
-
-                  {/* Panel reasignación */}
                   {reasignando === ruta.id && (
                     <div className="mt-3 pt-3 border-t flex flex-wrap gap-3 items-center">
                       <select

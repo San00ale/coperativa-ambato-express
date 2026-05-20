@@ -6,7 +6,6 @@ import { authOptions } from '@/lib/auth'
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions)
-
     const { searchParams } = new URL(request.url)
     const fecha = searchParams.get('fecha')
     const origen = searchParams.get('origen')
@@ -19,10 +18,16 @@ export async function GET(request: Request) {
     }
     
     if (fecha) {
-      const fechaObj = new Date(fecha)
+      // Crear fechas en zona horaria local (Ecuador UTC-5)
+      // La fecha viene como YYYY-MM-DD
+      const start = new Date(fecha)
+      start.setUTCHours(0, 0, 0, 0)   // 00:00:00 UTC (realmente 19:00 del día anterior en Ecuador)
+      const end = new Date(fecha)
+      end.setUTCHours(23, 59, 59, 999)
+      
       where.fecha = {
-        gte: new Date(fechaObj.setHours(0, 0, 0, 0)),
-        lt: new Date(new Date(fechaObj).setDate(fechaObj.getDate() + 1))
+        gte: start.toISOString(),
+        lt: end.toISOString()
       }
     }
     
@@ -43,7 +48,7 @@ export async function GET(request: Request) {
           }
         },
         bus: true,
-        chofer: true,   // ← incluir datos del chofer (nombre, etc.)
+        chofer: true,
         boletos: {
           where: { estado: 'APROBADO' }
         }
@@ -54,10 +59,8 @@ export async function GET(request: Request) {
     return NextResponse.json(rutas)
   } catch (error) {
     console.error('Error al obtener rutas:', error)
-    return NextResponse.json(
-      { error: 'Error al obtener la lista de rutas' },
-      { status: 500 }
-    )
+    // En caso de error, devolver array vacío para evitar crash en frontend
+    return NextResponse.json([])
   }
 }
 
@@ -78,7 +81,7 @@ export async function POST(request: Request) {
       )
     }
 
-    // Validar que el choferId exista y sea de rol CHOFER (si se proporciona)
+    // Validar choferId si se proporciona
     if (choferId) {
       const chofer = await prisma.usuario.findUnique({
         where: { id: choferId, rol: 'CHOFER' }
@@ -100,7 +103,7 @@ export async function POST(request: Request) {
       include: {
         frecuencia: true,
         bus: true,
-        chofer: true   // para que la respuesta incluya los datos del chofer
+        chofer: true
       }
     })
     return NextResponse.json(ruta, { status: 201 })
