@@ -18,17 +18,11 @@ export async function GET(request: Request) {
     }
     
     if (fecha) {
-      // Crear fechas en zona horaria local (Ecuador UTC-5)
-      // La fecha viene como YYYY-MM-DD
-      const start = new Date(fecha)
-      start.setUTCHours(0, 0, 0, 0)   // 00:00:00 UTC (realmente 19:00 del día anterior en Ecuador)
-      const end = new Date(fecha)
-      end.setUTCHours(23, 59, 59, 999)
-      
-      where.fecha = {
-        gte: start.toISOString(),
-        lt: end.toISOString()
-      }
+      // Ecuador UTC-5: ajustar rango
+      const [year, month, day] = fecha.split('-').map(Number)
+      const start = new Date(Date.UTC(year, month-1, day, 5, 0, 0, 0))
+      const end = new Date(Date.UTC(year, month-1, day, 28, 59, 59, 999))
+      where.fecha = { gte: start, lt: end }
     }
     
     if (origen || destino) {
@@ -59,12 +53,12 @@ export async function GET(request: Request) {
     return NextResponse.json(rutas)
   } catch (error) {
     console.error('Error al obtener rutas:', error)
-    // En caso de error, devolver array vacío para evitar crash en frontend
     return NextResponse.json([])
   }
 }
 
 export async function POST(request: Request) {
+  // ... (sin cambios, igual que antes)
   try {
     const session = await getServerSession(authOptions)
     if (session?.user?.role !== 'ADMIN' && session?.user?.role !== 'OFICINISTA') {
@@ -81,7 +75,6 @@ export async function POST(request: Request) {
       )
     }
 
-    // Validar choferId si se proporciona
     if (choferId) {
       const chofer = await prisma.usuario.findUnique({
         where: { id: choferId, rol: 'CHOFER' }
