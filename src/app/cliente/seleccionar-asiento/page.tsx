@@ -9,14 +9,25 @@ interface Boleto {
   estado: string;
 }
 
+interface Bus {
+  capacidad: number;
+  asientosVIP: number;
+}
+
+interface Ruta {
+  id: string;
+  precio: number;
+  bus: Bus;
+  boletos: Boleto[];
+}
+
 // Componente que contiene la lógica y usa useSearchParams
 function SeleccionarAsientoContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const rutaId = searchParams.get("rutaId");
 
-  const [totalAsientos, setTotalAsientos] = useState(0);
-  const [boletos, setBoletos] = useState<Boleto[]>([]);
+  const [ruta, setRuta] = useState<Ruta | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -26,33 +37,43 @@ function SeleccionarAsientoContent() {
       setLoading(false);
       return;
     }
-    const cargarAsientos = async () => {
+    const cargarRuta = async () => {
       try {
         const res = await fetch(`/api/rutas/${rutaId}`);
-        if (!res.ok) throw new Error("Error al cargar los asientos");
-        const data = await res.json();
-        setTotalAsientos(data.bus.capacidad || 40);
-        setBoletos(data.boletos || []);
+        if (!res.ok) throw new Error("Error al cargar la ruta");
+        const data: Ruta = await res.json();
+        setRuta(data);
       } catch {
-        setError("No se pudo cargar la disponibilidad de asientos.");
+        setError("No se pudo cargar la información de asientos.");
       } finally {
         setLoading(false);
       }
     };
-    cargarAsientos();
+    cargarRuta();
   }, [rutaId]);
 
-  const getEstadoAsiento = (num: number) => {
-    const boleto = boletos.find((b) => Number(b.asiento) === num);
+  const getEstadoAsiento = (num: number): "DISPONIBLE" | "PENDIENTE" | "OCUPADO" => {
+    if (!ruta) return "DISPONIBLE";
+    const boleto = ruta.boletos?.find((b) => Number(b.asiento) === num);
     if (!boleto) return "DISPONIBLE";
-    if (boleto.estado === "APROBADO") return "APROBADO";
     if (boleto.estado === "PENDIENTE_APROBACION") return "PENDIENTE";
+    if (boleto.estado === "APROBADO" || boleto.estado === "ABORDADO") return "OCUPADO";
     return "DISPONIBLE";
+  };
+
+  const esVIP = (num: number): boolean => {
+    if (!ruta) return false;
+    const capacidad = ruta.bus.capacidad;
+    const vipCount = ruta.bus.asientosVIP;
+    return num > capacidad - vipCount;
   };
 
   const handleSeleccionarAsiento = (num: number) => {
     if (getEstadoAsiento(num) !== "DISPONIBLE") return;
-    router.push(`/cliente/pagar?rutaId=${rutaId}&asiento=${num}`);
+    const precioBase = ruta!.precio;
+    const vip = esVIP(num);
+    const precioFinal = vip ? precioBase * 1.2 : precioBase;
+    router.push(`/cliente/pagar?rutaId=${rutaId}&asiento=${num}&precio=${precioFinal}`);
   };
 
   if (loading) {
@@ -71,6 +92,12 @@ function SeleccionarAsientoContent() {
     );
   }
 
+  if (!ruta) return null;
+
+  const totalAsientos = ruta.bus.capacidad;
+  const asientosVIP = ruta.bus.asientosVIP;
+  const asientosNormales = totalAsientos - asientosVIP;
+
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-4xl mx-auto">
@@ -84,19 +111,19 @@ function SeleccionarAsientoContent() {
           <div className="grid grid-cols-4 gap-3 max-w-md mx-auto">
             {Array.from({ length: totalAsientos }, (_, i) => i + 1).map((num) => {
               const estado = getEstadoAsiento(num);
-              const estilos = {
-                DISPONIBLE: "bg-green-100 hover:bg-green-200 text-green-800 cursor-pointer",
-                PENDIENTE:  "bg-yellow-100 text-yellow-800 cursor-not-allowed opacity-70",
-                APROBADO:   "bg-red-200 text-red-800 cursor-not-allowed opacity-70",
-              }[estado];
+              const vip = esVIP(num);
+              let bgClass = "bg-green-100 hover:bg-green-200 text-green-800";
+              if (estado === "PENDIENTE") bgClass = "bg-yellow-100 text-yellow-800 cursor-not-allowed opacity-70";
+              if (estado === "OCUPADO") bgClass = "bg-red-200 text-red-800 cursor-not-allowed opacity-70";
+              if (vip && estado === "DISPONIBLE") bgClass = "bg-green-100 hover:bg-green-200 text-green-800 border-2 border-yellow-500";
               return (
                 <button
                   key={num}
                   onClick={() => handleSeleccionarAsiento(num)}
                   disabled={estado !== "DISPONIBLE"}
-                  className={`font-semibold py-2 rounded transition ${estilos}`}
+                  className={`font-semibold py-2 rounded transition ${bgClass}`}
                 >
-                  {num}
+                  {num} {vip && "⭐"}
                 </button>
               );
             })}
@@ -113,6 +140,10 @@ function SeleccionarAsientoContent() {
             <span className="flex items-center gap-1">
               <span className="w-4 h-4 bg-red-200 rounded inline-block"></span>
               Ocupado
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-4 h-4 border-2 border-yellow-500 bg-green-100 rounded inline-block"></span>
+              VIP (+20%)
             </span>
           </div>
         </div>
