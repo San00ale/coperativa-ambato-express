@@ -44,13 +44,24 @@ export async function PUT(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    if (session?.user?.role !== 'ADMIN') {
+    // Permitir ADMIN y CHOFER (chofer solo puede marcar completada)
+    if (session?.user?.role !== 'ADMIN' && session?.user?.role !== 'CHOFER') {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
     const { id } = await params
     const body = await request.json()
     const { busId, fecha, completada } = body
+
+    // Si es chofer, solo permitir cambiar completada (no otros campos)
+    if (session?.user?.role === 'CHOFER') {
+      if (busId !== undefined || fecha !== undefined) {
+        return NextResponse.json(
+          { error: 'Los choferes solo pueden marcar la ruta como completada' },
+          { status: 403 }
+        )
+      }
+    }
 
     const ruta = await prisma.ruta.update({
       where: { id },
