@@ -17,7 +17,7 @@ export async function GET(
         bus: true,
         boletos: {
           where: {
-            estado: { in: ['APROBADO', 'PENDIENTE_APROBACION'] }
+            estado: { in: ['APROBADO', 'PENDIENTE_APROBACION', 'ABORDADO'] }
           },
           select: {
             asiento: true,
