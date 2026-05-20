@@ -40,6 +40,10 @@ export default function MisRutasPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actualizando, setActualizando] = useState<string | null>(null)
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(() => {
+    // Fecha actual en formato local YYYY-MM-DD
+    return new Date().toLocaleDateString('en-CA')
+  })
 
   useEffect(() => {
     const fetchRutas = async () => {
@@ -47,13 +51,7 @@ export default function MisRutasPage() {
         setLoading(true)
         setError(null)
 
-        // Obtener la fecha actual en formato ISO
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
-        const fechaFormato = today.toISOString().split('T')[0]
-
-        // Llamar al API de rutas
-        const response = await fetch(`/api/rutas?fecha=${fechaFormato}`)
+        const response = await fetch(`/api/rutas?fecha=${fechaSeleccionada}`)
 
         if (!response.ok) {
           throw new Error('Error al obtener las rutas')
@@ -70,14 +68,15 @@ export default function MisRutasPage() {
     }
 
     fetchRutas()
-  }, [])
+  }, [fechaSeleccionada])
 
   const handleMarcarCompletada = async (rutaId: string) => {
     try {
       setActualizando(rutaId)
 
+      // Cambiar de PATCH a PUT (backend espera PUT)
       const response = await fetch(`/api/rutas/${rutaId}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -102,9 +101,7 @@ export default function MisRutasPage() {
   }
 
   const formatearHora = (hora: string) => {
-    // Si viene en formato HH:MM, devolver como está
     if (hora.includes(':')) return hora
-    // Si viene en otro formato, intentar parsear
     try {
       const date = new Date(hora)
       return date.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })
@@ -127,14 +124,27 @@ export default function MisRutasPage() {
     }
   }
 
+  const handleFechaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFechaSeleccionada(e.target.value)
+  }
+
   return (
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Mis Rutas del Día</h1>
-        <p className="text-gray-600 mt-2">
-          {formatearFecha(new Date().toISOString())}
-        </p>
+        <h1 className="text-3xl font-bold text-gray-900">Mis Rutas</h1>
+        <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-4">
+          <label className="text-gray-600">Selecciona una fecha:</label>
+          <input
+            type="date"
+            value={fechaSeleccionada}
+            onChange={handleFechaChange}
+            className="px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <p className="text-sm text-gray-500">
+            Mostrando rutas para el {formatearFecha(fechaSeleccionada + 'T12:00:00')}
+          </p>
+        </div>
       </div>
 
       {/* Estados y resumen */}
@@ -186,7 +196,7 @@ export default function MisRutasPage() {
           <Bus className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900">No hay rutas asignadas</h3>
           <p className="text-gray-600 mt-2">
-            No tienes rutas programadas para hoy. Revisa tu calendario de turnos.
+            No tienes rutas programadas para la fecha seleccionada.
           </p>
         </div>
       )}
@@ -203,7 +213,6 @@ export default function MisRutasPage() {
                   : 'bg-white border-blue-200 shadow-md hover:shadow-lg'
               }`}
             >
-              {/* Ruta Header */}
               <div className={`p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
                 ruta.completada ? 'bg-gray-100' : 'bg-blue-50'
               }`}>
@@ -226,7 +235,6 @@ export default function MisRutasPage() {
                     </div>
                   </div>
 
-                  {/* Detalles principales */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
                     <div>
                       <div className="text-xs text-gray-600">Hora de Salida</div>
@@ -250,7 +258,6 @@ export default function MisRutasPage() {
                   </div>
                 </div>
 
-                {/* Botón de completar */}
                 {!ruta.completada && (
                   <button
                     onClick={() => handleMarcarCompletada(ruta.id)}
@@ -277,10 +284,9 @@ export default function MisRutasPage() {
                 )}
               </div>
 
-              {/* Expandible: Detalles adicionales */}
+              {/* Detalles adicionales */}
               <div className="hidden sm:block border-t border-gray-200">
                 <div className="p-4 sm:p-6 bg-white space-y-4">
-                  {/* Bus Details */}
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                       <Bus size={18} />
@@ -308,7 +314,6 @@ export default function MisRutasPage() {
                     </div>
                   </div>
 
-                  {/* Paradas */}
                   {ruta.frecuencia.paradas.length > 0 && (
                     <div>
                       <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
@@ -337,4 +342,3 @@ export default function MisRutasPage() {
     </div>
   )
 }
-
