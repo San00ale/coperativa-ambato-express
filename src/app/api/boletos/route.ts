@@ -52,24 +52,33 @@ export async function POST(request: Request) {
     // Determinar estado según método de pago
     const estado = metodoPago === 'TRANSFERENCIA' ? 'PENDIENTE_APROBACION' : 'APROBADO'
 
-    // Determinar el pasajero (para venta del chofer)
+    // *** LÓGICA CORREGIDA PARA ASIGNAR PASAJERO ***
     let pasajeroId = session.user.id
-    if (pasajeroNombre && pasajeroCedula) {
-      let pasajero = await prisma.usuario.findUnique({
-        where: { cedula: pasajeroCedula }
-      })
-      if (!pasajero) {
-        pasajero = await prisma.usuario.create({
-          data: {
-            email: `${pasajeroCedula}@temporal.com`,
-            password: await bcrypt.hash('temporal', 10),
-            nombre: pasajeroNombre,
-            cedula: pasajeroCedula,
-            rol: 'CLIENTE'
-          }
+
+    // Solo para roles que venden boletos a terceros (chofer u oficinista) se permite crear/buscar pasajero por cédula
+    if (session.user.role === 'CHOFER' || session.user.role === 'OFICINISTA') {
+      if (pasajeroNombre && pasajeroCedula) {
+        let pasajero = await prisma.usuario.findUnique({
+          where: { cedula: pasajeroCedula }
         })
+        if (!pasajero) {
+          pasajero = await prisma.usuario.create({
+            data: {
+              email: `${pasajeroCedula}@temporal.com`,
+              password: await bcrypt.hash('temporal', 10),
+              nombre: pasajeroNombre,
+              cedula: pasajeroCedula,
+              rol: 'CLIENTE'
+            }
+          })
+        }
+        pasajeroId = pasajero.id
       }
-      pasajeroId = pasajero.id
+    } else {
+      // Para cliente autenticado, se usa su propio ID y se ignora cualquier dato de pasajero enviado
+      if (pasajeroNombre || pasajeroCedula) {
+        console.warn('Cliente autenticado intentó enviar datos de pasajero; se ignora y se usa su propia cuenta.')
+      }
     }
 
     // Crear el boleto
@@ -116,12 +125,10 @@ export async function GET(request: Request) {
 
     let where: any = {}
 
-    // Si es cliente, solo ve sus propios boletos
     if (session.user.role === 'CLIENTE') {
       where.pasajeroId = session.user.id
     }
     
-    // Si es oficinista y pide pendientes, ve solo los pendientes de aprobación
     if (session.user.role === 'OFICINISTA' && pendientes) {
       where.estado = 'PENDIENTE_APROBACION'
     }
