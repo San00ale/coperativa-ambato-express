@@ -21,6 +21,7 @@ interface Ruta {
   id: string
   fecha: string
   completada: boolean
+  precio?: number
   frecuencia: {
     origen: string
     destino: string
@@ -103,6 +104,18 @@ export default function VenderEnRutaPage() {
 
   const asientosOcupados = ruta?.boletos.map(b => b.asiento) || []
 
+  const esVIP = (num: string): boolean => {
+    if (!ruta) return false;
+    const vipSeatsNumeros = ruta.bus.asientosVIPNumeros;
+    if (vipSeatsNumeros) {
+      const vipSeatsArray = vipSeatsNumeros.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+      return vipSeatsArray.includes(parseInt(num));
+    }
+    const capacidad = ruta.bus.capacidad;
+    const vipCount = ruta.bus.asientosVIP;
+    return parseInt(num) > capacidad - vipCount;
+  }
+
   const handleAsientoClick = (asiento: string) => {
     if (!asientosOcupados.includes(asiento)) {
       setAsientoSeleccionado(asiento)
@@ -135,6 +148,10 @@ export default function VenderEnRutaPage() {
       setEnviando(true)
       setError(null)
 
+      const vip = esVIP(asientoSeleccionado!)
+      const precioBase = ruta.precio || 0
+      const precioFinal = vip ? precioBase * 1.2 : precioBase
+
       const response = await fetch('/api/ventas-chofer', {
         method: 'POST',
         headers: {
@@ -147,6 +164,7 @@ export default function VenderEnRutaPage() {
           tipoPasajero: formData.tipo,
           asiento: formData.asiento,
           metodoPago: formData.metodoPago,
+          precio: precioFinal,
         }),
       })
 
