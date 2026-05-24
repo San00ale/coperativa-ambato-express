@@ -1,6 +1,34 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+
+    const bus = await prisma.bus.findUnique({
+      where: { id }
+    })
+
+    if (!bus) {
+      return NextResponse.json(
+        { error: 'Bus no encontrado' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json(bus)
+  } catch (error) {
+    console.error('Error al obtener bus:', error)
+    return NextResponse.json(
+      { error: 'Error al obtener el bus' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
