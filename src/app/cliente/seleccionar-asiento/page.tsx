@@ -12,6 +12,7 @@ interface Boleto {
 interface Bus {
   capacidad: number;
   asientosVIP: number;
+  asientosVIPNumeros?: string;
 }
 
 interface Ruta {
@@ -63,6 +64,11 @@ function SeleccionarAsientoContent() {
 
   const esVIP = (num: number): boolean => {
     if (!ruta) return false;
+    const vipSeatsNumeros = ruta.bus.asientosVIPNumeros;
+    if (vipSeatsNumeros) {
+      const vipSeatsArray = vipSeatsNumeros.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+      return vipSeatsArray.includes(num);
+    }
     const capacidad = ruta.bus.capacidad;
     const vipCount = ruta.bus.asientosVIP;
     return num > capacidad - vipCount;
@@ -95,7 +101,9 @@ function SeleccionarAsientoContent() {
   if (!ruta) return null;
 
   const totalAsientos = ruta.bus.capacidad;
-  const asientosVIP = ruta.bus.asientosVIP;
+  const vipSeatsNumeros = ruta.bus.asientosVIPNumeros;
+  const vipSeatsArray = vipSeatsNumeros ? vipSeatsNumeros.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n)) : [];
+  const asientosVIP = vipSeatsArray.length > 0 ? vipSeatsArray.length : ruta.bus.asientosVIP;
   const asientosNormales = totalAsientos - asientosVIP;
 
   return (
