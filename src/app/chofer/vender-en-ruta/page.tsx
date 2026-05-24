@@ -13,6 +13,7 @@ interface Bus {
   carroceria: string
   asientosNormales: number
   asientosVIP: number
+  asientosVIPNumeros?: string
   capacidad: number
 }
 
@@ -311,6 +312,7 @@ export default function VenderEnRutaPage() {
             <AsientosGrid
               capacidad={ruta.bus.capacidad}
               asientosVIP={ruta.bus.asientosVIP}
+              asientosVIPNumeros={ruta.bus.asientosVIPNumeros}
               asientosOcupados={asientosOcupados}
               asientoSeleccionado={asientoSeleccionado}
               onAsientoClick={handleAsientoClick}
