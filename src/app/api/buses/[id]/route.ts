@@ -7,7 +7,7 @@ export async function PUT(
 ) {
   try {
     const body = await request.json()
-    const { numero, placa, chasis, carroceria, marca, capacidad, asientosVIP, fotoUrl } = body
+    const { numero, placa, chasis, carroceria, marca, capacidad, asientosVIP, asientosVIPNumeros, fotoUrl } = body
     const { id } = await params
 
     if (!numero || !placa || !capacidad) {
@@ -27,6 +27,7 @@ export async function PUT(
         marca: marca || '',
         capacidad: parseInt(capacidad),
         asientosVIP: asientosVIP ? parseInt(asientosVIP) : 0,
+        asientosVIPNumeros: asientosVIPNumeros || '',
         fotoUrl: fotoUrl || null,
       }
     })
