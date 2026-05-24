@@ -53,6 +53,18 @@ export default function VenderBoleto() {
     DISCAPACITADO: 0.5,
   }
 
+  const esVIP = (num: number): boolean => {
+    if (!rutaSeleccionada) return false;
+    const vipSeatsNumeros = rutaSeleccionada.bus.asientosVIPNumeros;
+    if (vipSeatsNumeros) {
+      const vipSeatsArray = vipSeatsNumeros.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+      return vipSeatsArray.includes(num);
+    }
+    const capacidad = rutaSeleccionada.bus.capacidad;
+    const vipCount = rutaSeleccionada.bus.asientosVIP;
+    return num > capacidad - vipCount;
+  }
+
   const precioBase = rutaSeleccionada ? rutaSeleccionada.precio : 0
   const precioConDescuento = precioBase * (1 - DESCUENTO[tipoPasajero])
   const precioTotal = asientosSeleccionados.reduce((total, asiento) => {
@@ -107,18 +119,6 @@ export default function VenderBoleto() {
     } finally {
       setCargando(false)
     }
-  }
-
-  const esVIP = (num: number): boolean => {
-    if (!rutaSeleccionada) return false;
-    const vipSeatsNumeros = rutaSeleccionada.bus.asientosVIPNumeros;
-    if (vipSeatsNumeros) {
-      const vipSeatsArray = vipSeatsNumeros.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
-      return vipSeatsArray.includes(num);
-    }
-    const capacidad = rutaSeleccionada.bus.capacidad;
-    const vipCount = rutaSeleccionada.bus.asientosVIP;
-    return num > capacidad - vipCount;
   }
 
   const toggleAsiento = (asiento: number) => {
