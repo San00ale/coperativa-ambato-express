@@ -116,7 +116,7 @@ export default function BuscarRutasPage() {
 
             {/* Origen */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+<label className="block text-sm font-medium text-gray-900 mb-1">
                 Origen
               </label>
               <select
@@ -135,13 +135,12 @@ export default function BuscarRutasPage() {
 
             {/* Destino */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Destino
+              <label className="block text-sm font-medium text-gray-900 mb-1">                Destino
               </label>
               <select
                 value={destino}
                 onChange={(e) => setDestino(e.target.value)}
-                className="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-md p-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"  
               >
                 <option value="">Selecciona ciudad</option>
                 {ciudadesDestino.map((ciudad) => (
@@ -162,13 +161,13 @@ export default function BuscarRutasPage() {
                 value={fecha}
                 onChange={(e) => setFecha(e.target.value)}
                 min={new Date().toISOString().split("T")[0]}
-                className="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-md p-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
 
           {error && (
-            <p className="text-red-500 text-sm mt-3">{error}</p>
+            <p className="text-red-700 text-sm mt-3">{error}</p>  
           )}
 
           <button
@@ -181,7 +180,7 @@ export default function BuscarRutasPage() {
         </div>
                 {buscado && (
           <div>
-            <h2 className="text-lg font-semibold text-gray-700 mb-3">
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">
               Resultados ({resultados.length})
             </h2>
 

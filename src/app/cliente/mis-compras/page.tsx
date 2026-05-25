@@ -84,7 +84,7 @@ export default function MisComprasPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <p className="text-red-500">{error}</p>
+        <p className="text-red-700">{error}</p>
       </div>
     );
   }
@@ -131,15 +131,15 @@ export default function MisComprasPage() {
                   {/* Detalles del boleto */}
                   <div className="grid grid-cols-3 gap-3 text-sm text-gray-600 border-t pt-3">
                     <div>
-                      <p className="text-xs text-gray-400">Asiento</p>
+                      <p className="text-xs text-gray-500">Asiento</p>
                       <p className="font-medium text-gray-800">{boleto.asiento}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400">Tipo pasajero</p>
+                      <p className="text-xs text-gray-500">Tipo pasajero</p>
                       <p className="font-medium text-gray-800">{getTipoPasajero(boleto.tipoPasajero)}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400">Precio pagado</p>
+                      <p className="text-xs text-gray-500">Precio pagado</p>
                       <p className="font-medium text-green-600">${boleto.precio.toFixed(2)}</p>
                     </div>
                   </div>
