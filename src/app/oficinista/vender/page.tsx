@@ -43,7 +43,23 @@ export default function VenderBoleto() {
   const [cargando, setCargando] = useState(false)
   const [mensaje, setMensaje] = useState('')
   const [paso, setPaso] = useState(1)
+  const [errorCedula, setErrorCedula] = useState('')
 
+function validarCedula(cedula: string): boolean {
+  if (!/^\d{10}$/.test(cedula)) return false
+  const provincia = parseInt(cedula.substring(0, 2))
+  if (provincia < 1 || provincia > 24) return false
+  if (parseInt(cedula[2]) >= 6) return false
+  const coeficientes = [2, 1, 2, 1, 2, 1, 2, 1, 2]
+  let suma = 0
+  for (let i = 0; i < 9; i++) {
+    let val = parseInt(cedula[i]) * coeficientes[i]
+    if (val >= 10) val -= 9
+    suma += val
+  }
+  const digitoVerificador = suma % 10 === 0 ? 0 : 10 - (suma % 10)
+  return digitoVerificador === parseInt(cedula[9])
+}
   const DESCUENTO: Record<TipoPasajero, number> = {
     ADULTO: 0,
     NINO: 0.5,
@@ -111,11 +127,15 @@ export default function VenderBoleto() {
     }
   }
 
-  async function emitirBoletos() {
-    if (!rutaSeleccionada || asientosSeleccionados.length === 0 || !nombre || !cedula) {
-      setMensaje('Selecciona al menos un asiento y completa los datos del pasajero')
-      return
-    }
+ async function emitirBoletos() {
+  if (!rutaSeleccionada || asientosSeleccionados.length === 0 || !nombre || !cedula) {
+    setMensaje('Selecciona al menos un asiento y completa los datos del pasajero')
+    return
+  }
+  if (!validarCedula(cedula)) {
+    setMensaje('La cédula ingresada no es válida')
+    return
+  }
     setCargando(true)
     setMensaje('')
 
@@ -309,14 +329,24 @@ export default function VenderBoleto() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Cédula</label>
-                <input
-                  className="w-full border rounded-lg px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  value={cedula}
-                  onChange={e => setCedula(e.target.value)}
-                  placeholder="1234567890"
-                />
-              </div>
+  <label className="block text-sm text-gray-600 mb-1">Cédula</label>
+  <input
+    className={`w-full border rounded-lg px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 ${errorCedula ? 'border-red-500' : ''}`}
+    value={cedula}
+    maxLength={10}
+    onChange={e => {
+      const val = e.target.value.replace(/\D/g, '')
+      setCedula(val)
+      if (val.length === 10) {
+        setErrorCedula(validarCedula(val) ? '' : 'Cédula ecuatoriana inválida')
+      } else {
+        setErrorCedula('')
+      }
+    }}
+    placeholder="1234567890"
+  />
+  {errorCedula && <p className="text-red-500 text-xs mt-1">{errorCedula}</p>}
+</div>
               <div>
                 <label className="block text-sm text-gray-600 mb-1">Tipo de pasajero (aplica a todos)</label>
                 <select
