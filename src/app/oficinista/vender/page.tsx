@@ -13,6 +13,8 @@ interface Ruta {
     numero: string
     placa: string
     capacidad: number
+    asientosVIP: number
+    asientosVIPNumeros?: string
   }
   frecuencia: {
     origen: string
@@ -67,9 +69,25 @@ function validarCedula(cedula: string): boolean {
     DISCAPACITADO: 0.5,
   }
 
+  const esVIP = (num: number): boolean => {
+    if (!rutaSeleccionada) return false;
+    const vipSeatsNumeros = rutaSeleccionada.bus.asientosVIPNumeros;
+    if (vipSeatsNumeros) {
+      const vipSeatsArray = vipSeatsNumeros.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+      return vipSeatsArray.includes(num);
+    }
+    const capacidad = rutaSeleccionada.bus.capacidad;
+    const vipCount = rutaSeleccionada.bus.asientosVIP;
+    return num > capacidad - vipCount;
+  }
+
   const precioBase = rutaSeleccionada ? rutaSeleccionada.precio : 0
   const precioConDescuento = precioBase * (1 - DESCUENTO[tipoPasajero])
-  const precioTotal = precioConDescuento * asientosSeleccionados.length
+  const precioTotal = asientosSeleccionados.reduce((total, asiento) => {
+    const vip = esVIP(asiento)
+    const precioAsiento = vip ? precioConDescuento * 1.2 : precioConDescuento
+    return total + precioAsiento
+  }, 0)
 
   async function buscarRutas() {
     if (!origen || !destino || !fecha) {
@@ -142,6 +160,8 @@ function validarCedula(cedula: string): boolean {
     let errores = 0
     for (const asiento of asientosSeleccionados) {
       try {
+        const vip = esVIP(asiento)
+        const precioAsiento = vip ? precioConDescuento * 1.2 : precioConDescuento
         const res = await fetch('/api/boletos', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -152,7 +172,7 @@ function validarCedula(cedula: string): boolean {
             cedula,
             tipoPasajero,
             metodoPago,
-            precio: precioBase,
+            precio: precioAsiento,
           }),
         })
         if (!res.ok) {
@@ -278,6 +298,7 @@ function validarCedula(cedula: string): boolean {
                     {Array.from({ length: rutaSeleccionada.bus.capacidad || 40 }, (_, i) => i + 1).map(num => {
                       const disponible = rutaSeleccionada.asientosDisponibles!.includes(num)
                       const seleccionado = asientosSeleccionados.includes(num)
+                      const vip = esVIP(num)
                       return (
                         <button
                           key={num}
@@ -286,9 +307,10 @@ function validarCedula(cedula: string): boolean {
                           className={`h-10 rounded text-sm font-medium transition
                             ${!disponible ? 'bg-red-200 text-red-400 cursor-not-allowed' :
                               seleccionado ? 'bg-blue-600 text-white' :
+                              vip ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-2 border-yellow-500' :
                               'bg-green-100 text-green-700 hover:bg-green-200'}`}
                         >
-                          {num}
+                          {num}{vip && '⭐'}
                         </button>
                       )
                     })}
@@ -297,6 +319,7 @@ function validarCedula(cedula: string): boolean {
                     <span className="flex items-center gap-1"><span className="w-3 h-3 bg-green-100 rounded inline-block" /> Disponible</span>
                     <span className="flex items-center gap-1"><span className="w-3 h-3 bg-red-200 rounded inline-block" /> Ocupado</span>
                     <span className="flex items-center gap-1"><span className="w-3 h-3 bg-blue-600 rounded inline-block" /> Seleccionado</span>
+                    <span className="flex items-center gap-1"><span className="w-3 h-3 border-2 border-yellow-500 bg-yellow-100 rounded inline-block" /> VIP (+20%)</span>
                   </div>
                 </div>
                 {asientosSeleccionados.length > 0 && (

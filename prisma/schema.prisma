@@ -31,6 +31,7 @@ model Bus {
   fotoUrl     String?
   capacidad   Int
   asientosVIP Int      @default(0)
+  asientosVIPNumeros String  @default("") // Comma-separated list of VIP seat numbers
   activo      Boolean  @default(true)
   rutas       Ruta[]
 }

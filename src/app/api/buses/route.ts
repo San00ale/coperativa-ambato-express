@@ -19,7 +19,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { numero, placa, chasis, carroceria, marca, capacidad, asientosVIP, fotoUrl } = body
+    const { numero, placa, chasis, carroceria, marca, capacidad, asientosVIP, asientosVIPNumeros, fotoUrl } = body
     
     if (!numero || !placa || !capacidad) {
       return NextResponse.json(
@@ -37,6 +37,7 @@ export async function POST(request: Request) {
         marca: marca || '',
         capacidad: parseInt(capacidad),
         asientosVIP: asientosVIP ? parseInt(asientosVIP) : 0,
+        asientosVIPNumeros: asientosVIPNumeros || '',
         fotoUrl: fotoUrl || null,
         activo: true
       }

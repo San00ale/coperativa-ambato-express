@@ -1,13 +1,41 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+
+    const bus = await prisma.bus.findUnique({
+      where: { id }
+    })
+
+    if (!bus) {
+      return NextResponse.json(
+        { error: 'Bus no encontrado' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json(bus)
+  } catch (error) {
+    console.error('Error al obtener bus:', error)
+    return NextResponse.json(
+      { error: 'Error al obtener el bus' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const body = await request.json()
-    const { numero, placa, chasis, carroceria, marca, capacidad, asientosVIP, fotoUrl } = body
+    const { numero, placa, chasis, carroceria, marca, capacidad, asientosVIP, asientosVIPNumeros, fotoUrl } = body
     const { id } = await params
 
     if (!numero || !placa || !capacidad) {
@@ -27,6 +55,7 @@ export async function PUT(
         marca: marca || '',
         capacidad: parseInt(capacidad),
         asientosVIP: asientosVIP ? parseInt(asientosVIP) : 0,
+        asientosVIPNumeros: asientosVIPNumeros || '',
         fotoUrl: fotoUrl || null,
       }
     })
