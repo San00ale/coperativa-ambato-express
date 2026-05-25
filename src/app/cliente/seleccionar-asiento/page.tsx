@@ -87,7 +87,7 @@ function SeleccionarAsientoContent() {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <p className="text-red-500">{error}</p>
+        <p className="text-red-700">{error}</p>
       </div>
     );
   }
@@ -128,8 +128,7 @@ function SeleccionarAsientoContent() {
               );
             })}
           </div>
-          <div className="flex justify-center gap-6 mt-6 text-sm text-gray-500">
-            <span className="flex items-center gap-1">
+          <div className="flex justify-center gap-6 mt-6 text-sm text-gray-700">            <span className="flex items-center gap-1">
               <span className="w-4 h-4 bg-green-100 rounded inline-block"></span>
               Disponible
             </span>
