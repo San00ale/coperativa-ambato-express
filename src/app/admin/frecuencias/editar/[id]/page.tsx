@@ -20,6 +20,7 @@ interface Frecuencia {
   tipoViaje: 'DIRECTO' | 'CON_PARADAS'
   activa: boolean
   paradas: Parada[]
+  duracion?: number | null   // ← nuevo campo
 }
 
 export default function EditarFrecuenciaPage() {
@@ -33,7 +34,8 @@ export default function EditarFrecuenciaPage() {
     destino: '',
     hora: '',
     tipoViaje: 'DIRECTO' as 'DIRECTO' | 'CON_PARADAS',
-    paradas: ['']
+    paradas: [''],
+    duracion: ''          // ← nuevo campo
   })
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -65,7 +67,8 @@ export default function EditarFrecuenciaPage() {
             tipoViaje: frecuencia.tipoViaje,
             paradas: frecuencia.paradas && frecuencia.paradas.length > 0 
               ? frecuencia.paradas.map((p: Parada) => p.ciudad)
-              : ['']
+              : [''],
+            duracion: frecuencia.duracion?.toString() || ''   // ← cargar duración
           })
         } else {
           setError('Frecuencia no encontrada')
@@ -131,7 +134,8 @@ export default function EditarFrecuenciaPage() {
         destino: formData.destino.trim(),
         hora: formData.hora,
         tipoViaje: formData.tipoViaje,
-        activa: true
+        activa: true,
+        duracion: formData.duracion ? parseInt(formData.duracion) : undefined
       }
 
       const response = await fetch(`/api/frecuencias/${id}`, {
@@ -262,6 +266,24 @@ export default function EditarFrecuenciaPage() {
                   <option value="CON_PARADAS">Con Paradas</option>
                 </select>
               </div>
+            </div>
+
+            {/* Campo Duración (nuevo) */}
+            <div>
+              <label htmlFor="duracion" className="block text-sm font-medium text-gray-700 mb-2">
+                Duración (minutos, opcional)
+              </label>
+              <input
+                type="number"
+                id="duracion"
+                name="duracion"
+                min="0"
+                step="1"
+                value={formData.duracion}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+                placeholder="Ej: 120"
+              />
             </div>
 
             <div className="bg-blue-50 p-4 rounded-md">

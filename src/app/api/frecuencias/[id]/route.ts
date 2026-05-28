@@ -16,7 +16,7 @@ export async function PUT(
 
     const { id } = await params
     const body = await request.json()
-    const { origen, destino, hora, tipoViaje, activa } = body
+    const { origen, destino, hora, tipoViaje, activa, duracion } = body
 
     if (!origen || !destino || !hora) {
       return NextResponse.json(
@@ -32,7 +32,8 @@ export async function PUT(
         destino,
         hora,
         tipoViaje: tipoViaje || 'DIRECTO',
-        activa: activa !== undefined ? activa : true
+        activa: activa !== undefined ? activa : true,
+        duracion: duracion ? parseInt(duracion) : null
       }
     })
 

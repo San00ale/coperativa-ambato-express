@@ -25,7 +25,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { origen, destino, hora, tipoViaje, paradas } = body
+    const { origen, destino, hora, tipoViaje, paradas, duracion } = body
     
     if (!origen || !destino || !hora) {
       return NextResponse.json(
@@ -39,6 +39,7 @@ export async function POST(request: Request) {
         origen,
         destino,
         hora,
+        duracion: duracion ? parseInt(duracion) : null,
         tipoViaje: tipoViaje || 'DIRECTO',
         activa: true,
         paradas: paradas && paradas.length > 0 ? {
