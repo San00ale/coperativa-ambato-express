@@ -123,7 +123,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const pendientes = searchParams.get('pendientes') === 'true'
 
-    let where: any = {}
+    const where: any = {}
 
     if (session.user.role === 'CLIENTE') {
       where.pasajeroId = session.user.id
