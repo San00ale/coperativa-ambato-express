@@ -72,7 +72,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const rol = searchParams.get('rol')
 
-    let where: any = {}
+    const where: any = {}
     if (rol === 'CHOFER' || rol === 'OFICINISTA') {
       where.rol = rol
     } else {
