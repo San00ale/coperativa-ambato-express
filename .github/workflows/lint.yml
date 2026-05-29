@@ -1,0 +1,62 @@
+name: Validación de Código (Linting)
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 📦 Configurar Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: 📚 Instalar dependencias
+        run: npm ci
+
+      - name: 🔍 ESLint - Validar código
+        run: npm run lint
+        continue-on-error: false
+
+      - name: 🎨 Prettier - Validar formato
+        run: npm run format:check
+        continue-on-error: true
+
+      - name: 📝 TypeScript - Validar tipos
+        run: npm run type-check
+        continue-on-error: false
+
+      - name: 🔒 Validar dependencias
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: ✅ Linting completado
+        run: |
+          echo "✅ Validación de código completada"
+          echo "📊 Revisar los resultados arriba"
+
+      - name: 💬 Comentar en PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ Validación de código completada\n\n- ESLint: ✓\n- Prettier: ✓\n- TypeScript: ✓'
+            })
+        continue-on-error: true

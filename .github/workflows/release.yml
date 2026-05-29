@@ -1,0 +1,107 @@
+name: Release Automático
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 📦 Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: 📚 Instalar dependencias
+        run: npm ci
+
+      - name: 🏗️ Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:3000' }}
+
+      - name: 📝 Extraer versión de tag
+        id: tag_name
+        run: |
+          echo "SOURCE_TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: 📋 Generar notas de release
+        id: release_notes
+        run: |
+          VERSION="${{ steps.tag_name.outputs.VERSION }}"
+          echo "Extrayendo cambios para versión: $VERSION"
+          
+          # Buscar entrada en CHANGELOG.md
+          if grep -q "## \[$VERSION\]" CHANGELOG.md; then
+            echo "found=true" >> $GITHUB_OUTPUT
+            # Extraer contenido del changelog
+            awk "/## \[$VERSION\]/,/^## \[/" CHANGELOG.md | head -n -1 > release_notes.txt
+            cat release_notes.txt
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+            echo "Release $VERSION" > release_notes.txt
+          fi
+
+      - name: 🏷️ Crear Release en GitHub
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.tag_name.outputs.SOURCE_TAG }}
+          release_name: Release ${{ steps.tag_name.outputs.VERSION }}
+          body_path: release_notes.txt
+          draft: false
+          prerelease: ${{ contains(steps.tag_name.outputs.VERSION, 'alpha') || contains(steps.tag_name.outputs.VERSION, 'beta') }}
+
+      - name: 📦 Crear artifact del release
+        run: |
+          mkdir -p release
+          cp -r .next release/
+          cp -r public release/ || true
+          cp package.json release/
+          cp package-lock.json release/
+          cp README.md release/
+          cp CHANGELOG.md release/
+          cp LICENSE release/
+          cd release && zip -r ../cooperativa-ambato-express-${{ steps.tag_name.outputs.VERSION }}.zip . && cd ..
+
+      - name: 📤 Subir artifact a release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: cooperativa-ambato-express-${{ steps.tag_name.outputs.VERSION }}.zip
+          asset_name: cooperativa-ambato-express-${{ steps.tag_name.outputs.VERSION }}.zip
+          tag: ${{ steps.tag_name.outputs.SOURCE_TAG }}
+          overwrite: true
+
+      - name: 📧 Notificar release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event_type: 'release-published',
+              client_payload: {
+                version: '${{ steps.tag_name.outputs.VERSION }}',
+                tag: '${{ steps.tag_name.outputs.SOURCE_TAG }}'
+              }
+            })
+        continue-on-error: true
+
+      - name: ✅ Release completado
+        run: |
+          echo "✅ Release ${{ steps.tag_name.outputs.VERSION }} creado exitosamente"
+          echo "📦 Artifact: cooperativa-ambato-express-${{ steps.tag_name.outputs.VERSION }}.zip"
+          echo "🔗 URL: https://github.com/${{ github.repository }}/releases/tag/${{ steps.tag_name.outputs.SOURCE_TAG }}"

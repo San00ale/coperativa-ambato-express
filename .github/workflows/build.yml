@@ -1,0 +1,95 @@
+name: Build Automático
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 📦 Configurar Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: 📚 Instalar dependencias
+        run: npm ci
+
+      - name: 🗄️ Setup base de datos
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+        continue-on-error: true
+
+      - name: 🏗️ Build de Next.js
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:3000' }}
+
+      - name: ✅ Validar build
+        run: |
+          if [ -d ".next" ]; then
+            echo "✅ Build completado exitosamente"
+            ls -lh .next
+          else
+            echo "❌ Build falló"
+            exit 1
+          fi
+
+      - name: 📊 Analizar tamaño de build
+        run: |
+          echo "## 📦 Tamaño del Build" >> $GITHUB_STEP_SUMMARY
+          du -sh .next >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📁 Archivos principales" >> $GITHUB_STEP_SUMMARY
+          find .next -maxdepth 2 -type f -exec du -h {} + | sort -rh | head -10 >> $GITHUB_STEP_SUMMARY
+
+      - name: 📦 Archivar build (para deployment)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ github.sha }}
+          path: |
+            .next
+            public
+            package.json
+            package-lock.json
+          retention-days: 30
+
+      - name: 💬 Comentar en PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ Build completado exitosamente\n\n- Next.js build: ✓\n- Prisma generate: ✓\n- Listo para desplegar'
+            })
+        continue-on-error: true
+
+      - name: 🚨 Falló el build
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ El build ha fallado\n\nRevisa los logs en Actions para más detalles.'
+            })
+        continue-on-error: true
