@@ -403,12 +403,23 @@ function validarCedula(cedula: string): boolean {
                 <p>Hora: <span className="font-medium">{rutaSeleccionada.frecuencia.hora}</span></p>
                 <p>Bus: <span className="font-medium">{rutaSeleccionada.bus.numero} ({rutaSeleccionada.bus.placa})</span></p>
                 <p>Asientos: <span className="font-medium">{asientosSeleccionados.join(', ')}</span></p>
-                <p>Cantidad: <span className="font-medium">{asientosSeleccionados.length}</span></p>
-                <p>Precio unitario: <span className="font-medium">${precioBase.toFixed(2)}</span></p>
-                {DESCUENTO[tipoPasajero] > 0 && (
-                  <p>Descuento: <span className="font-medium text-green-600">-{DESCUENTO[tipoPasajero] * 100}% por pasajero</span></p>
-                )}
-                <p className="text-lg font-bold text-blue-900 pt-1">Total: ${precioTotal.toFixed(2)}</p>
+                // DESPUÉS:
+<p>Cantidad: <span className="font-medium">{asientosSeleccionados.length}</span></p>
+{DESCUENTO[tipoPasajero] > 0 && (
+  <p>Descuento: <span className="font-medium text-green-600">-{DESCUENTO[tipoPasajero] * 100}% por pasajero</span></p>
+)}
+<div className="border-t border-blue-200 pt-2 mt-2 space-y-1">
+  {asientosSeleccionados.map(asiento => {
+    const vip = esVIP(asiento)
+    const precio = vip ? precioConDescuento * 1.2 : precioConDescuento
+    return (
+      <p key={asiento}>
+        Asiento {asiento}{vip ? ' ⭐ VIP' : ''}: <span className="font-medium">${precio.toFixed(2)}</span>
+      </p>
+    )
+  })}
+</div>
+<p className="text-lg font-bold text-blue-900 pt-1">Total: ${precioTotal.toFixed(2)}</p>
               </div>
             </div>
 
