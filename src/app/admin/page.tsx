@@ -11,6 +11,12 @@ interface Boleto {
   precio: number
   estado: string
   createdAt: string
+  ruta: {
+    frecuencia: {
+      origen: string
+      destino: string
+    }
+  }
 }
 
 export default function AdminPage() {
