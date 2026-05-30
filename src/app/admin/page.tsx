@@ -52,6 +52,16 @@ export default function AdminPage() {
     cargarEstadisticas()
   }, [session, router])
 
+  useEffect(() => {
+    if (!session) {
+      router.push('/login')
+    }
+  }, [session, router])
+
+  if (!session) {
+    return null
+  }
+
   const cargarEstadisticas = async () => {
     try {
       const response = await fetch('/api/boletos')
