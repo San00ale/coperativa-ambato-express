@@ -40,6 +40,7 @@ export default function AdminPage() {
   const [topRutas, setTopRutas] = useState<RutaTop[]>([])
   const [totalBoletosSemana, setTotalBoletosSemana] = useState<number>(0)
   const [totalIngresosSemana, setTotalIngresosSemana] = useState<number>(0)
+  const [promedioDiario, setPromedioDiario] = useState<number>(0)
   const [loadingEstadisticas, setLoadingEstadisticas] = useState(true)
 
   useEffect(() => {
@@ -120,6 +121,7 @@ export default function AdminPage() {
 
         setTotalBoletosSemana(boletos7Dias.length)
         setTotalIngresosSemana(boletos7Dias.reduce((total, boleto) => total + boleto.precio, 0))
+        setPromedioDiario(Math.round(boletos7Dias.length / 7))
       }
     } catch (error) {
       console.error('Error al cargar estadísticas:', error)
@@ -241,6 +243,9 @@ export default function AdminPage() {
                   </p>
                   <p className="text-gray-900 font-semibold">
                     Ingresos semanales: ${totalIngresosSemana.toFixed(2)}
+                  </p>
+                  <p className="text-gray-900 font-semibold">
+                    Promedio diario: {promedioDiario} boletos
                   </p>
                 </>
               )}
