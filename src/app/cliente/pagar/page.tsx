@@ -4,8 +4,6 @@ import { Suspense } from "react";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-const PRECIO_BASE = 5.00;
-
 const DESCUENTOS: Record<string, number> = {
   ADULTO: 0,
   NINO: 0.5,
@@ -32,12 +30,15 @@ interface Ruta {
   frecuencia: Frecuencia;
 }
 
-// Componente interno que usa useSearchParams (debe estar envuelto en Suspense)
 function PagarContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const rutaId = searchParams.get("rutaId");
   const asiento = searchParams.get("asiento");
+  const precioParam = searchParams.get("precio");
+
+  // Leer precio desde URL (ya incluye recargo VIP si aplica)
+  const precioBase = precioParam ? parseFloat(precioParam) : 0;
 
   const [nombre, setNombre] = useState("");
   const [cedula, setCedula] = useState("");
@@ -49,7 +50,8 @@ function PagarContent() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
 
-  const precioFinal = PRECIO_BASE * (1 - DESCUENTOS[tipoPasajero]);
+  // Aplicar descuento por tipo de pasajero sobre el precio recibido (con recargo VIP ya incluido)
+  const precioFinal = precioBase * (1 - DESCUENTOS[tipoPasajero]);
 
   useEffect(() => {
     if (!rutaId) return;
@@ -112,7 +114,7 @@ function PagarContent() {
         body: JSON.stringify({
           rutaId,
           asiento,
-          precio: PRECIO_BASE,
+          precio: precioFinal,
           tipoPasajero,
           metodoPago: "TRANSFERENCIA",
           comprobanteUrl,
@@ -128,8 +130,9 @@ function PagarContent() {
 
       router.push("/cliente/mis-compras");
 
-    } catch (err: any) {
-      setError(err.message || "Error inesperado. Intenta de nuevo.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Error inesperado. Intenta de nuevo.";
+      setError(message);
     } finally {
       setEnviando(false);
     }
@@ -173,7 +176,7 @@ function PagarContent() {
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               placeholder="Ej: Juan Pérez"
-              className="w-full border border-gray-300 rounded-md p-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"  
+              className="w-full border border-gray-300 rounded-md p-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -187,7 +190,7 @@ function PagarContent() {
               onChange={(e) => setCedula(e.target.value)}
               placeholder="Ej: 1804123456"
               maxLength={10}
-              className="w-full border border-gray-300 rounded-md p-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"  
+              className="w-full border border-gray-300 rounded-md p-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -213,11 +216,19 @@ function PagarContent() {
             </div>
           </div>
 
-          <div className="bg-gray-50 rounded-md p-3 flex justify-between items-center">
-            <span className="text-sm text-gray-600">Precio a pagar:</span>
-            <span className="text-lg font-bold text-green-600">
-              ${precioFinal.toFixed(2)}
-            </span>
+          <div className="bg-gray-50 rounded-md p-3 space-y-1">
+            {precioBase !== precioFinal && (
+              <div className="flex justify-between items-center text-sm text-gray-500">
+                <span>Precio base:</span>
+                <span>${precioBase.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Precio a pagar:</span>
+              <span className="text-lg font-bold text-green-600">
+                ${precioFinal.toFixed(2)}
+              </span>
+            </div>
           </div>
 
           <div>
@@ -239,7 +250,7 @@ function PagarContent() {
             )}
           </div>
 
-            {error && <p className="text-red-700 text-sm">{error}</p>}
+          {error && <p className="text-red-700 text-sm">{error}</p>}
 
           <button
             onClick={handleConfirmar}
@@ -254,7 +265,6 @@ function PagarContent() {
   );
 }
 
-// Componente principal envuelto en Suspense (requerido por Next.js para useSearchParams)
 export default function PagarPage() {
   return (
     <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Cargando...</div>}>
