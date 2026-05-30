@@ -291,19 +291,35 @@ export default function AdminPage() {
         ) : topRutas.length === 0 ? (
           <p className="text-gray-500 text-sm">No hay ventas en los últimos 7 días</p>
         ) : (
-          <div className="space-y-3">
-            {topRutas.map((ruta, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <span className="text-lg font-bold text-gray-700">#{index + 1}</span>
-                  <span className="text-sm text-gray-900">
-                    {ruta.origen} → {ruta.destino}
-                  </span>
+          <>
+            {topRutas.length > 0 && (
+              <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-center space-x-2 mb-2">
+                  <span className="text-2xl">🏆</span>
+                  <h3 className="font-semibold text-gray-900">Ruta más vendida</h3>
                 </div>
-                <span className="text-sm font-semibold text-gray-900">{ruta.cantidad} boletos</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-900">
+                    {topRutas[0].origen} → {topRutas[0].destino}
+                  </span>
+                  <span className="text-sm font-semibold text-gray-900">{topRutas[0].cantidad} boletos</span>
+                </div>
               </div>
-            ))}
-          </div>
+            )}
+            <div className="space-y-3">
+              {topRutas.map((ruta, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-lg font-bold text-gray-700">#{index + 1}</span>
+                    <span className="text-sm text-gray-900">
+                      {ruta.origen} → {ruta.destino}
+                    </span>
+                  </div>
+                  <span className="text-sm font-semibold text-gray-900">{ruta.cantidad} boletos</span>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>
