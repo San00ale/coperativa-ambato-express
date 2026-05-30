@@ -306,7 +306,9 @@ const calcularHoraLlegada = (horaSalida: string, duracionMinutos: number | null)
                     </div>
                   </div>
 
-                {/* Información Adicional */}
+                  </div>
+
+                  {/* Información Adicional */}
                 <div className="lg:col-span-1 space-y-4">
                   {/* Capacidad */}
                   <div className="bg-gray-50 p-4 rounded-lg">
