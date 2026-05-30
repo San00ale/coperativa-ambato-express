@@ -84,10 +84,13 @@ export default function VenderEnRutaPage() {
         }
 
         const rutas = await response.json()
+        const rutasActivas = rutas.filter(
+          (r: any) => !r.completada && r.estado !== 'completada'
+        )
 
-        // Si hay rutas, seleccionar la primera (la ruta actual del chofer)
-        if (rutas.length > 0) {
-          setRuta(rutas[0])
+        // Si hay rutas activas, seleccionar la primera (la ruta actual del chofer)
+        if (rutasActivas.length > 0) {
+          setRuta(rutasActivas[0])
         } else {
           setError('No tienes rutas asignadas para hoy')
         }
