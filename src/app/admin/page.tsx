@@ -206,8 +206,8 @@ export default function AdminPage() {
         <h2 className="text-lg font-semibold mb-4 text-gray-900">Gestión del Sistema</h2>
         <div className="space-y-4">
           <div className="border-l-4 border-green-500 pl-4">
-            <h3 className="font-medium text-gray-900">Ventas</h3>
-            <p className="text-gray-600 text-sm mt-1">Reportes y estadísticas</p>
+            <h3 className="font-medium text-gray-900">Ventas de Hoy</h3>
+            <p className="text-gray-600 text-sm mt-1">Reportes y estadísticas del día</p>
             <div className="mt-3 space-y-2">
               {loadingEstadisticas ? (
                 <p className="text-gray-500 text-sm">Cargando estadísticas...</p>
@@ -224,6 +224,59 @@ export default function AdminPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-6 mt-8">
+        <h2 className="text-lg font-semibold mb-4 text-gray-900">Estadísticas de los Últimos 7 Días</h2>
+        {loadingEstadisticas ? (
+          <p className="text-gray-500 text-sm">Cargando estadísticas...</p>
+        ) : estadisticas7Dias.length === 0 || estadisticas7Dias.every(dia => dia.cantidad === 0) ? (
+          <p className="text-gray-500 text-sm">No hay ventas en los últimos 7 días</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Boletos</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ingresos</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {estadisticas7Dias.map((dia, index) => (
+                  <tr key={index}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{dia.fecha}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{dia.cantidad}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${dia.ingresos.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-6 mt-8">
+        <h2 className="text-lg font-semibold mb-4 text-gray-900">Top 3 Rutas Más Vendidas</h2>
+        {loadingEstadisticas ? (
+          <p className="text-gray-500 text-sm">Cargando estadísticas...</p>
+        ) : topRutas.length === 0 ? (
+          <p className="text-gray-500 text-sm">No hay ventas en los últimos 7 días</p>
+        ) : (
+          <div className="space-y-3">
+            {topRutas.map((ruta, index) => (
+              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <span className="text-lg font-bold text-gray-700">#{index + 1}</span>
+                  <span className="text-sm text-gray-900">
+                    {ruta.origen} → {ruta.destino}
+                  </span>
+                </div>
+                <span className="text-sm font-semibold text-gray-900">{ruta.cantidad} boletos</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
