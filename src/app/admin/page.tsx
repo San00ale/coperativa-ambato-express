@@ -68,6 +68,53 @@ export default function AdminPage() {
         
         setBoletosHoy(boletosFiltrados.length)
         setIngresosHoy(boletosFiltrados.reduce((total, boleto) => total + boleto.precio, 0))
+
+        const hace7Dias = new Date()
+        hace7Dias.setDate(hace7Dias.getDate() - 7)
+        hace7Dias.setHours(0, 0, 0, 0)
+
+        const boletos7Dias = data.filter(boleto => {
+          const fechaBoleto = new Date(boleto.createdAt)
+          return (
+            fechaBoleto >= hace7Dias &&
+            (boleto.estado === 'APROBADO' || boleto.estado === 'ABORDADO')
+          )
+        })
+
+        const estadisticasPorDia: EstadisticaDia[] = []
+        for (let i = 6; i >= 0; i--) {
+          const fecha = new Date()
+          fecha.setDate(fecha.getDate() - i)
+          fecha.setHours(0, 0, 0, 0)
+          
+          const boletosDelDia = boletos7Dias.filter(boleto => {
+            const fechaBoleto = new Date(boleto.createdAt)
+            fechaBoleto.setHours(0, 0, 0, 0)
+            return fechaBoleto.getTime() === fecha.getTime()
+          })
+          
+          estadisticasPorDia.push({
+            fecha: fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' }),
+            cantidad: boletosDelDia.length,
+            ingresos: boletosDelDia.reduce((total, boleto) => total + boleto.precio, 0)
+          })
+        }
+        setEstadisticas7Dias(estadisticasPorDia)
+
+        const rutasContador: { [key: string]: number } = {}
+        boletos7Dias.forEach(boleto => {
+          const rutaKey = `${boleto.ruta.frecuencia.origen} → ${boleto.ruta.frecuencia.destino}`
+          rutasContador[rutaKey] = (rutasContador[rutaKey] || 0) + 1
+        })
+
+        const topRutasArray: RutaTop[] = Object.entries(rutasContador)
+          .map(([ruta, cantidad]) => {
+            const [origen, destino] = ruta.split(' → ')
+            return { origen, destino, cantidad }
+          })
+          .sort((a, b) => b.cantidad - a.cantidad)
+          .slice(0, 3)
+        setTopRutas(topRutasArray)
       }
     } catch (error) {
       console.error('Error al cargar estadísticas:', error)
