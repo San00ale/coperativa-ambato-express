@@ -171,6 +171,23 @@ export default function MisRutasPage() {
   const handleFechaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFechaSeleccionada(e.target.value)
   }
+// ← NUEVO: Calcular hora de llegada estimada (Issue #103)
+const calcularHoraLlegada = (horaSalida: string, duracionMinutos: number | null): string | null => {
+  if (!duracionMinutos) return null
+  
+  try {
+    const [horas, minutos] = horaSalida.split(':').map(Number)
+    let minutosTotales = horas * 60 + minutos
+    minutosTotales += duracionMinutos
+    
+    const horasLlegada = Math.floor(minutosTotales / 60) % 24
+    const minutosLlegada = minutosTotales % 60
+    
+    return `${String(horasLlegada).padStart(2, '0')}:${String(minutosLlegada).padStart(2, '0')}`
+  } catch (error) {
+    return null
+  }
+}
 
   // ← NUEVO: Obtener conteos por estado
   const totalRutas = rutas.length
