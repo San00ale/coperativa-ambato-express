@@ -27,6 +27,7 @@ interface Frecuencia {
 interface Ruta {
   id: string;
   fecha: string;
+  precio: number;
   frecuencia: Frecuencia;
 }
 
@@ -155,9 +156,16 @@ function PagarContent() {
 
         {ruta && (
           <div className="bg-white rounded-lg shadow p-4 mb-6">
-            <p className="font-semibold text-gray-800">
-              {ruta.frecuencia.origen} → {ruta.frecuencia.destino}
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="font-semibold text-gray-800">
+                {ruta.frecuencia.origen} → {ruta.frecuencia.destino}
+              </p>
+              {precioBase > ruta.precio && (
+                <span className="text-xs font-medium px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 border border-yellow-300">
+                  ⭐ Asiento VIP
+                </span>
+              )}
+            </div>
             <p className="text-sm text-gray-500 mt-1">
               🕐 {ruta.frecuencia.hora} &nbsp;|&nbsp;
               💺 Asiento {asiento} &nbsp;|&nbsp;
@@ -165,7 +173,7 @@ function PagarContent() {
             </p>
           </div>
         )}
-
+        
         <div className="bg-white rounded-lg shadow p-6 space-y-5">
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1">
