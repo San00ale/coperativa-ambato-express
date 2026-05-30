@@ -41,6 +41,7 @@ export default function AdminPage() {
   const [totalBoletosSemana, setTotalBoletosSemana] = useState<number>(0)
   const [totalIngresosSemana, setTotalIngresosSemana] = useState<number>(0)
   const [promedioDiario, setPromedioDiario] = useState<number>(0)
+  const [mejorDia, setMejorDia] = useState<EstadisticaDia | null>(null)
   const [loadingEstadisticas, setLoadingEstadisticas] = useState(true)
 
   useEffect(() => {
@@ -122,6 +123,10 @@ export default function AdminPage() {
         setTotalBoletosSemana(boletos7Dias.length)
         setTotalIngresosSemana(boletos7Dias.reduce((total, boleto) => total + boleto.precio, 0))
         setPromedioDiario(Math.round(boletos7Dias.length / 7))
+
+        const diaConMasIngresos = estadisticasPorDia.reduce((max, dia) => 
+          dia.ingresos > max.ingresos ? dia : max, estadisticasPorDia[0])
+        setMejorDia(diaConMasIngresos)
       }
     } catch (error) {
       console.error('Error al cargar estadísticas:', error)
@@ -261,26 +266,40 @@ export default function AdminPage() {
         ) : estadisticas7Dias.every(dia => dia.cantidad === 0) ? (
           <p className="text-gray-500 text-sm">No hay ventas en los últimos 7 días</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Boletos</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ingresos</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {estadisticas7Dias.map((dia, index) => (
-                  <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{dia.fecha}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{dia.cantidad}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${dia.ingresos.toFixed(2)}</td>
+          <>
+            {mejorDia && mejorDia.ingresos > 0 && (
+              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center space-x-2 mb-2">
+                  <span className="text-2xl">📈</span>
+                  <h3 className="font-semibold text-gray-900">Mejor día</h3>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-900">{mejorDia.fecha}</span>
+                  <span className="text-sm font-semibold text-gray-900">${mejorDia.ingresos.toFixed(2)}</span>
+                </div>
+              </div>
+            )}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Boletos</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ingresos</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {estadisticas7Dias.map((dia, index) => (
+                    <tr key={index}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{dia.fecha}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{dia.cantidad}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${dia.ingresos.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
