@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import AdminHeader from '@/components/AdminHeader'
+import SeatSelector from '@/components/SeatSelector'
 
 interface Bus {
   id: string
@@ -15,6 +16,7 @@ interface Bus {
   marca: string
   capacidad: number
   asientosVIP: number
+  asientosVIPNumeros?: string
   fotoUrl?: string | null
   activo: boolean
 }
@@ -38,8 +40,10 @@ export default function BusesPage() {
     marca: '',
     capacidad: '',
     asientosVIP: '',
+    asientosVIPNumeros: '',
     fotoUrl: ''
   })
+  const [selectedVIPSeats, setSelectedVIPSeats] = useState<number[]>([])
 
   useEffect(() => {
     if (session?.user?.role !== 'ADMIN') {
@@ -74,8 +78,10 @@ export default function BusesPage() {
       marca: '',
       capacidad: '',
       asientosVIP: '',
+      asientosVIPNumeros: '',
       fotoUrl: ''
     })
+    setSelectedVIPSeats([])
     setError('')
     setSuccess('')
   }
@@ -87,6 +93,10 @@ export default function BusesPage() {
 
   const handleEditar = (bus: Bus) => {
     setBusSeleccionado(bus)
+    const vipSeatsArray = bus.asientosVIPNumeros 
+      ? bus.asientosVIPNumeros.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n))
+      : []
+    setSelectedVIPSeats(vipSeatsArray)
     setFormData({
       numero: bus.numero,
       placa: bus.placa,
@@ -95,6 +105,7 @@ export default function BusesPage() {
       marca: bus.marca,
       capacidad: bus.capacidad.toString(),
       asientosVIP: bus.asientosVIP.toString(),
+      asientosVIPNumeros: bus.asientosVIPNumeros || '',
       fotoUrl: bus.fotoUrl || ''
     })
     setShowEditarModal(true)
@@ -114,7 +125,8 @@ export default function BusesPage() {
         body: JSON.stringify({
           ...formData,
           capacidad: parseInt(formData.capacidad),
-          asientosVIP: formData.asientosVIP ? parseInt(formData.asientosVIP) : 0,
+          asientosVIP: selectedVIPSeats.length,
+          asientosVIPNumeros: selectedVIPSeats.sort((a, b) => a - b).join(','),
         }),
       })
       if (response.ok) {
@@ -213,7 +225,7 @@ export default function BusesPage() {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button onClick={() => handleEditar(bus)} className="text-indigo-600 hover:text-indigo-900 mr-4">Editar</button>
+                  <Link href={`/admin/buses/editar/${bus.id}`} className="text-indigo-600 hover:text-indigo-900 mr-4">Editar</Link>
                   {bus.activo ? (
                     <button onClick={() => handleEliminar(bus)} className="text-red-600 hover:text-red-900">Desactivar</button>
                   ) : (
@@ -255,12 +267,31 @@ export default function BusesPage() {
               </div>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Capacidad *</label>
-                <input type="number" required min="1" value={formData.capacidad} onChange={(e) => setFormData({ ...formData, capacidad: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded text-gray-900" />
+                <input 
+                  type="number" 
+                  required 
+                  min="1" 
+                  value={formData.capacidad} 
+                  onChange={(e) => {
+                    setFormData({ ...formData, capacidad: e.target.value })
+                    setSelectedVIPSeats([])
+                  }} 
+                  className="w-full px-3 py-2 border border-gray-300 rounded text-gray-900" 
+                />
               </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Asientos VIP</label>
-                <input type="number" min="0" value={formData.asientosVIP} onChange={(e) => setFormData({ ...formData, asientosVIP: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded text-gray-900" />
-              </div>
+              {formData.capacidad && parseInt(formData.capacidad) > 0 && (
+                <SeatSelector
+                  capacidad={parseInt(formData.capacidad)}
+                  selectedVIPSeats={selectedVIPSeats}
+                  onSeatToggle={(seatNumber) => {
+                    setSelectedVIPSeats(prev => 
+                      prev.includes(seatNumber) 
+                        ? prev.filter(s => s !== seatNumber)
+                        : [...prev, seatNumber]
+                    )
+                  }}
+                />
+              )}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Foto URL</label>
                 <input type="url" value={formData.fotoUrl} onChange={(e) => setFormData({ ...formData, fotoUrl: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded text-gray-900" />
@@ -302,12 +333,31 @@ export default function BusesPage() {
               </div>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Capacidad *</label>
-                <input type="number" required min="1" value={formData.capacidad} onChange={(e) => setFormData({ ...formData, capacidad: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded text-gray-900" />
+                <input 
+                  type="number" 
+                  required 
+                  min="1" 
+                  value={formData.capacidad} 
+                  onChange={(e) => {
+                    setFormData({ ...formData, capacidad: e.target.value })
+                    setSelectedVIPSeats([])
+                  }} 
+                  className="w-full px-3 py-2 border border-gray-300 rounded text-gray-900" 
+                />
               </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Asientos VIP</label>
-                <input type="number" min="0" value={formData.asientosVIP} onChange={(e) => setFormData({ ...formData, asientosVIP: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded text-gray-900" />
-              </div>
+              {formData.capacidad && parseInt(formData.capacidad) > 0 && (
+                <SeatSelector
+                  capacidad={parseInt(formData.capacidad)}
+                  selectedVIPSeats={selectedVIPSeats}
+                  onSeatToggle={(seatNumber) => {
+                    setSelectedVIPSeats(prev => 
+                      prev.includes(seatNumber) 
+                        ? prev.filter(s => s !== seatNumber)
+                        : [...prev, seatNumber]
+                    )
+                  }}
+                />
+              )}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Foto URL</label>
                 <input type="url" value={formData.fotoUrl} onChange={(e) => setFormData({ ...formData, fotoUrl: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded text-gray-900" />

@@ -105,7 +105,7 @@ export default function EscanearPage() {
 
         await qr.start(
           { facingMode: 'environment' },
-          { fps: 10, qrbox: { width: 500, height: 500 } },
+          { fps: 10, qrbox: { width: 510, height: 510 } },
           onScanSuccess,
           onScanFailure
         )

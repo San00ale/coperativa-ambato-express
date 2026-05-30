@@ -165,7 +165,7 @@ function PagarContent() {
 
         <div className="bg-white rounded-lg shadow p-6 space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Nombre completo
             </label>
             <input
@@ -178,7 +178,7 @@ function PagarContent() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Cédula
             </label>
             <input
@@ -192,7 +192,7 @@ function PagarContent() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Tipo de pasajero
             </label>
             <div className="grid grid-cols-2 gap-2">
@@ -221,7 +221,7 @@ function PagarContent() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-900 mb-1">
               Comprobante de transferencia
             </label>
             <input
@@ -239,7 +239,7 @@ function PagarContent() {
             )}
           </div>
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+            {error && <p className="text-red-700 text-sm">{error}</p>}
 
           <button
             onClick={handleConfirmar}

@@ -13,6 +13,8 @@ interface Ruta {
     numero: string
     placa: string
     capacidad: number
+    asientosVIP: number
+    asientosVIPNumeros?: string
   }
   frecuencia: {
     origen: string
@@ -43,7 +45,23 @@ export default function VenderBoleto() {
   const [cargando, setCargando] = useState(false)
   const [mensaje, setMensaje] = useState('')
   const [paso, setPaso] = useState(1)
+  const [errorCedula, setErrorCedula] = useState('')
 
+function validarCedula(cedula: string): boolean {
+  if (!/^\d{10}$/.test(cedula)) return false
+  const provincia = parseInt(cedula.substring(0, 2))
+  if (provincia < 1 || provincia > 24) return false
+  if (parseInt(cedula[2]) >= 6) return false
+  const coeficientes = [2, 1, 2, 1, 2, 1, 2, 1, 2]
+  let suma = 0
+  for (let i = 0; i < 9; i++) {
+    let val = parseInt(cedula[i]) * coeficientes[i]
+    if (val >= 10) val -= 9
+    suma += val
+  }
+  const digitoVerificador = suma % 10 === 0 ? 0 : 10 - (suma % 10)
+  return digitoVerificador === parseInt(cedula[9])
+}
   const DESCUENTO: Record<TipoPasajero, number> = {
     ADULTO: 0,
     NINO: 0.5,
@@ -51,9 +69,25 @@ export default function VenderBoleto() {
     DISCAPACITADO: 0.5,
   }
 
+  const esVIP = (num: number): boolean => {
+    if (!rutaSeleccionada) return false;
+    const vipSeatsNumeros = rutaSeleccionada.bus.asientosVIPNumeros;
+    if (vipSeatsNumeros) {
+      const vipSeatsArray = vipSeatsNumeros.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+      return vipSeatsArray.includes(num);
+    }
+    const capacidad = rutaSeleccionada.bus.capacidad;
+    const vipCount = rutaSeleccionada.bus.asientosVIP;
+    return num > capacidad - vipCount;
+  }
+
   const precioBase = rutaSeleccionada ? rutaSeleccionada.precio : 0
   const precioConDescuento = precioBase * (1 - DESCUENTO[tipoPasajero])
-  const precioTotal = precioConDescuento * asientosSeleccionados.length
+  const precioTotal = asientosSeleccionados.reduce((total, asiento) => {
+    const vip = esVIP(asiento)
+    const precioAsiento = vip ? precioConDescuento * 1.2 : precioConDescuento
+    return total + precioAsiento
+  }, 0)
 
   async function buscarRutas() {
     if (!origen || !destino || !fecha) {
@@ -111,17 +145,23 @@ export default function VenderBoleto() {
     }
   }
 
-  async function emitirBoletos() {
-    if (!rutaSeleccionada || asientosSeleccionados.length === 0 || !nombre || !cedula) {
-      setMensaje('Selecciona al menos un asiento y completa los datos del pasajero')
-      return
-    }
+ async function emitirBoletos() {
+  if (!rutaSeleccionada || asientosSeleccionados.length === 0 || !nombre || !cedula) {
+    setMensaje('Selecciona al menos un asiento y completa los datos del pasajero')
+    return
+  }
+  if (!validarCedula(cedula)) {
+    setMensaje('La cédula ingresada no es válida')
+    return
+  }
     setCargando(true)
     setMensaje('')
 
     let errores = 0
     for (const asiento of asientosSeleccionados) {
       try {
+        const vip = esVIP(asiento)
+        const precioAsiento = vip ? precioConDescuento * 1.2 : precioConDescuento
         const res = await fetch('/api/boletos', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -132,7 +172,7 @@ export default function VenderBoleto() {
             cedula,
             tipoPasajero,
             metodoPago,
-            precio: precioBase,
+            precio: precioAsiento,
           }),
         })
         if (!res.ok) {
@@ -258,6 +298,7 @@ export default function VenderBoleto() {
                     {Array.from({ length: rutaSeleccionada.bus.capacidad || 40 }, (_, i) => i + 1).map(num => {
                       const disponible = rutaSeleccionada.asientosDisponibles!.includes(num)
                       const seleccionado = asientosSeleccionados.includes(num)
+                      const vip = esVIP(num)
                       return (
                         <button
                           key={num}
@@ -266,9 +307,10 @@ export default function VenderBoleto() {
                           className={`h-10 rounded text-sm font-medium transition
                             ${!disponible ? 'bg-red-200 text-red-400 cursor-not-allowed' :
                               seleccionado ? 'bg-blue-600 text-white' :
+                              vip ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-2 border-yellow-500' :
                               'bg-green-100 text-green-700 hover:bg-green-200'}`}
                         >
-                          {num}
+                          {num}{vip && '⭐'}
                         </button>
                       )
                     })}
@@ -277,6 +319,7 @@ export default function VenderBoleto() {
                     <span className="flex items-center gap-1"><span className="w-3 h-3 bg-green-100 rounded inline-block" /> Disponible</span>
                     <span className="flex items-center gap-1"><span className="w-3 h-3 bg-red-200 rounded inline-block" /> Ocupado</span>
                     <span className="flex items-center gap-1"><span className="w-3 h-3 bg-blue-600 rounded inline-block" /> Seleccionado</span>
+                    <span className="flex items-center gap-1"><span className="w-3 h-3 border-2 border-yellow-500 bg-yellow-100 rounded inline-block" /> VIP (+20%)</span>
                   </div>
                 </div>
                 {asientosSeleccionados.length > 0 && (
@@ -309,14 +352,24 @@ export default function VenderBoleto() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Cédula</label>
-                <input
-                  className="w-full border rounded-lg px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  value={cedula}
-                  onChange={e => setCedula(e.target.value)}
-                  placeholder="1234567890"
-                />
-              </div>
+  <label className="block text-sm text-gray-600 mb-1">Cédula</label>
+  <input
+    className={`w-full border rounded-lg px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 ${errorCedula ? 'border-red-500' : ''}`}
+    value={cedula}
+    maxLength={10}
+    onChange={e => {
+      const val = e.target.value.replace(/\D/g, '')
+      setCedula(val)
+      if (val.length === 10) {
+        setErrorCedula(validarCedula(val) ? '' : 'Cédula ecuatoriana inválida')
+      } else {
+        setErrorCedula('')
+      }
+    }}
+    placeholder="1234567890"
+  />
+  {errorCedula && <p className="text-red-500 text-xs mt-1">{errorCedula}</p>}
+</div>
               <div>
                 <label className="block text-sm text-gray-600 mb-1">Tipo de pasajero (aplica a todos)</label>
                 <select
@@ -350,12 +403,23 @@ export default function VenderBoleto() {
                 <p>Hora: <span className="font-medium">{rutaSeleccionada.frecuencia.hora}</span></p>
                 <p>Bus: <span className="font-medium">{rutaSeleccionada.bus.numero} ({rutaSeleccionada.bus.placa})</span></p>
                 <p>Asientos: <span className="font-medium">{asientosSeleccionados.join(', ')}</span></p>
-                <p>Cantidad: <span className="font-medium">{asientosSeleccionados.length}</span></p>
-                <p>Precio unitario: <span className="font-medium">${precioBase.toFixed(2)}</span></p>
-                {DESCUENTO[tipoPasajero] > 0 && (
-                  <p>Descuento: <span className="font-medium text-green-600">-{DESCUENTO[tipoPasajero] * 100}% por pasajero</span></p>
-                )}
-                <p className="text-lg font-bold text-blue-900 pt-1">Total: ${precioTotal.toFixed(2)}</p>
+                // DESPUÉS:
+<p>Cantidad: <span className="font-medium">{asientosSeleccionados.length}</span></p>
+{DESCUENTO[tipoPasajero] > 0 && (
+  <p>Descuento: <span className="font-medium text-green-600">-{DESCUENTO[tipoPasajero] * 100}% por pasajero</span></p>
+)}
+<div className="border-t border-blue-200 pt-2 mt-2 space-y-1">
+  {asientosSeleccionados.map(asiento => {
+    const vip = esVIP(asiento)
+    const precio = vip ? precioConDescuento * 1.2 : precioConDescuento
+    return (
+      <p key={asiento}>
+        Asiento {asiento}{vip ? ' ⭐ VIP' : ''}: <span className="font-medium">${precio.toFixed(2)}</span>
+      </p>
+    )
+  })}
+</div>
+<p className="text-lg font-bold text-blue-900 pt-1">Total: ${precioTotal.toFixed(2)}</p>
               </div>
             </div>
 

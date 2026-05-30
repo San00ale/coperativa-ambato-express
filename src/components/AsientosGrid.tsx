@@ -1,6 +1,7 @@
 interface AsientosGridProps {
   capacidad: number
   asientosVIP: number
+  asientosVIPNumeros?: string
   asientosOcupados: string[]
   asientoSeleccionado: string | null
   onAsientoClick: (asiento: string) => void
@@ -9,10 +10,16 @@ interface AsientosGridProps {
 export default function AsientosGrid({
   capacidad,
   asientosVIP,
+  asientosVIPNumeros,
   asientosOcupados,
   asientoSeleccionado,
   onAsientoClick,
 }: AsientosGridProps) {
+  // Parsear asientos VIP específicos si existen
+  const vipSeatsArray = asientosVIPNumeros
+    ? asientosVIPNumeros.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n))
+    : []
+
   // Generar lista de asientos
   const generarAsientos = () => {
     const asientos = []
@@ -27,8 +34,10 @@ export default function AsientosGrid({
           const numero = j + 1
           const asiento = `${fila}${numero}`
           
-          // Determinar si es VIP (primeros asientosVIP)
-          const isVIP = contador <= asientosVIP
+          // Determinar si es VIP (usar asientosVIPNumeros si existe, sino cálculo automático)
+          const isVIP = vipSeatsArray.length > 0
+            ? vipSeatsArray.includes(contador)
+            : contador <= asientosVIP
           
           asientos.push({
             id: asiento,
@@ -148,7 +157,7 @@ export default function AsientosGrid({
         </div>
         <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
           <div className="font-semibold text-yellow-900">Asientos VIP</div>
-          <div className="text-2xl font-bold text-yellow-600">{asientosVIP}</div>
+          <div className="text-2xl font-bold text-yellow-600">{vipSeatsArray.length > 0 ? vipSeatsArray.length : asientosVIP}</div>
         </div>
         <div className="bg-red-50 p-3 rounded-lg border border-red-200">
           <div className="font-semibold text-red-900">Ocupados</div>

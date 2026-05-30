@@ -1,0 +1,65 @@
+# Propietarios de Código - Cooperativa Ambato Express
+
+# Este archivo define quién es responsable de cada parte del proyecto
+# y será requerido para las revisiones de Pull Requests
+
+# Configuración y Root
+* @San00ale
+
+# Backend - API Routes
+/src/pages/api/ @San00ale
+/src/server/ @San00ale
+
+# Autenticación
+/src/pages/api/auth/ @San00ale
+
+# Base de Datos y ORM
+/prisma/ @San00ale
+
+# Frontend - Layout y Componentes Comunes
+/src/components/layout/ @San00ale
+/src/components/common/ @San00ale
+/src/components/ui/ @San00ale
+
+# Módulo ADMIN
+/src/pages/admin/ @Zzzheyla
+/src/components/admin/ @Zzzheyla
+
+# Módulo OFICINISTA
+/src/pages/oficinista/ @killer13233
+/src/components/oficinista/ @killer13233
+
+# Módulo CHOFER
+/src/pages/chofer/ @Jonathan305g
+/src/components/chofer/ @Jonathan305g
+
+# Módulo CLIENTE
+/src/pages/cliente/ @DavidPe1307
+/src/components/cliente/ @DavidPe1307
+
+# Utilidades y Helpers
+/src/lib/ @San00ale
+/src/utils/ @San00ale
+
+# Estilos y Configuración
+/src/styles/ @San00ale
+/tailwind.config.ts @San00ale
+/next.config.js @San00ale
+/tsconfig.json @San00ale
+
+# Documentación
+*.md @San00ale
+/docs/ @San00ale
+.github/ @San00ale
+
+# Dependencias
+package.json @San00ale
+package-lock.json @San00ale
+.env.example @San00ale
+
+# CI/CD
+.github/workflows/ @San00ale
+
+# Variables de entorno y secretos (NO COMMITEAR)
+.env.local
+.env

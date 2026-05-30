@@ -14,7 +14,8 @@ export default function AgregarFrecuenciaPage() {
     destino: '',
     hora: '',
     tipoViaje: 'DIRECTO' as 'DIRECTO' | 'CON_PARADAS',
-    paradas: ['']
+    paradas: [''],
+    duracion: ''          // ← nuevo campo
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -72,7 +73,8 @@ export default function AgregarFrecuenciaPage() {
         tipoViaje: formData.tipoViaje,
         paradas: formData.tipoViaje === 'CON_PARADAS' 
           ? formData.paradas.filter(p => p.trim() !== '')
-          : []
+          : [],
+        duracion: formData.duracion ? parseInt(formData.duracion) : undefined
       }
 
       const response = await fetch('/api/frecuencias', {
@@ -198,6 +200,24 @@ export default function AgregarFrecuenciaPage() {
                   <option value="CON_PARADAS">Con Paradas</option>
                 </select>
               </div>
+            </div>
+
+            {/* Campo Duración (nuevo) */}
+            <div>
+              <label htmlFor="duracion" className="block text-sm font-medium text-gray-700 mb-2">
+                Duración (minutos, opcional)
+              </label>
+              <input
+                type="number"
+                id="duracion"
+                name="duracion"
+                min="0"
+                step="1"
+                value={formData.duracion}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+                placeholder="Ej: 120"
+              />
             </div>
 
             {formData.tipoViaje === 'CON_PARADAS' && (
