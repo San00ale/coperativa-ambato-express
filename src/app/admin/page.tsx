@@ -230,7 +230,7 @@ export default function AdminPage() {
         <h2 className="text-lg font-semibold mb-4 text-gray-900">Estadísticas de los Últimos 7 Días</h2>
         {loadingEstadisticas ? (
           <p className="text-gray-500 text-sm">Cargando estadísticas...</p>
-        ) : estadisticas7Dias.length === 0 || estadisticas7Dias.every(dia => dia.cantidad === 0) ? (
+        ) : estadisticas7Dias.every(dia => dia.cantidad === 0) ? (
           <p className="text-gray-500 text-sm">No hay ventas en los últimos 7 días</p>
         ) : (
           <div className="overflow-x-auto">
