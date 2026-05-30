@@ -21,8 +21,8 @@ export async function GET(request: Request) {
     if (fecha) {
       // Ecuador UTC-5: ajustar rango
       const [year, month, day] = fecha.split('-').map(Number)
-      const start = new Date(Date.UTC(year, month-1, day, 5, 0, 0, 0))
-      const end = new Date(Date.UTC(year, month-1, day, 28, 59, 59, 999))
+      const start = new Date(Date.UTC(year, month-1, day, 0, 0, 0, 0))
+const end = new Date(Date.UTC(year, month-1, day + 1, 0, 0, 0, 0))
       where.fecha = { gte: start, lt: end }
     }
     

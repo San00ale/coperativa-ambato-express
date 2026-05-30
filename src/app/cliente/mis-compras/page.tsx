@@ -14,6 +14,7 @@ interface Bus {
 
 interface Ruta {
   fecha: string;
+  precio: number;
   frecuencia: Frecuencia;
   bus: Bus;
 }
@@ -113,9 +114,16 @@ export default function MisComprasPage() {
                   {/* Encabezado del boleto */}
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <p className="font-semibold text-gray-800 text-lg">
-                        {boleto.ruta.frecuencia.origen} → {boleto.ruta.frecuencia.destino}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-gray-800 text-lg">
+                          {boleto.ruta.frecuencia.origen} → {boleto.ruta.frecuencia.destino}
+                        </p>
+                        {boleto.precio > boleto.ruta.precio && (
+                          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 border border-yellow-300">
+                            ⭐ VIP
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-500 mt-1">
                         🕐 {boleto.ruta.frecuencia.hora} &nbsp;|&nbsp;
                         📅 {new Date(boleto.ruta.fecha).toLocaleDateString("es-EC")} &nbsp;|&nbsp;
