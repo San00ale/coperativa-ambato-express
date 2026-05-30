@@ -16,10 +16,11 @@ interface Ruta {
     asientosVIP: number
     asientosVIPNumeros?: string
   }
-  frecuencia: {
+ frecuencia: {
     origen: string
     destino: string
     hora: string
+    duracion?: number
   }
   boletos?: { asiento: string; estado: string }[]
   asientosDisponibles?: number[]
@@ -271,7 +272,10 @@ function validarCedula(cedula: string): boolean {
                       <span className="font-semibold text-gray-800">
                         {ruta.frecuencia.origen} → {ruta.frecuencia.destino}
                       </span>
-                      <span className="ml-3 text-sm text-gray-500">{ruta.frecuencia.hora}</span>
+                     <span className="ml-3 text-sm text-gray-500">
+  {ruta.frecuencia.hora}
+  {ruta.frecuencia.duracion && ` · ${ruta.frecuencia.duracion} min`}
+</span>
                       <div className="text-xs text-gray-400">
                         Bus: {ruta.bus.numero} ({ruta.bus.placa})
                       </div>
@@ -400,7 +404,10 @@ function validarCedula(cedula: string): boolean {
               <h3 className="font-semibold text-blue-800 mb-2">Resumen de venta</h3>
               <div className="text-sm text-blue-700 space-y-1">
                 <p>Ruta: <span className="font-medium">{rutaSeleccionada.frecuencia.origen} → {rutaSeleccionada.frecuencia.destino}</span></p>
-                <p>Hora: <span className="font-medium">{rutaSeleccionada.frecuencia.hora}</span></p>
+               <p>Hora: <span className="font-medium">{rutaSeleccionada.frecuencia.hora}</span></p>
+{rutaSeleccionada.frecuencia.duracion && (
+  <p>Duración: <span className="font-medium">{rutaSeleccionada.frecuencia.duracion} min</span></p>
+)}
                 <p>Bus: <span className="font-medium">{rutaSeleccionada.bus.numero} ({rutaSeleccionada.bus.placa})</span></p>
                 <p>Asientos: <span className="font-medium">{asientosSeleccionados.join(', ')}</span></p>
                 // DESPUÉS:
