@@ -73,6 +73,24 @@ function PagarContent() {
   const handleArchivoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const tiposPermitidos = ["image/jpeg", "image/png"];
+    if (!tiposPermitidos.includes(file.type)) {
+      setError("Solo se permiten archivos de imagen (.jpg, .jpeg, .png).");
+      setArchivo(null);
+      setArchivoPreview("");
+      return;
+    }
+
+    const maxSize = 2 * 1024 * 1024; // 2 MB
+    if (file.size > maxSize) {
+      setError("El archivo no debe superar los 2 MB.");
+      setArchivo(null);
+      setArchivoPreview("");
+      return;
+    }
+
+    setError("");
     setArchivo(file);
     setArchivoPreview(URL.createObjectURL(file));
   };
@@ -226,10 +244,15 @@ function PagarContent() {
             </label>
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png"
               onChange={handleArchivoChange}
               className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
             />
+            {archivo && (
+              <p className="mt-2 text-xs text-gray-500">
+                📎 {archivo.name} ({(archivo.size / 1024).toFixed(1)} KB)
+              </p>
+            )}
             {archivoPreview && (
               <img
                 src={archivoPreview}
