@@ -38,6 +38,8 @@ export default function AdminPage() {
   const [ingresosHoy, setIngresosHoy] = useState<number>(0)
   const [estadisticas7Dias, setEstadisticas7Dias] = useState<EstadisticaDia[]>([])
   const [topRutas, setTopRutas] = useState<RutaTop[]>([])
+  const [totalBoletosSemana, setTotalBoletosSemana] = useState<number>(0)
+  const [totalIngresosSemana, setTotalIngresosSemana] = useState<number>(0)
   const [loadingEstadisticas, setLoadingEstadisticas] = useState(true)
 
   useEffect(() => {
@@ -115,6 +117,9 @@ export default function AdminPage() {
           .sort((a, b) => b.cantidad - a.cantidad)
           .slice(0, 3)
         setTopRutas(topRutasArray)
+
+        setTotalBoletosSemana(boletos7Dias.length)
+        setTotalIngresosSemana(boletos7Dias.reduce((total, boleto) => total + boleto.precio, 0))
       }
     } catch (error) {
       console.error('Error al cargar estadísticas:', error)
@@ -218,6 +223,24 @@ export default function AdminPage() {
                   </p>
                   <p className="text-gray-900 font-semibold">
                     Ingresos totales hoy: ${ingresosHoy.toFixed(2)}
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+          <div className="border-l-4 border-blue-500 pl-4">
+            <h3 className="font-medium text-gray-900">Ventas de la Semana</h3>
+            <p className="text-gray-600 text-sm mt-1">Últimos 7 días</p>
+            <div className="mt-3 space-y-2">
+              {loadingEstadisticas ? (
+                <p className="text-gray-500 text-sm">Cargando estadísticas...</p>
+              ) : (
+                <>
+                  <p className="text-gray-900 font-semibold">
+                    Total boletos (7 días): {totalBoletosSemana}
+                  </p>
+                  <p className="text-gray-900 font-semibold">
+                    Ingresos semanales: ${totalIngresosSemana.toFixed(2)}
                   </p>
                 </>
               )}
