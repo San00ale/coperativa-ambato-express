@@ -7,7 +7,7 @@ import { authOptions } from '@/lib/auth'
  * POST /api/rutas/[id]/asignar-chofer
  * Asigna o desasigna un chofer a una ruta
  */
-export async function POST(request: NextRequest, context: { params: any }) {
+export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     // Verificar que es ADMIN
     const session = await getServerSession(authOptions)

@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
@@ -72,7 +73,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const rol = searchParams.get('rol')
 
-    const where: any = {}
+    const where: Prisma.UsuarioWhereInput = {}
     if (rol === 'CHOFER' || rol === 'OFICINISTA') {
       where.rol = rol
     } else {

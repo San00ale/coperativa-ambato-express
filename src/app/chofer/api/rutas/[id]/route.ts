@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
@@ -80,7 +81,7 @@ export async function PUT(
     }
 
     // Preparar datos a actualizar
-    const updateData: any = {}
+    const updateData: Prisma.RutaUpdateInput = {}
     
     if (estado) {
       // Validar estados válidos

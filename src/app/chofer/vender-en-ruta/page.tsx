@@ -21,6 +21,7 @@ interface Ruta {
   id: string
   fecha: string
   completada: boolean
+  estado: string
   precio?: number
   frecuencia: {
     origen: string
@@ -83,9 +84,9 @@ export default function VenderEnRutaPage() {
           throw new Error('Error al obtener las rutas')
         }
 
-        const rutas = await response.json()
+        const rutas = (await response.json()) as Ruta[]
         const rutasActivas = rutas.filter(
-          (r: any) => !r.completada && r.estado !== 'completada'
+          (r) => !r.completada && r.estado !== 'completada'
         )
 
         // Si hay rutas activas, seleccionar la primera (la ruta actual del chofer)

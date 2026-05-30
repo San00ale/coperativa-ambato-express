@@ -128,8 +128,9 @@ function PagarContent() {
 
       router.push("/cliente/mis-compras");
 
-    } catch (err: any) {
-      setError(err.message || "Error inesperado. Intenta de nuevo.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Error inesperado. Intenta de nuevo."
+      setError(message)
     } finally {
       setEnviando(false);
     }

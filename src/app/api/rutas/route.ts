@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
@@ -11,7 +12,7 @@ export async function GET(request: Request) {
     const origen = searchParams.get('origen')
     const destino = searchParams.get('destino')
     
-    const where: any = {}
+    const where: Prisma.RutaWhereInput = {}
 
     if (session?.user?.role === 'CHOFER') {
       where.choferId = session.user.id
