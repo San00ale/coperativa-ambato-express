@@ -289,11 +289,22 @@ const calcularHoraLlegada = (horaSalida: string, duracionMinutos: number | null)
                   <div className="flex items-start gap-3">
                     <Clock className="w-5 h-5 text-blue-600 mt-1" />
                     <div>
-                      <p className="text-sm text-gray-600">Hora de Salida</p>
-                      <p className="font-bold text-gray-900">{formatearHora(ruta.frecuencia.hora)}</p>
+                      <p className="text-sm text-gray-600">Horarios</p>
+                      <div className="space-y-1">
+                        <p className="font-bold text-gray-900">
+                          Salida: {formatearHora(ruta.frecuencia.hora)}
+                        </p>
+                        {(() => {
+                          const horaLlegada = calcularHoraLlegada(ruta.frecuencia.hora, ruta.frecuencia.duracion)
+                          return horaLlegada && (
+                            <p className="font-bold text-green-700">
+                              Llegada estimada: {horaLlegada}
+                            </p>
+                          )
+                        })()}
+                      </div>
                     </div>
                   </div>
-                </div>
 
                 {/* Información Adicional */}
                 <div className="lg:col-span-1 space-y-4">
