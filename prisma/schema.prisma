@@ -62,6 +62,8 @@ model Ruta {
   frecuenciaId String
   fecha       DateTime
   busId       String
+  estado        String    @default("pendiente")
+  inicio        DateTime? 
   completada  Boolean  @default(false)
   precio      Float?
   frecuencia  Frecuencia @relation(fields: [frecuenciaId], references: [id])

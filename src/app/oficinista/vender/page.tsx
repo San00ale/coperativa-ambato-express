@@ -410,12 +410,12 @@ function validarCedula(cedula: string): boolean {
 )}
                 <p>Bus: <span className="font-medium">{rutaSeleccionada.bus.numero} ({rutaSeleccionada.bus.placa})</span></p>
                 <p>Asientos: <span className="font-medium">{asientosSeleccionados.join(', ')}</span></p>
-                // DESPUÉS:
-<p>Cantidad: <span className="font-medium">{asientosSeleccionados.length}</span></p>
-{DESCUENTO[tipoPasajero] > 0 && (
-  <p>Descuento: <span className="font-medium text-green-600">-{DESCUENTO[tipoPasajero] * 100}% por pasajero</span></p>
-)}
-<div className="border-t border-blue-200 pt-2 mt-2 space-y-1">
+                {/* DESPUÉS: */}
+                <p>Cantidad: <span className="font-medium">{asientosSeleccionados.length}</span></p>
+                {DESCUENTO[tipoPasajero] > 0 && (
+                  <p>Descuento: <span className="font-medium text-green-600">-{DESCUENTO[tipoPasajero] * 100}% por pasajero</span></p>
+                )}
+                <div className="border-t border-blue-200 pt-2 mt-2 space-y-1">
   {asientosSeleccionados.map(asiento => {
     const vip = esVIP(asiento)
     const precio = vip ? precioConDescuento * 1.2 : precioConDescuento

@@ -149,9 +149,9 @@ function PagarContent() {
 
       router.push("/cliente/mis-compras");
 
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Error inesperado. Intenta de nuevo.";
-      setError(message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Error inesperado. Intenta de nuevo."
+      setError(message)
     } finally {
       setEnviando(false);
     }

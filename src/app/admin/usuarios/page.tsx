@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -34,15 +34,7 @@ export default function UsuariosPage() {
   })
   const [submitting, setSubmitting] = useState(false)
 
-  useEffect(() => {
-    if (session?.user?.role !== 'ADMIN') {
-      router.push('/login')
-      return
-    }
-    cargarUsuarios()
-  }, [session, router])
-
-  const cargarUsuarios = async () => {
+  const cargarUsuarios = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/usuarios')
       if (response.ok) {
@@ -57,7 +49,20 @@ export default function UsuariosPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (session?.user?.role !== 'ADMIN') {
+      router.push('/login')
+      return
+    }
+
+    const iniciarCarga = async () => {
+      await cargarUsuarios()
+    }
+
+    void iniciarCarga()
+  }, [session, router, cargarUsuarios])
 
   const handleAgregar = () => {
     setModalError('')        // limpiar error del modal
