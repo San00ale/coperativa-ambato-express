@@ -14,6 +14,7 @@ interface Ruta {
     origen: string
     destino: string
     hora: string
+    duracion: number | null
     tipoViaje: string
     paradas: Array<{
       id: string
