@@ -19,11 +19,25 @@ interface Boleto {
   }
 }
 
+interface EstadisticaDia {
+  fecha: string
+  cantidad: number
+  ingresos: number
+}
+
+interface RutaTop {
+  origen: string
+  destino: string
+  cantidad: number
+}
+
 export default function AdminPage() {
   const router = useRouter()
   const { data: session } = useSession()
   const [boletosHoy, setBoletosHoy] = useState<number>(0)
   const [ingresosHoy, setIngresosHoy] = useState<number>(0)
+  const [estadisticas7Dias, setEstadisticas7Dias] = useState<EstadisticaDia[]>([])
+  const [topRutas, setTopRutas] = useState<RutaTop[]>([])
   const [loadingEstadisticas, setLoadingEstadisticas] = useState(true)
 
   useEffect(() => {
