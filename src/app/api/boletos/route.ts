@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     }
 
     // Convertir asiento a string (Prisma espera String)
-    asiento = String(asiento)
+    // ya está en asientoValue
 
     // Verificar que el asiento no esté ocupado en esa ruta
     const boletoExistente = await prisma.boleto.findFirst({

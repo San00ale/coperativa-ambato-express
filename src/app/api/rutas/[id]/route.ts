@@ -65,7 +65,11 @@ export async function PUT(
     }
 
     const updateData: Prisma.RutaUpdateInput = {}
-    if (busId !== undefined) updateData.busId = busId
+    if (busId !== undefined) {
+      updateData.bus = {
+        connect: { id: busId }
+      }
+    }
     if (fecha !== undefined) updateData.fecha = new Date(fecha)
     if (estado !== undefined) updateData.estado = estado
     if (completada !== undefined) updateData.completada = completada

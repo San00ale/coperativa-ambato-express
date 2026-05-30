@@ -14,7 +14,7 @@ import { authOptions } from '@/lib/auth'
  */
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -26,6 +26,7 @@ export async function PUT(
       )
     }
 
+    const params = await context.params
     const rutaId = params.id
 
     if (!rutaId) {
@@ -156,7 +157,7 @@ export async function PUT(
  */
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -168,6 +169,7 @@ export async function GET(
       )
     }
 
+    const params = await context.params
     const rutaId = params.id
 
     const ruta = await prisma.ruta.findUnique({

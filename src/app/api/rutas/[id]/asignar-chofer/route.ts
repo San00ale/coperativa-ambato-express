@@ -7,7 +7,7 @@ import { authOptions } from '@/lib/auth'
  * POST /api/rutas/[id]/asignar-chofer
  * Asigna o desasigna un chofer a una ruta
  */
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     // Verificar que es ADMIN
     const session = await getServerSession(authOptions)
@@ -20,10 +20,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     }
 
     const { choferId } = await request.json()
-    // Normalizar params: en algunas versiones/contextos Next.js lo provee como Promise
-    const params = context.params && typeof context.params.then === 'function'
-      ? await context.params
-      : context.params
+    const params = await context.params
     const rutaId = params?.id
 
     if (!rutaId) {
