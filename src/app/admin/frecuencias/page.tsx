@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -29,15 +29,7 @@ export default function FrecuenciasPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    if (session?.user?.role !== 'ADMIN') {
-      router.push('/login')
-      return
-    }
-    cargarFrecuencias()
-  }, [session, router])
-
-  const cargarFrecuencias = async () => {
+  const cargarFrecuencias = useCallback(async () => {
     try {
       const response = await fetch('/api/frecuencias')
       if (response.ok) {
@@ -51,7 +43,20 @@ export default function FrecuenciasPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (session?.user?.role !== 'ADMIN') {
+      router.push('/login')
+      return
+    }
+
+    const iniciarCarga = async () => {
+      await cargarFrecuencias()
+    }
+
+    void iniciarCarga()
+  }, [session, router, cargarFrecuencias])
 
   const handleEliminar = async (frecuencia: Frecuencia) => {
     if (!confirm(`¿Estás seguro de eliminar la frecuencia ${frecuencia.origen}-${frecuencia.destino} ${frecuencia.hora}?`)) return

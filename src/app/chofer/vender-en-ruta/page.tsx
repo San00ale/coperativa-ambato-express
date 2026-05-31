@@ -21,6 +21,7 @@ interface Ruta {
   id: string
   fecha: string
   completada: boolean
+  estado: string
   precio?: number
   frecuencia: {
     origen: string
@@ -83,11 +84,14 @@ export default function VenderEnRutaPage() {
           throw new Error('Error al obtener las rutas')
         }
 
-        const rutas = await response.json()
+        const rutas = (await response.json()) as Ruta[]
+        const rutasActivas = rutas.filter(
+          (r) => !r.completada && r.estado !== 'completada'
+        )
 
-        // Si hay rutas, seleccionar la primera (la ruta actual del chofer)
-        if (rutas.length > 0) {
-          setRuta(rutas[0])
+        // Si hay rutas activas, seleccionar la primera (la ruta actual del chofer)
+        if (rutasActivas.length > 0) {
+          setRuta(rutasActivas[0])
         } else {
           setError('No tienes rutas asignadas para hoy')
         }

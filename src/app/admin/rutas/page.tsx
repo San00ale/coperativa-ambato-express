@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -62,15 +62,7 @@ export default function RutasPage() {
     choferId: ''          // ← nuevo campo
   })
 
-  useEffect(() => {
-    if (session?.user?.role !== 'ADMIN') {
-      router.push('/login')
-      return
-    }
-    cargarDatos()
-  }, [session, router])
-
-  const cargarDatos = async () => {
+  const cargarDatos = useCallback(async () => {
     try {
       const rutasResponse = await fetch('/api/rutas')
       if (rutasResponse.ok) {
@@ -90,7 +82,6 @@ export default function RutasPage() {
         setBuses(busesData.filter((b: Bus) => b.activo))
       }
 
-      // Cargar lista de choferes (rol CHOFER)
       const choferesResponse = await fetch('/api/admin/usuarios?rol=CHOFER')
       if (choferesResponse.ok) {
         const choferesData = await choferesResponse.json()
@@ -101,7 +92,20 @@ export default function RutasPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (session?.user?.role !== 'ADMIN') {
+      router.push('/login')
+      return
+    }
+
+    const iniciarCarga = async () => {
+      await cargarDatos()
+    }
+
+    void iniciarCarga()
+  }, [session, router, cargarDatos])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
     const { name, value } = e.target

@@ -60,50 +60,47 @@ export default function EditarRutaPage() {
       return
     }
 
+    const cargarDatos = async () => {
+      try {
+        const rutaResponse = await fetch(`/api/rutas`)
+        if (rutaResponse.ok) {
+          const rutasData = await rutaResponse.json()
+          const rutaEncontrada = rutasData.find((r: Ruta) => r.id === id)
+          
+          if (rutaEncontrada) {
+            setRuta(rutaEncontrada)
+            setFormData({
+              frecuenciaId: rutaEncontrada.frecuenciaId,
+              busId: rutaEncontrada.busId,
+              fecha: rutaEncontrada.fecha.split('T')[0]
+            })
+          } else {
+            setError('Ruta no encontrada')
+          }
+        }
+
+        const frecuenciasResponse = await fetch('/api/frecuencias')
+        if (frecuenciasResponse.ok) {
+          const frecuenciasData = await frecuenciasResponse.json()
+          setFrecuencias(frecuenciasData.filter((f: Frecuencia) => f.activa))
+        }
+
+        const busesResponse = await fetch('/api/buses')
+        if (busesResponse.ok) {
+          const busesData = await busesResponse.json()
+          setBuses(busesData.filter((b: Bus) => b.activo))
+        }
+      } catch (error) {
+        setError('Error de conexión')
+      } finally {
+        setLoading(false)
+      }
+    }
+
     if (id) {
-      cargarDatos()
+      void cargarDatos()
     }
   }, [session, router, id])
-
-  const cargarDatos = async () => {
-    try {
-      // Cargar ruta específica
-      const rutaResponse = await fetch(`/api/rutas`)
-      if (rutaResponse.ok) {
-        const rutasData = await rutaResponse.json()
-        const rutaEncontrada = rutasData.find((r: Ruta) => r.id === id)
-        
-        if (rutaEncontrada) {
-          setRuta(rutaEncontrada)
-          setFormData({
-            frecuenciaId: rutaEncontrada.frecuenciaId,
-            busId: rutaEncontrada.busId,
-            fecha: rutaEncontrada.fecha.split('T')[0]
-          })
-        } else {
-          setError('Ruta no encontrada')
-        }
-      }
-
-      // Cargar frecuencias
-      const frecuenciasResponse = await fetch('/api/frecuencias')
-      if (frecuenciasResponse.ok) {
-        const frecuenciasData = await frecuenciasResponse.json()
-        setFrecuencias(frecuenciasData.filter((f: Frecuencia) => f.activa))
-      }
-
-      // Cargar buses
-      const busesResponse = await fetch('/api/buses')
-      if (busesResponse.ok) {
-        const busesData = await busesResponse.json()
-        setBuses(busesData.filter((b: Bus) => b.activo))
-      }
-    } catch (error) {
-      setError('Error de conexión')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
     const { name, value } = e.target
