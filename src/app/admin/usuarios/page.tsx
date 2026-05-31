@@ -18,13 +18,15 @@ export default function UsuariosPage() {
   const { data: session } = useSession()
   const router = useRouter()
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
+  const [clientes, setClientes] = useState<Usuario[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingClientes, setLoadingClientes] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
   // Modal agregar usuario
   const [showAgregarModal, setShowAgregarModal] = useState(false)
-  const [modalError, setModalError] = useState('')  // ← error específico del modal
+  const [modalError, setModalError] = useState('')
   const [formData, setFormData] = useState({
     nombre: '',
     email: '',
@@ -34,6 +36,18 @@ export default function UsuariosPage() {
   })
   const [submitting, setSubmitting] = useState(false)
 
+  // Modal agregar cliente
+  const [showAgregarClienteModal, setShowAgregarClienteModal] = useState(false)
+  const [modalClienteError, setModalClienteError] = useState('')
+  const [clienteFormData, setClienteFormData] = useState({
+    nombre: '',
+    email: '',
+    cedula: '',
+    password: ''
+  })
+  const [submittingCliente, setSubmittingCliente] = useState(false)
+
+  // ---------- Funciones de carga (optimizadas con useCallback) ----------
   const cargarUsuarios = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/usuarios')
@@ -51,28 +65,46 @@ export default function UsuariosPage() {
     }
   }, [])
 
+  const cargarClientes = useCallback(async () => {
+    try {
+      const response = await fetch('/api/admin/clientes')
+      if (response.ok) {
+        const data = await response.json()
+        setClientes(data)
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Error al cargar los clientes')
+      }
+    } catch (error) {
+      setError('Error de conexión')
+    } finally {
+      setLoadingClientes(false)
+    }
+  }, [])
+
+  // ---------- Efecto principal: redirigir si no es admin y cargar datos ----------
   useEffect(() => {
     if (session?.user?.role !== 'ADMIN') {
       router.push('/login')
       return
     }
 
-    const iniciarCarga = async () => {
-      await cargarUsuarios()
+    const cargarTodo = async () => {
+      await Promise.all([cargarUsuarios(), cargarClientes()])
     }
+    cargarTodo()
+  }, [session, router, cargarUsuarios, cargarClientes])
 
-    void iniciarCarga()
-  }, [session, router, cargarUsuarios])
-
+  // ---------- Handlers para usuarios ----------
   const handleAgregar = () => {
-    setModalError('')        // limpiar error del modal
+    setModalError('')
     setShowAgregarModal(true)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitting(true)
-    setModalError('')        // limpiar antes de enviar
+    setModalError('')
 
     try {
       const response = await fetch('/api/admin/usuarios', {
@@ -127,6 +159,70 @@ export default function UsuariosPage() {
     }
   }
 
+  // ---------- Handlers para clientes ----------
+  const handleAgregarCliente = () => {
+    setModalClienteError('')
+    setShowAgregarClienteModal(true)
+  }
+
+  const handleSubmitCliente = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmittingCliente(true)
+    setModalClienteError('')
+
+    try {
+      const response = await fetch('/api/admin/clientes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(clienteFormData)
+      })
+
+      if (response.ok) {
+        setSuccess('Cliente creado exitosamente')
+        setShowAgregarClienteModal(false)
+        setClienteFormData({
+          nombre: '',
+          email: '',
+          cedula: '',
+          password: ''
+        })
+        await cargarClientes()
+      } else {
+        const errorData = await response.json()
+        setModalClienteError(errorData.error || 'Error al crear cliente')
+      }
+    } catch (error) {
+      setModalClienteError('Error de conexión')
+    } finally {
+      setSubmittingCliente(false)
+    }
+  }
+
+  const handleCambiarEstadoCliente = async (cliente: Usuario) => {
+    if (!confirm(`¿Estás seguro de ${cliente.activo ? 'suspender' : 'activar'} a ${cliente.nombre}?`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/admin/clientes/${cliente.id}/estado`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activo: !cliente.activo })
+      })
+
+      if (response.ok) {
+        setSuccess(`Cliente ${cliente.activo ? 'suspendido' : 'activado'} exitosamente`)
+        await cargarClientes()
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Error al cambiar estado')
+      }
+    } catch (error) {
+      setError('Error de conexión')
+    }
+  }
+
+  // ---------- Renderizado condicional de carga ----------
   if (loading) {
     return (
       <div className="p-8">
@@ -137,6 +233,7 @@ export default function UsuariosPage() {
     )
   }
 
+  // ---------- JSX principal ----------
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between mb-6">
@@ -172,6 +269,7 @@ export default function UsuariosPage() {
         </div>
       )}
 
+      {/* Tabla de Usuarios (Choferes y Oficinistas) */}
       <div className="bg-white rounded-lg shadow">
         <table className="min-w-full">
           <thead className="bg-gray-50">
@@ -235,6 +333,78 @@ export default function UsuariosPage() {
           <div className="text-center py-8 text-gray-500">
             No hay usuarios registrados
           </div>
+        )}
+      </div>
+
+      {/* Sección de Clientes */}
+      <div className="bg-white rounded-lg shadow mt-8">
+        <div className="flex items-center justify-between p-6 border-b">
+          <h2 className="text-xl font-semibold text-gray-900">Gestión de Clientes</h2>
+          <button
+            onClick={handleAgregarCliente}
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+          >
+            Agregar Cliente
+          </button>
+        </div>
+
+        {loadingClientes ? (
+          <div className="text-center py-8 text-gray-500">Cargando clientes...</div>
+        ) : (
+          <>
+            <table className="min-w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cédula</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {clientes.map((cliente) => (
+                  <tr key={cliente.id} className={!cliente.activo ? 'opacity-50' : ''}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {cliente.nombre}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {cliente.email}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {cliente.cedula}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        cliente.activo
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {cliente.activo ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button
+                        onClick={() => handleCambiarEstadoCliente(cliente)}
+                        className={`${
+                          cliente.activo
+                            ? 'text-red-600 hover:text-red-900'
+                            : 'text-green-600 hover:text-green-900'
+                        }`}
+                      >
+                        {cliente.activo ? 'Suspender' : 'Activar'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {clientes.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                No hay clientes registrados
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -305,7 +475,6 @@ export default function UsuariosPage() {
                   </select>
                 </div>
 
-                {/* Mostrar error dentro del modal */}
                 {modalError && (
                   <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-sm">
                     {modalError}
@@ -326,6 +495,88 @@ export default function UsuariosPage() {
                     className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50"
                   >
                     {submitting ? 'Creando...' : 'Agregar'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Agregar Cliente */}
+      {showAgregarClienteModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Agregar Nuevo Cliente</h3>
+              <form onSubmit={handleSubmitCliente}>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                  <input
+                    type="text"
+                    required
+                    value={clienteFormData.nombre}
+                    onChange={(e) => setClienteFormData({ ...clienteFormData, nombre: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900"
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                  <input
+                    type="email"
+                    required
+                    value={clienteFormData.email}
+                    onChange={(e) => setClienteFormData({ ...clienteFormData, email: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 placeholder:text-gray-400"
+                    placeholder="cliente@email.com"
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cédula *</label>
+                  <input
+                    type="text"
+                    required
+                    value={clienteFormData.cedula}
+                    onChange={(e) => setClienteFormData({ ...clienteFormData, cedula: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 placeholder:text-gray-400"
+                    placeholder="10 dígitos"
+                    maxLength={10}
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña *</label>
+                  <input
+                    type="password"
+                    required
+                    value={clienteFormData.password}
+                    onChange={(e) => setClienteFormData({ ...clienteFormData, password: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900"
+                  />
+                </div>
+
+                {modalClienteError && (
+                  <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-sm">
+                    {modalClienteError}
+                  </div>
+                )}
+
+                <div className="flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowAgregarClienteModal(false)}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingCliente}
+                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50"
+                  >
+                    {submittingCliente ? 'Creando...' : 'Agregar'}
                   </button>
                 </div>
               </form>
