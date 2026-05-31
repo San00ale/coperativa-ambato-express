@@ -25,36 +25,37 @@ export default function AdminPage() {
       router.push('/login')
       return
     }
-    cargarEstadisticas()
-  }, [session, router])
 
-  const cargarEstadisticas = async () => {
-    try {
-      const response = await fetch('/api/boletos')
-      if (response.ok) {
-        const data: Boleto[] = await response.json()
-        
-        const hoy = new Date()
-        hoy.setHours(0, 0, 0, 0)
-        
-        const boletosFiltrados = data.filter(boleto => {
-          const fechaBoleto = new Date(boleto.createdAt)
-          fechaBoleto.setHours(0, 0, 0, 0)
-          return (
-            fechaBoleto.getTime() === hoy.getTime() &&
-            (boleto.estado === 'APROBADO' || boleto.estado === 'ABORDADO')
-          )
-        })
-        
-        setBoletosHoy(boletosFiltrados.length)
-        setIngresosHoy(boletosFiltrados.reduce((total, boleto) => total + boleto.precio, 0))
+    const cargarEstadisticas = async () => {
+      try {
+        const response = await fetch('/api/boletos')
+        if (response.ok) {
+          const data: Boleto[] = await response.json()
+          
+          const hoy = new Date()
+          hoy.setHours(0, 0, 0, 0)
+          
+          const boletosFiltrados = data.filter(boleto => {
+            const fechaBoleto = new Date(boleto.createdAt)
+            fechaBoleto.setHours(0, 0, 0, 0)
+            return (
+              fechaBoleto.getTime() === hoy.getTime() &&
+              (boleto.estado === 'APROBADO' || boleto.estado === 'ABORDADO')
+            )
+          })
+          
+          setBoletosHoy(boletosFiltrados.length)
+          setIngresosHoy(boletosFiltrados.reduce((total, boleto) => total + boleto.precio, 0))
+        }
+      } catch (error) {
+        console.error('Error al cargar estadísticas:', error)
+      } finally {
+        setLoadingEstadisticas(false)
       }
-    } catch (error) {
-      console.error('Error al cargar estadísticas:', error)
-    } finally {
-      setLoadingEstadisticas(false)
     }
-  }
+
+    void cargarEstadisticas()
+  }, [session, router])
 
   if (!session) {
     router.push('/login')

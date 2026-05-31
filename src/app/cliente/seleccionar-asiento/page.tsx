@@ -33,12 +33,13 @@ function SeleccionarAsientoContent() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!rutaId) {
-      setError("No se ha seleccionado una ruta válida.");
-      setLoading(false);
-      return;
-    }
     const cargarRuta = async () => {
+      if (!rutaId) {
+        setError("No se ha seleccionado una ruta válida.");
+        setLoading(false);
+        return;
+      }
+
       try {
         const res = await fetch(`/api/rutas/${rutaId}`);
         if (!res.ok) throw new Error("Error al cargar la ruta");
@@ -50,7 +51,7 @@ function SeleccionarAsientoContent() {
         setLoading(false);
       }
     };
-    cargarRuta();
+    void cargarRuta();
   }, [rutaId]);
 
   const getEstadoAsiento = (num: number): "DISPONIBLE" | "PENDIENTE" | "OCUPADO" => {

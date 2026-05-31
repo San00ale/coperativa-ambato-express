@@ -47,41 +47,41 @@ export default function EditarFrecuenciaPage() {
       return
     }
 
+    const cargarFrecuencia = async () => {
+      try {
+        const response = await fetch(`/api/frecuencias`)
+        if (response.ok) {
+          const frecuencias = await response.json()
+          const frecuencia = frecuencias.find((f: Frecuencia) => f.id === id)
+          
+          if (frecuencia) {
+            setFormData({
+              origen: frecuencia.origen,
+              destino: frecuencia.destino,
+              hora: frecuencia.hora,
+              tipoViaje: frecuencia.tipoViaje,
+              paradas: frecuencia.paradas && frecuencia.paradas.length > 0 
+                ? frecuencia.paradas.map((p: Parada) => p.ciudad)
+                : [''],
+              duracion: frecuencia.duracion?.toString() || ''   
+            })
+          } else {
+            setError('Frecuencia no encontrada')
+          }
+        } else {
+          setError('Error al cargar la frecuencia')
+        }
+      } catch (error) {
+        setError('Error de conexión')
+      } finally {
+        setLoading(false)
+      }
+    }
+
     if (id) {
-      cargarFrecuencia()
+      void cargarFrecuencia()
     }
   }, [session, router, id])
-
-  const cargarFrecuencia = async () => {
-    try {
-      const response = await fetch(`/api/frecuencias`)
-      if (response.ok) {
-        const frecuencias = await response.json()
-        const frecuencia = frecuencias.find((f: Frecuencia) => f.id === id)
-        
-        if (frecuencia) {
-          setFormData({
-            origen: frecuencia.origen,
-            destino: frecuencia.destino,
-            hora: frecuencia.hora,
-            tipoViaje: frecuencia.tipoViaje,
-            paradas: frecuencia.paradas && frecuencia.paradas.length > 0 
-              ? frecuencia.paradas.map((p: Parada) => p.ciudad)
-              : [''],
-            duracion: frecuencia.duracion?.toString() || ''   // ← cargar duración
-          })
-        } else {
-          setError('Frecuencia no encontrada')
-        }
-      } else {
-        setError('Error al cargar la frecuencia')
-      }
-    } catch (error) {
-      setError('Error de conexión')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -47,16 +47,8 @@ export default function UsuariosPage() {
   })
   const [submittingCliente, setSubmittingCliente] = useState(false)
 
-  useEffect(() => {
-    if (session?.user?.role !== 'ADMIN') {
-      router.push('/login')
-      return
-    }
-    cargarUsuarios()
-    cargarClientes()
-  }, [session, router])
-
-  const cargarUsuarios = async () => {
+  // ---------- Funciones de carga (optimizadas con useCallback) ----------
+  const cargarUsuarios = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/usuarios')
       if (response.ok) {
@@ -71,9 +63,9 @@ export default function UsuariosPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const cargarClientes = async () => {
+  const cargarClientes = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/clientes')
       if (response.ok) {
@@ -88,17 +80,31 @@ export default function UsuariosPage() {
     } finally {
       setLoadingClientes(false)
     }
-  }
+  }, [])
 
+  // ---------- Efecto principal: redirigir si no es admin y cargar datos ----------
+  useEffect(() => {
+    if (session?.user?.role !== 'ADMIN') {
+      router.push('/login')
+      return
+    }
+
+    const cargarTodo = async () => {
+      await Promise.all([cargarUsuarios(), cargarClientes()])
+    }
+    cargarTodo()
+  }, [session, router, cargarUsuarios, cargarClientes])
+
+  // ---------- Handlers para usuarios ----------
   const handleAgregar = () => {
-    setModalError('')        // limpiar error del modal
+    setModalError('')
     setShowAgregarModal(true)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitting(true)
-    setModalError('')        // limpiar antes de enviar
+    setModalError('')
 
     try {
       const response = await fetch('/api/admin/usuarios', {
@@ -153,6 +159,7 @@ export default function UsuariosPage() {
     }
   }
 
+  // ---------- Handlers para clientes ----------
   const handleAgregarCliente = () => {
     setModalClienteError('')
     setShowAgregarClienteModal(true)
@@ -215,6 +222,7 @@ export default function UsuariosPage() {
     }
   }
 
+  // ---------- Renderizado condicional de carga ----------
   if (loading) {
     return (
       <div className="p-8">
@@ -225,6 +233,7 @@ export default function UsuariosPage() {
     )
   }
 
+  // ---------- JSX principal ----------
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between mb-6">
@@ -260,6 +269,7 @@ export default function UsuariosPage() {
         </div>
       )}
 
+      {/* Tabla de Usuarios (Choferes y Oficinistas) */}
       <div className="bg-white rounded-lg shadow">
         <table className="min-w-full">
           <thead className="bg-gray-50">
@@ -338,58 +348,63 @@ export default function UsuariosPage() {
           </button>
         </div>
 
-        <table className="min-w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cédula</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {clientes.map((cliente) => (
-              <tr key={cliente.id} className={!cliente.activo ? 'opacity-50' : ''}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {cliente.nombre}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {cliente.email}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {cliente.cedula}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    cliente.activo
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {cliente.activo ? 'Activo' : 'Inactivo'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button
-                    onClick={() => handleCambiarEstadoCliente(cliente)}
-                    className={`${
-                      cliente.activo
-                        ? 'text-red-600 hover:text-red-900'
-                        : 'text-green-600 hover:text-green-900'
-                    }`}
-                  >
-                    {cliente.activo ? 'Suspender' : 'Activar'}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {clientes.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            No hay clientes registrados
-          </div>
+        {loadingClientes ? (
+          <div className="text-center py-8 text-gray-500">Cargando clientes...</div>
+        ) : (
+          <>
+            <table className="min-w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cédula</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {clientes.map((cliente) => (
+                  <tr key={cliente.id} className={!cliente.activo ? 'opacity-50' : ''}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {cliente.nombre}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {cliente.email}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {cliente.cedula}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        cliente.activo
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {cliente.activo ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button
+                        onClick={() => handleCambiarEstadoCliente(cliente)}
+                        className={`${
+                          cliente.activo
+                            ? 'text-red-600 hover:text-red-900'
+                            : 'text-green-600 hover:text-green-900'
+                        }`}
+                      >
+                        {cliente.activo ? 'Suspender' : 'Activar'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {clientes.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                No hay clientes registrados
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -460,7 +475,6 @@ export default function UsuariosPage() {
                   </select>
                 </div>
 
-                {/* Mostrar error dentro del modal */}
                 {modalError && (
                   <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-sm">
                     {modalError}

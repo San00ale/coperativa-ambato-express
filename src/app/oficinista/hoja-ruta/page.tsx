@@ -7,8 +7,8 @@ interface Frecuencia {
   origen: string
   destino: string
   hora: string
+  duracion?: number
 }
-
 interface Bus {
   id: string
   placa: string
@@ -25,7 +25,7 @@ interface Ruta {
   fecha: string
   busId: string
   bus: { placa: string }
-  frecuencia: { origen: string; destino: string; hora: string }
+  frecuencia: { origen: string; destino: string; hora: string; duracion?: number }
   precio?: number
 }
 
@@ -43,8 +43,8 @@ export default function HojaRuta() {
   const [mensaje, setMensaje] = useState('')
   const [reasignando, setReasignando] = useState<string | null>(null)
   const [nuevoBusId, setNuevoBusId] = useState('')
-
   const obtenerFechaLocal = () => new Date().toLocaleDateString('en-CA')
+const [fechaFiltro, setFechaFiltro] = useState(obtenerFechaLocal())
 
   useEffect(() => {
     fetch('/api/frecuencias').then(r => r.json()).then(setFrecuencias).catch(() => {})
@@ -53,26 +53,24 @@ export default function HojaRuta() {
       .then(r => r.json())
       .then(setChoferes)
       .catch(() => {})
-    cargarRutasHoy()
+    const hoy = new Date().toLocaleDateString('en-CA')
+    cargarRutas(hoy)
   }, [])
 
-  async function cargarRutasHoy() {
-    const hoy = obtenerFechaLocal()
-    try {
-      const res = await fetch(`/api/rutas?fecha=${hoy}`)
-      const data = await res.json()
-      if (Array.isArray(data)) {
-        setRutas(data)
-      } else {
-        console.error('La API devolvió un objeto inesperado:', data)
-        setRutas([])
-        setMensaje('Error al cargar las rutas: respuesta inválida')
-      }
-    } catch (error) {
-      console.error('Error al cargar rutas:', error)
-      setMensaje('Error al cargar las rutas de hoy')
+  async function cargarRutas(fechaBuscar: string) {
+  try {
+    const res = await fetch(`/api/rutas?fecha=${fechaBuscar}`)
+    const data = await res.json()
+    if (Array.isArray(data)) {
+      setRutas(data)
+    } else {
+      setRutas([])
+      setMensaje('Error al cargar las rutas')
     }
+  } catch {
+    setMensaje('Error al cargar las rutas')
   }
+}
 
   async function crearRuta() {
     if (!frecuenciaId || !busId || !fecha || !precio) {
@@ -100,7 +98,7 @@ export default function HojaRuta() {
         setFecha('')
         setPrecio('')
         setChoferId('')
-        await cargarRutasHoy()
+        await cargarRutas(fechaFiltro)
       } else {
         const err = await res.json()
         setMensaje(err.error || 'Error al crear ruta')
@@ -127,7 +125,7 @@ export default function HojaRuta() {
         setMensaje('✅ Bus reasignado correctamente')
         setReasignando(null)
         setNuevoBusId('')
-        await cargarRutasHoy()
+        await cargarRutas(fechaFiltro)
       } else {
         setMensaje('Error al reasignar bus')
       }
@@ -219,7 +217,15 @@ export default function HojaRuta() {
         </div>
 
         <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-700 mb-4">Rutas de hoy</h2>
+          <div className="flex items-center justify-between mb-4">
+  <h2 className="text-lg font-semibold text-gray-700">Rutas del día</h2>
+  <input
+    type="date"
+    className="border rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
+    value={fechaFiltro}
+    onChange={e => { setFechaFiltro(e.target.value); cargarRutas(e.target.value) }}
+  />
+</div>
           {rutas.length === 0 ? (
             <p className="text-gray-400 text-center py-6">No hay rutas programadas para hoy</p>
           ) : (
@@ -232,9 +238,10 @@ export default function HojaRuta() {
                         {ruta.frecuencia.origen} → {ruta.frecuencia.destino}
                       </p>
                       <p className="text-sm text-gray-500">
-                        {ruta.frecuencia.hora} · Bus: {ruta.bus?.placa}
-                        {ruta.precio && ` · Precio: $${ruta.precio.toFixed(2)}`}
-                      </p>
+  {ruta.frecuencia.hora} · Bus: {ruta.bus?.placa}
+  {ruta.precio && ` · Precio: $${ruta.precio.toFixed(2)}`}
+  {ruta.frecuencia.duracion && ` · Duración: ${ruta.frecuencia.duracion} min`}
+</p>
                     </div>
                     <button
                       onClick={() => { setReasignando(ruta.id); setNuevoBusId('') }}
