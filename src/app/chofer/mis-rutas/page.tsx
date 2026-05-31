@@ -14,6 +14,7 @@ interface Ruta {
     origen: string
     destino: string
     hora: string
+    duracion: number | null
     tipoViaje: string
     paradas: Array<{
       id: string
@@ -170,6 +171,23 @@ export default function MisRutasPage() {
   const handleFechaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFechaSeleccionada(e.target.value)
   }
+// ← NUEVO: Calcular hora de llegada estimada (Issue #103)
+const calcularHoraLlegada = (horaSalida: string, duracionMinutos: number | null): string | null => {
+  if (!duracionMinutos) return null
+  
+  try {
+    const [horas, minutos] = horaSalida.split(':').map(Number)
+    let minutosTotales = horas * 60 + minutos
+    minutosTotales += duracionMinutos
+    
+    const horasLlegada = Math.floor(minutosTotales / 60) % 24
+    const minutosLlegada = minutosTotales % 60
+    
+    return `${String(horasLlegada).padStart(2, '0')}:${String(minutosLlegada).padStart(2, '0')}`
+  } catch (error) {
+    return null
+  }
+}
 
   // ← NUEVO: Obtener conteos por estado
   const totalRutas = rutas.length
@@ -271,13 +289,26 @@ export default function MisRutasPage() {
                   <div className="flex items-start gap-3">
                     <Clock className="w-5 h-5 text-blue-600 mt-1" />
                     <div>
-                      <p className="text-sm text-gray-600">Hora de Salida</p>
-                      <p className="font-bold text-gray-900">{formatearHora(ruta.frecuencia.hora)}</p>
+                      <p className="text-sm text-gray-600">Horarios</p>
+                      <div className="space-y-1">
+                        <p className="font-bold text-gray-900">
+                          Salida: {formatearHora(ruta.frecuencia.hora)}
+                        </p>
+                        {(() => {
+                          const horaLlegada = calcularHoraLlegada(ruta.frecuencia.hora, ruta.frecuencia.duracion)
+                          return horaLlegada && (
+                            <p className="font-bold text-green-700">
+                              Llegada estimada: {horaLlegada}
+                            </p>
+                          )
+                        })()}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Información Adicional */}
+                  </div>
+
+                  {/* Información Adicional */}
                 <div className="lg:col-span-1 space-y-4">
                   {/* Capacidad */}
                   <div className="bg-gray-50 p-4 rounded-lg">
