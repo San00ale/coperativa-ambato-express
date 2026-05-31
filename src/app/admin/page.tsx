@@ -49,113 +49,106 @@ export default function AdminPage() {
       router.push('/login')
       return
     }
-    cargarEstadisticas()
-  }, [session, router])
 
-  useEffect(() => {
-    if (!session) {
-      router.push('/login')
-    }
-  }, [session, router])
+    const cargarEstadisticas = async () => {
+      try {
+        const response = await fetch('/api/boletos')
+        if (response.ok) {
+          const data: Boleto[] = await response.json()
 
-  if (!session) {
-    return null
-  }
+          // 1. Estadísticas de hoy
+          const hoy = new Date()
+          hoy.setHours(0, 0, 0, 0)
 
-  const cargarEstadisticas = async () => {
-    try {
-      const response = await fetch('/api/boletos')
-      if (response.ok) {
-        const data: Boleto[] = await response.json()
-        
-        const hoy = new Date()
-        hoy.setHours(0, 0, 0, 0)
-        
-        const boletosFiltrados = data.filter(boleto => {
-          const fechaBoleto = new Date(boleto.createdAt)
-          fechaBoleto.setHours(0, 0, 0, 0)
-          return (
-            fechaBoleto.getTime() === hoy.getTime() &&
-            (boleto.estado === 'APROBADO' || boleto.estado === 'ABORDADO')
-          )
-        })
-        
-        setBoletosHoy(boletosFiltrados.length)
-        setIngresosHoy(boletosFiltrados.reduce((total, boleto) => total + boleto.precio, 0))
-
-        const hace7Dias = new Date()
-        hace7Dias.setDate(hace7Dias.getDate() - 7)
-        hace7Dias.setHours(0, 0, 0, 0)
-
-        const boletos7Dias = data.filter(boleto => {
-          const fechaBoleto = new Date(boleto.createdAt)
-          return (
-            fechaBoleto >= hace7Dias &&
-            (boleto.estado === 'APROBADO' || boleto.estado === 'ABORDADO')
-          )
-        })
-
-        const estadisticasPorDia: EstadisticaDia[] = []
-        for (let i = 6; i >= 0; i--) {
-          const fecha = new Date()
-          fecha.setDate(fecha.getDate() - i)
-          fecha.setHours(0, 0, 0, 0)
-          
-          const boletosDelDia = boletos7Dias.filter(boleto => {
+          const boletosFiltradosHoy = data.filter(boleto => {
             const fechaBoleto = new Date(boleto.createdAt)
             fechaBoleto.setHours(0, 0, 0, 0)
-            return fechaBoleto.getTime() === fecha.getTime()
+            return (
+              fechaBoleto.getTime() === hoy.getTime() &&
+              (boleto.estado === 'APROBADO' || boleto.estado === 'ABORDADO')
+            )
           })
-          
-          estadisticasPorDia.push({
-            fecha: fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' }),
-            cantidad: boletosDelDia.length,
-            ingresos: boletosDelDia.reduce((total, boleto) => total + boleto.precio, 0)
+          setBoletosHoy(boletosFiltradosHoy.length)
+          setIngresosHoy(boletosFiltradosHoy.reduce((total, boleto) => total + boleto.precio, 0))
+
+          // 2. Estadísticas de últimos 7 días
+          const hace7Dias = new Date()
+          hace7Dias.setDate(hace7Dias.getDate() - 7)
+          hace7Dias.setHours(0, 0, 0, 0)
+
+          const boletos7Dias = data.filter(boleto => {
+            const fechaBoleto = new Date(boleto.createdAt)
+            return (
+              fechaBoleto >= hace7Dias &&
+              (boleto.estado === 'APROBADO' || boleto.estado === 'ABORDADO')
+            )
           })
+
+          const estadisticasPorDia: EstadisticaDia[] = []
+          for (let i = 6; i >= 0; i--) {
+            const fecha = new Date()
+            fecha.setDate(fecha.getDate() - i)
+            fecha.setHours(0, 0, 0, 0)
+
+            const boletosDelDia = boletos7Dias.filter(boleto => {
+              const fechaBoleto = new Date(boleto.createdAt)
+              fechaBoleto.setHours(0, 0, 0, 0)
+              return fechaBoleto.getTime() === fecha.getTime()
+            })
+
+            estadisticasPorDia.push({
+              fecha: fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' }),
+              cantidad: boletosDelDia.length,
+              ingresos: boletosDelDia.reduce((total, boleto) => total + boleto.precio, 0)
+            })
+          }
+          setEstadisticas7Dias(estadisticasPorDia)
+
+          // 3. Top rutas más vendidas
+          const rutasContador: { [key: string]: number } = {}
+          boletos7Dias.forEach(boleto => {
+            const rutaKey = `${boleto.ruta.frecuencia.origen} → ${boleto.ruta.frecuencia.destino}`
+            rutasContador[rutaKey] = (rutasContador[rutaKey] || 0) + 1
+          })
+          const topRutasArray: RutaTop[] = Object.entries(rutasContador)
+            .map(([ruta, cantidad]) => {
+              const [origen, destino] = ruta.split(' → ')
+              return { origen, destino, cantidad }
+            })
+            .sort((a, b) => b.cantidad - a.cantidad)
+            .slice(0, 3)
+          setTopRutas(topRutasArray)
+
+          // 4. Totales semanales y promedio
+          setTotalBoletosSemana(boletos7Dias.length)
+          setTotalIngresosSemana(boletos7Dias.reduce((total, boleto) => total + boleto.precio, 0))
+          setPromedioDiario(Math.round(boletos7Dias.length / 7))
+
+          // 5. Mejor día (mayor ingreso)
+          const diaConMasIngresos = estadisticasPorDia.reduce((max, dia) =>
+            dia.ingresos > max.ingresos ? dia : max, estadisticasPorDia[0])
+          setMejorDia(diaConMasIngresos)
         }
-        setEstadisticas7Dias(estadisticasPorDia)
-
-        const rutasContador: { [key: string]: number } = {}
-        boletos7Dias.forEach(boleto => {
-          const rutaKey = `${boleto.ruta.frecuencia.origen} → ${boleto.ruta.frecuencia.destino}`
-          rutasContador[rutaKey] = (rutasContador[rutaKey] || 0) + 1
-        })
-
-        const topRutasArray: RutaTop[] = Object.entries(rutasContador)
-          .map(([ruta, cantidad]) => {
-            const [origen, destino] = ruta.split(' → ')
-            return { origen, destino, cantidad }
-          })
-          .sort((a, b) => b.cantidad - a.cantidad)
-          .slice(0, 3)
-        setTopRutas(topRutasArray)
-
-        setTotalBoletosSemana(boletos7Dias.length)
-        setTotalIngresosSemana(boletos7Dias.reduce((total, boleto) => total + boleto.precio, 0))
-        setPromedioDiario(Math.round(boletos7Dias.length / 7))
-
-        const diaConMasIngresos = estadisticasPorDia.reduce((max, dia) => 
-          dia.ingresos > max.ingresos ? dia : max, estadisticasPorDia[0])
-        setMejorDia(diaConMasIngresos)
+      } catch (error) {
+        console.error('Error al cargar estadísticas:', error)
+      } finally {
+        setLoadingEstadisticas(false)
       }
-    } catch (error) {
-      console.error('Error al cargar estadísticas:', error)
-    } finally {
-      setLoadingEstadisticas(false)
     }
-  }
+
+    void cargarEstadisticas()
+  }, [session, router])
 
   if (!session) {
-    router.push('/login')
     return null
   }
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
       <AdminHeader title="Panel de Administrador" showBackButton={false} />
-      
+
       <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Link 
+        <Link
           href="/admin/buses"
           className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow border border-gray-200"
         >
@@ -172,7 +165,7 @@ export default function AdminPage() {
           </div>
         </Link>
 
-        <Link 
+        <Link
           href="/admin/frecuencias"
           className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow border border-gray-200"
         >
@@ -189,7 +182,7 @@ export default function AdminPage() {
           </div>
         </Link>
 
-        <Link 
+        <Link
           href="/admin/rutas"
           className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow border border-gray-200"
         >
@@ -206,7 +199,7 @@ export default function AdminPage() {
           </div>
         </Link>
 
-        <Link 
+        <Link
           href="/admin/usuarios"
           className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow border border-gray-200"
         >
@@ -223,7 +216,7 @@ export default function AdminPage() {
           </div>
         </Link>
       </div>
-      
+
       <div className="bg-white rounded-lg shadow p-6 mt-8">
         <h2 className="text-lg font-semibold mb-4 text-gray-900">Gestión del Sistema</h2>
         <div className="space-y-4">

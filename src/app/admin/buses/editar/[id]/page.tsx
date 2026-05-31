@@ -50,39 +50,40 @@ export default function EditarBusPage() {
       router.push('/login')
       return
     }
-    cargarBus()
-  }, [session, router, id])
 
-  const cargarBus = async () => {
-    try {
-      const response = await fetch(`/api/buses/${id}`)
-      if (response.ok) {
-        const data = await response.json()
-        setBus(data)
-        const vipSeatsArray = data.asientosVIPNumeros 
-          ? data.asientosVIPNumeros.split(',').map((s: string) => parseInt(s.trim())).filter((n: number) => !isNaN(n))
-          : []
-        setSelectedVIPSeats(vipSeatsArray)
-        setFormData({
-          numero: data.numero,
-          placa: data.placa,
-          chasis: data.chasis,
-          carroceria: data.carroceria,
-          marca: data.marca,
-          capacidad: data.capacidad.toString(),
-          asientosVIP: data.asientosVIP.toString(),
-          asientosVIPNumeros: data.asientosVIPNumeros || '',
-          fotoUrl: data.fotoUrl || ''
-        })
-      } else {
-        setError('Error al cargar el bus')
+    const cargarBus = async () => {
+      try {
+        const response = await fetch(`/api/buses/${id}`)
+        if (response.ok) {
+          const data = await response.json()
+          setBus(data)
+          const vipSeatsArray = data.asientosVIPNumeros 
+            ? data.asientosVIPNumeros.split(',').map((s: string) => parseInt(s.trim())).filter((n: number) => !isNaN(n))
+            : []
+          setSelectedVIPSeats(vipSeatsArray)
+          setFormData({
+            numero: data.numero,
+            placa: data.placa,
+            chasis: data.chasis,
+            carroceria: data.carroceria,
+            marca: data.marca,
+            capacidad: data.capacidad.toString(),
+            asientosVIP: data.asientosVIP.toString(),
+            asientosVIPNumeros: data.asientosVIPNumeros || '',
+            fotoUrl: data.fotoUrl || ''
+          })
+        } else {
+          setError('Error al cargar el bus')
+        }
+      } catch (error) {
+        setError('Error de conexión')
+      } finally {
+        setLoading(false)
       }
-    } catch (error) {
-      setError('Error de conexión')
-    } finally {
-      setLoading(false)
     }
-  }
+
+    void cargarBus()
+  }, [session, router, id])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

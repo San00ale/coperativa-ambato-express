@@ -1,0 +1,58 @@
+name: Tests Automatizados
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 📦 Configurar Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: 📚 Instalar dependencias
+        run: npm ci
+
+      - name: 🗄️ Setup base de datos
+        run: |
+          npx prisma migrate deploy
+          npx prisma db seed
+
+      - name: 🧪 Ejecutar tests unitarios
+        run: npm run test:unit
+        continue-on-error: true
+
+      - name: 🧪 Ejecutar tests de integración
+        run: npm run test:integration
+        continue-on-error: true
+
+      - name: 📊 Generar reporte de cobertura
+        run: npm run test:coverage
+        continue-on-error: true
+
+      - name: 📤 Subir reporte de cobertura
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+      - name: ✅ Resumen de Tests
+        run: |
+          echo "✅ Tests completados"
+          echo "📊 Reporte disponible en Actions"

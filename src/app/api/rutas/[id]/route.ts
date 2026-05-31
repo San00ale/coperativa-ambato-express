@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
@@ -51,7 +52,7 @@ export async function PUT(
 
     const { id } = await params
     const body = await request.json()
-    const { busId, fecha, completada } = body
+    const { busId, fecha, estado, completada } = body
 
     // Si es chofer, solo permitir cambiar completada (no otros campos)
     if (session?.user?.role === 'CHOFER') {
@@ -63,13 +64,22 @@ export async function PUT(
       }
     }
 
+    const updateData: Prisma.RutaUpdateInput = {}
+    if (busId !== undefined) {
+      updateData.bus = {
+        connect: { id: busId }
+      }
+    }
+    if (fecha !== undefined) updateData.fecha = new Date(fecha)
+    if (estado !== undefined) updateData.estado = estado
+    if (completada !== undefined) updateData.completada = completada
+    if (completada === true && estado === undefined) {
+      updateData.estado = 'completada'
+    }
+
     const ruta = await prisma.ruta.update({
       where: { id },
-      data: {
-        busId,
-        fecha: fecha ? new Date(fecha) : undefined,
-        completada
-      }
+      data: updateData
     })
 
     return NextResponse.json(ruta)
