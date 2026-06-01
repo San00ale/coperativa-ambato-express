@@ -47,6 +47,10 @@ export default function VenderBoleto() {
   const [mensaje, setMensaje] = useState('')
   const [paso, setPaso] = useState(1)
   const [errorCedula, setErrorCedula] = useState('')
+  const [clienteId, setClienteId] = useState('')
+const [clienteEmail, setClienteEmail] = useState('')
+const [errorCliente, setErrorCliente] = useState('')
+const [buscandoCliente, setBuscandoCliente] = useState(false)
 
 function validarCedula(cedula: string): boolean {
   if (!/^\d{10}$/.test(cedula)) return false
@@ -63,6 +67,31 @@ function validarCedula(cedula: string): boolean {
   const digitoVerificador = suma % 10 === 0 ? 0 : 10 - (suma % 10)
   return digitoVerificador === parseInt(cedula[9])
 }
+async function buscarCliente(ced: string) {
+  if (!validarCedula(ced)) return
+  setBuscandoCliente(true)
+  setErrorCliente('')
+  setNombre('')
+  setClienteId('')
+  setClienteEmail('')
+  try {
+    const res = await fetch(`/api/clientes/por-cedula?cedula=${ced}`)
+    if (res.ok) {
+      const data = await res.json()
+      setNombre(data.nombre)
+      setClienteId(data.id)
+      setClienteEmail(data.email)
+    } else {
+      setErrorCliente('Cliente no registrado. Debe crear una cuenta primero.')
+    }
+  } catch {
+    setErrorCliente('Error al buscar cliente')
+  } finally {
+    setBuscandoCliente(false)
+  }
+}
+
+
   const DESCUENTO: Record<TipoPasajero, number> = {
     ADULTO: 0,
     NINO: 0.5,
@@ -147,14 +176,18 @@ function validarCedula(cedula: string): boolean {
   }
 
  async function emitirBoletos() {
-  if (!rutaSeleccionada || asientosSeleccionados.length === 0 || !nombre || !cedula) {
-    setMensaje('Selecciona al menos un asiento y completa los datos del pasajero')
-    return
-  }
-  if (!validarCedula(cedula)) {
-    setMensaje('La cédula ingresada no es válida')
-    return
-  }
+  if (!rutaSeleccionada || asientosSeleccionados.length === 0 || !cedula) {
+  setMensaje('Selecciona al menos un asiento y completa la cédula del pasajero')
+  return
+}
+if (!validarCedula(cedula)) {
+  setMensaje('La cédula ingresada no es válida')
+  return
+}
+if (!clienteId) {
+  setMensaje('El cliente no está registrado. Debe crear una cuenta primero.')
+  return
+}
     setCargando(true)
     setMensaje('')
 
@@ -166,15 +199,15 @@ function validarCedula(cedula: string): boolean {
         const res = await fetch('/api/boletos', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            rutaId: rutaSeleccionada.id,
-            asiento,
-            nombre,
-            cedula,
-            tipoPasajero,
-            metodoPago,
-            precio: precioAsiento,
-          }),
+         body: JSON.stringify({
+  rutaId: rutaSeleccionada.id,
+  asiento,
+  pasajeroNombre: nombre,
+  pasajeroCedula: cedula,
+  tipoPasajero,
+  metodoPago,
+  precio: precioAsiento,
+}),
         })
         if (!res.ok) {
           const err = await res.json()
@@ -347,14 +380,16 @@ function validarCedula(cedula: string): boolean {
             <h2 className="text-lg font-semibold text-gray-700 mb-4">Datos del pasajero</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Nombre completo</label>
-                <input
-                  className="w-full border rounded-lg px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  value={nombre}
-                  onChange={e => setNombre(e.target.value)}
-                  placeholder="Juan Pérez"
-                />
-              </div>
+  <label className="block text-sm text-gray-600 mb-1">Nombre completo</label>
+  <input
+    className="w-full border rounded-lg px-3 py-2 text-gray-900 bg-gray-50 focus:outline-none"
+    value={buscandoCliente ? 'Buscando...' : nombre}
+    readOnly
+    placeholder="Se llena automáticamente con la cédula"
+  />
+  {errorCliente && <p className="text-red-500 text-xs mt-1">{errorCliente}</p>}
+  {nombre && <p className="text-green-600 text-xs mt-1">✅ Cliente encontrado</p>}
+</div>
               <div>
   <label className="block text-sm text-gray-600 mb-1">Cédula</label>
   <input
@@ -362,14 +397,19 @@ function validarCedula(cedula: string): boolean {
     value={cedula}
     maxLength={10}
     onChange={e => {
-      const val = e.target.value.replace(/\D/g, '')
-      setCedula(val)
-      if (val.length === 10) {
-        setErrorCedula(validarCedula(val) ? '' : 'Cédula ecuatoriana inválida')
-      } else {
-        setErrorCedula('')
-      }
-    }}
+  const val = e.target.value.replace(/\D/g, '')
+  setCedula(val)
+  if (val.length === 10) {
+    setErrorCedula(validarCedula(val) ? '' : 'Cédula ecuatoriana inválida')
+  } else {
+    setErrorCedula('')
+    setNombre('')
+    setClienteId('')
+    setClienteEmail('')
+    setErrorCliente('')
+  }
+}}
+onBlur={() => { if (cedula.length === 10 && validarCedula(cedula)) buscarCliente(cedula) }}
     placeholder="1234567890"
   />
   {errorCedula && <p className="text-red-500 text-xs mt-1">{errorCedula}</p>}

@@ -84,6 +84,25 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Chofer no válido' }, { status: 400 })
       }
     }
+    // Validar duplicados
+const [year, month, day] = fecha.split('-').map(Number)
+const startDia = new Date(Date.UTC(year, month-1, day, 0, 0, 0, 0))
+const endDia = new Date(Date.UTC(year, month-1, day + 1, 0, 0, 0, 0))
+
+const rutaExistente = await prisma.ruta.findFirst({
+  where: {
+    frecuenciaId,
+    busId,
+    fecha: { gte: startDia, lt: endDia }
+  }
+})
+
+if (rutaExistente) {
+  return NextResponse.json(
+    { error: 'Ya existe una ruta asignada a este bus en la misma fecha y horario' },
+    { status: 400 }
+  )
+}
 
     const ruta = await prisma.ruta.create({
       data: {
