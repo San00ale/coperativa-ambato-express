@@ -4,7 +4,8 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import bcrypt from 'bcryptjs'
-
+import QRCode from 'qrcode'
+import { enviarCorreoQR } from '@/lib/email'
 // POST /api/boletos - Crear un nuevo boleto
 export async function POST(request: Request) {
   try {
@@ -106,6 +107,41 @@ export async function POST(request: Request) {
         }
       }
     })
+    // DESPUÉS de prisma.boleto.create:
+let qrUrl = null
+if (metodoPago === 'EFECTIVO') {
+  const pasajero = await prisma.usuario.findUnique({ where: { id: pasajeroId } })
+  const ruta = await prisma.ruta.findUnique({
+    where: { id: rutaId },
+    include: { frecuencia: true }
+  })
+  if (pasajero && ruta) {
+    const qrData = JSON.stringify({
+      boletoId: boleto.id,
+      ruta: `${ruta.frecuencia.origen} → ${ruta.frecuencia.destino}`,
+      fecha: ruta.fecha,
+      hora: ruta.frecuencia.hora,
+      asiento: asientoValue,
+      pasajero: pasajero.nombre,
+      cedula: pasajero.cedula
+    })
+    qrUrl = await QRCode.toDataURL(qrData)
+    await prisma.boleto.update({
+      where: { id: boleto.id },
+      data: { qrUrl }
+    })
+    await enviarCorreoQR(
+      pasajero.email,
+      pasajero.nombre,
+      qrUrl,
+      `${ruta.frecuencia.origen} → ${ruta.frecuencia.destino}`,
+      ruta.fecha.toString(),
+      asientoValue
+    )
+  }
+}
+
+return NextResponse.json({ ...boleto, qrUrl }, { status: 201 })
 
     return NextResponse.json(boleto, { status: 201 })
   } catch (error) {
