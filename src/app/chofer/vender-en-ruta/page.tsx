@@ -2,8 +2,9 @@
 
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
-import { AlertCircle, Loader, Bus, Ticket, CreditCard, DollarSign, CheckCircle2 } from 'lucide-react'
+import { AlertCircle, Loader, Bus, Ticket, DollarSign, CheckCircle2 } from 'lucide-react'
 import AsientosGrid from '@/components/AsientosGrid'
+import { validarCedulaEcuatoriana } from '@/lib/validations'
 
 interface Bus {
   id: string
@@ -57,6 +58,7 @@ export default function VenderEnRutaPage() {
   const [asientoSeleccionado, setAsientoSeleccionado] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
   const [mensajeExito, setMensajeExito] = useState<string | null>(null)
+  const [cedulaError, setCedulaError] = useState('')
 
   const [formData, setFormData] = useState<FormData>({
     nombre: '',
@@ -108,6 +110,21 @@ export default function VenderEnRutaPage() {
 
   const asientosOcupados = ruta?.boletos.map(b => b.asiento) || []
 
+  const calcularPrecioFinal = (): number => {
+    const precioBase = ruta?.precio ?? 0
+    let precio = precioBase
+
+    if (asientoSeleccionado && esVIP(asientoSeleccionado)) {
+      precio *= 1.2
+    }
+
+    if (['MENOR', 'TERCERA_EDAD', 'DISCAPACITADO'].includes(formData.tipo)) {
+      precio *= 0.5
+    }
+
+    return Math.round(precio * 100) / 100
+  }
+
   const esVIP = (num: string): boolean => {
     if (!ruta) return false;
     const vipSeatsNumeros = ruta.bus.asientosVIPNumeros;
@@ -136,6 +153,10 @@ export default function VenderEnRutaPage() {
       setError('La cédula es requerida')
       return false
     }
+    if (!validarCedulaEcuatoriana(formData.cedula)) {
+      setError('Cédula ecuatoriana inválida')
+      return false
+    }
     if (!asientoSeleccionado) {
       setError('Debes seleccionar un asiento')
       return false
@@ -152,9 +173,7 @@ export default function VenderEnRutaPage() {
       setEnviando(true)
       setError(null)
 
-      const vip = esVIP(asientoSeleccionado!)
-      const precioBase = ruta.precio || 0
-      const precioFinal = vip ? precioBase * 1.2 : precioBase
+      const precioFinal = calcularPrecioFinal()
 
       const response = await fetch('/api/ventas-chofer', {
         method: 'POST',
@@ -163,12 +182,12 @@ export default function VenderEnRutaPage() {
         },
         body: JSON.stringify({
           rutaId: ruta.id,
-          nombre: formData.nombre,
-          cedula: formData.cedula,
+          asiento: asientoSeleccionado,
+          pasajeroNombre: formData.nombre,
+          pasajeroCedula: formData.cedula,
           tipoPasajero: formData.tipo,
-          asiento: formData.asiento,
-          metodoPago: formData.metodoPago,
           precio: precioFinal,
+          metodoPago: 'EFECTIVO',
         }),
       })
 
@@ -370,10 +389,19 @@ export default function VenderEnRutaPage() {
                 <input
                   type="text"
                   value={formData.cedula}
-                  onChange={(e) => setFormData(prev => ({ ...prev, cedula: e.target.value }))}
+                  onChange={(e) => {
+                    const soloNumeros = e.target.value.replace(/\D/g, '')
+                    setFormData(prev => ({ ...prev, cedula: soloNumeros }))
+                    setCedulaError(
+                      soloNumeros && !validarCedulaEcuatoriana(soloNumeros)
+                        ? 'Cédula ecuatoriana inválida'
+                        : ''
+                    )
+                  }}
                   placeholder="Ej: 1234567890"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${cedulaError ? 'border-red-500' : 'border-gray-300'}`}
                 />
+                {cedulaError && <p className="text-xs text-red-600 mt-1">{cedulaError}</p>}
               </div>
 
               {/* Tipo de Pasajero */}
@@ -412,36 +440,9 @@ export default function VenderEnRutaPage() {
                 <label className="block text-sm font-medium text-gray-900 mb-2">
                   Método de Pago
                 </label>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-3 cursor-pointer p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
-                    style={{ backgroundColor: formData.metodoPago === 'EFECTIVO' ? '#f0fdf4' : 'transparent' }}>
-                    <input
-                      type="radio"
-                      value="EFECTIVO"
-                      checked={formData.metodoPago === 'EFECTIVO'}
-                      onChange={(e) => setFormData(prev => ({ ...prev, metodoPago: e.target.value as 'EFECTIVO' | 'TARJETA' }))}
-                      className="w-4 h-4"
-                    />
-                    <span className="flex items-center gap-2 flex-1">
-                      <DollarSign size={18} className="text-green-600" />
-                      <span className="font-medium text-gray-900">Efectivo</span>
-                    </span>
-                  </label>
-
-                  <label className="flex items-center gap-3 cursor-pointer p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
-                    style={{ backgroundColor: formData.metodoPago === 'TARJETA' ? '#f0fdf4' : 'transparent' }}>
-                    <input
-                      type="radio"
-                      value="TARJETA"
-                      checked={formData.metodoPago === 'TARJETA'}
-                      onChange={(e) => setFormData(prev => ({ ...prev, metodoPago: e.target.value as 'EFECTIVO' | 'TARJETA' }))}
-                      className="w-4 h-4"
-                    />
-                    <span className="flex items-center gap-2 flex-1">
-                      <CreditCard size={18} className="text-blue-600" />
-                      <span className="font-medium text-gray-900">Tarjeta</span>
-                    </span>
-                  </label>
+                <div className="p-3 border border-green-200 rounded-lg bg-green-50 flex items-center gap-2 text-green-800">
+                  <DollarSign size={18} className="text-green-600" />
+                  <span className="font-medium">Solo efectivo</span>
                 </div>
               </div>
 
@@ -483,7 +484,11 @@ export default function VenderEnRutaPage() {
                     </div>
                     <div className="flex justify-between">
                       <span>Pago:</span>
-                      <span className="font-medium text-gray-900">{formData.metodoPago}</span>
+                      <span className="font-medium text-gray-900">EFECTIVO</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Precio:</span>
+                      <span className="font-semibold text-green-700">${calcularPrecioFinal().toFixed(2)}</span>
                     </div>
                   </div>
                 </div>

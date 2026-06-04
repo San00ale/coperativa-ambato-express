@@ -1,27 +1,36 @@
 interface Props {
   capacidad: number
   asientosVIP: number
+  asientosVIPNumeros?: string
   asientosOcupados: string[]
   asientoSeleccionado: string | null
   onAsientoClick: (asiento: string) => void
-  precioBase: number
+  precioBase?: number
   onPrecioChange?: (precio: number) => void
 }
 
 export default function AsientosGrid({
   capacidad,
   asientosVIP,
+  asientosVIPNumeros,
   asientosOcupados,
   asientoSeleccionado,
   onAsientoClick,
-  precioBase,
+  precioBase = 0,
   onPrecioChange
 }: Props) {
   const columnas = 4
   const asientosNormales = capacidad - asientosVIP
 
   const esVIP = (numeroAsiento: number): boolean => {
-    // Los últimos asientos son VIP (ej: 36-40 de 40)
+    if (asientosVIPNumeros) {
+      const vipNumeros = asientosVIPNumeros
+        .split(',')
+        .map((n) => parseInt(n.trim(), 10))
+        .filter((n) => !Number.isNaN(n))
+      return vipNumeros.includes(numeroAsiento)
+    }
+
     return numeroAsiento > asientosNormales
   }
 
