@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { validarCedulaEcuatoriana } from "@/lib/validations";
 
 const PRECIO_BASE = 5.00;
 
@@ -32,7 +33,6 @@ interface Ruta {
   frecuencia: Frecuencia;
 }
 
-// Componente interno que usa useSearchParams (debe estar envuelto en Suspense)
 function PagarContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -41,6 +41,8 @@ function PagarContent() {
 
   const [nombre, setNombre] = useState("");
   const [cedula, setCedula] = useState("");
+  const [errorNombre, setErrorNombre] = useState("");
+  const [errorCedula, setErrorCedula] = useState("");
   const [tipoPasajero, setTipoPasajero] = useState("ADULTO");
   const [archivo, setArchivo] = useState<File | null>(null);
   const [archivoPreview, setArchivoPreview] = useState<string>("");
@@ -53,7 +55,6 @@ function PagarContent() {
 
   useEffect(() => {
     if (!rutaId) return;
-
     const cargarRuta = async () => {
       try {
         const res = await fetch(`/api/rutas?rutaId=${rutaId}`);
@@ -66,9 +67,34 @@ function PagarContent() {
         setLoading(false);
       }
     };
-
     cargarRuta();
   }, [rutaId]);
+
+  const handleNombreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const valor = e.target.value;
+    setNombre(valor);
+    if (valor.trim().length === 0) {
+      setErrorNombre("El nombre completo es obligatorio.");
+    } else if (valor.trim().length < 3) {
+      setErrorNombre("El nombre debe tener al menos 3 caracteres.");
+    } else {
+      setErrorNombre("");
+    }
+  };
+
+  const handleCedulaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const valor = e.target.value.replace(/\D/g, "").slice(0, 10);
+    setCedula(valor);
+    if (valor.length === 0) {
+      setErrorCedula("La cédula es obligatoria.");
+    } else if (valor.length < 10) {
+      setErrorCedula(`Cédula incompleta (${valor.length}/10 dígitos).`);
+    } else if (!validarCedulaEcuatoriana(valor)) {
+      setErrorCedula("Cédula inválida. Verifica el número ingresado.");
+    } else {
+      setErrorCedula("");
+    }
+  };
 
   const handleArchivoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -77,26 +103,26 @@ function PagarContent() {
     setArchivoPreview(URL.createObjectURL(file));
   };
 
+  const confirmarHabilitado =
+    !!asiento &&
+    nombre.trim().length >= 3 &&
+    !errorNombre &&
+    cedula.length === 10 &&
+    !errorCedula &&
+    validarCedulaEcuatoriana(cedula) &&
+    !!tipoPasajero &&
+    !!archivo &&
+    !enviando;
+
   const handleConfirmar = async () => {
-    if (!nombre.trim() || !cedula.trim()) {
-      setError("Por favor completa nombre y cédula.");
-      return;
-    }
-    if (cedula.length < 10) {
-      setError("La cédula debe tener al menos 10 dígitos.");
-      return;
-    }
-    if (!archivo) {
-      setError("Por favor sube el comprobante de transferencia.");
-      return;
-    }
+    if (!confirmarHabilitado) return;
 
     setError("");
     setEnviando(true);
 
     try {
       const formData = new FormData();
-      formData.append("file", archivo);
+      formData.append("file", archivo!);
 
       const uploadRes = await fetch("/api/upload", {
         method: "POST",
@@ -116,7 +142,7 @@ function PagarContent() {
           tipoPasajero,
           metodoPago: "TRANSFERENCIA",
           comprobanteUrl,
-          pasajeroNombre: nombre,
+          pasajeroNombre: nombre.trim(),
           pasajeroCedula: cedula,
         }),
       });
@@ -127,9 +153,10 @@ function PagarContent() {
       }
 
       router.push("/cliente/mis-compras");
-
-    } catch (err: any) {
-      setError(err.message || "Error inesperado. Intenta de nuevo.");
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "Error inesperado. Intenta de nuevo."
+      );
     } finally {
       setEnviando(false);
     }
@@ -164,6 +191,8 @@ function PagarContent() {
         )}
 
         <div className="bg-white rounded-lg shadow p-6 space-y-5">
+
+          {/* Nombre completo */}
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1">
               Nombre completo
@@ -171,12 +200,18 @@ function PagarContent() {
             <input
               type="text"
               value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
+              onChange={handleNombreChange}
               placeholder="Ej: Juan Pérez"
-              className="w-full border border-gray-300 rounded-md p-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"  
+              className={`w-full border rounded-md p-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errorNombre ? "border-red-500" : "border-gray-300"
+              }`}
             />
+            {errorNombre && (
+              <p className="text-red-600 text-xs mt-1">{errorNombre}</p>
+            )}
           </div>
 
+          {/* Cédula */}
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1">
               Cédula
@@ -184,13 +219,26 @@ function PagarContent() {
             <input
               type="text"
               value={cedula}
-              onChange={(e) => setCedula(e.target.value)}
+              onChange={handleCedulaChange}
               placeholder="Ej: 1804123456"
               maxLength={10}
-              className="w-full border border-gray-300 rounded-md p-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"  
+              inputMode="numeric"
+              className={`w-full border rounded-md p-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errorCedula
+                  ? "border-red-500"
+                  : cedula.length === 10 && !errorCedula
+                  ? "border-green-500"
+                  : "border-gray-300"
+              }`}
             />
+            {errorCedula ? (
+              <p className="text-red-600 text-xs mt-1">{errorCedula}</p>
+            ) : cedula.length === 10 && !errorCedula ? (
+              <p className="text-green-600 text-xs mt-1">✅ Cédula válida</p>
+            ) : null}
           </div>
 
+          {/* Tipo de pasajero */}
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1">
               Tipo de pasajero
@@ -203,7 +251,7 @@ function PagarContent() {
                   className={`p-3 rounded-md border text-left text-sm transition-colors ${
                     tipoPasajero === tipo.value
                       ? "border-blue-500 bg-blue-50 text-blue-700"
-                      : "border-gray-300 hover:border-gray-400"
+                      : "border-gray-300 hover:border-gray-400 text-gray-900"
                   }`}
                 >
                   <p className="font-medium">{tipo.label}</p>
@@ -213,6 +261,7 @@ function PagarContent() {
             </div>
           </div>
 
+          {/* Precio */}
           <div className="bg-gray-50 rounded-md p-3 flex justify-between items-center">
             <span className="text-sm text-gray-600">Precio a pagar:</span>
             <span className="text-lg font-bold text-green-600">
@@ -220,6 +269,7 @@ function PagarContent() {
             </span>
           </div>
 
+          {/* Comprobante */}
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1">
               Comprobante de transferencia
@@ -237,27 +287,44 @@ function PagarContent() {
                 className="mt-3 w-full max-h-48 object-contain rounded-md border"
               />
             )}
+            {!archivo && (
+              <p className="text-gray-400 text-xs mt-1">
+                Sube la imagen del comprobante para continuar.
+              </p>
+            )}
           </div>
 
-            {error && <p className="text-red-700 text-sm">{error}</p>}
+          {error && <p className="text-red-700 text-sm">{error}</p>}
 
+          {/* Botón dinámico */}
           <button
             onClick={handleConfirmar}
-            disabled={enviando}
-            className="w-full bg-green-600 text-white py-3 rounded-md font-semibold hover:bg-green-700 disabled:opacity-50 transition-colors"
+            disabled={!confirmarHabilitado}
+            className="w-full bg-green-600 text-white py-3 rounded-md font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {enviando ? "Procesando..." : "✅ Confirmar Compra"}
           </button>
+
+          {!confirmarHabilitado && !enviando && (
+            <p className="text-center text-xs text-gray-400">
+              Completa todos los campos correctamente para continuar.
+            </p>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-// Componente principal envuelto en Suspense (requerido por Next.js para useSearchParams)
 export default function PagarPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Cargando...</div>}>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          Cargando...
+        </div>
+      }
+    >
       <PagarContent />
     </Suspense>
   );
