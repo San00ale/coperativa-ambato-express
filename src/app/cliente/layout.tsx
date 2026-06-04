@@ -52,14 +52,14 @@ export default function ClienteLayout({
               <div className="hidden md:flex gap-4">
                 <Link
                   href="/cliente/buscar"
-                  className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition"
+                  className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition"
                 >
                   <Search size={18} />
                   Buscar Rutas
                 </Link>
                 <Link
                   href="/cliente/mis-compras"
-                  className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition"
+                  className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition"
                 >
                   <ShoppingBag size={18} />
                   Mis Compras
@@ -70,7 +70,7 @@ export default function ClienteLayout({
             {/* Desktop User Menu */}
             <div className="hidden md:flex items-center gap-4">
               <div className="text-sm">
-                <p className="font-medium">{session?.user?.name}</p>
+                <p className="font-medium text-gray-800">{session?.user?.name}</p>
                 <p className="text-gray-600 text-xs">Cliente</p>
               </div>
               <button
@@ -97,14 +97,14 @@ export default function ClienteLayout({
             <div className="md:hidden pb-4 space-y-2">
               <Link
                 href="/cliente/buscar"
-                className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 w-full"
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full"
               >
                 <Search size={18} />
                 Buscar Rutas
               </Link>
               <Link
                 href="/cliente/mis-compras"
-                className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 w-full"
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100 hover:text-gray-900 w-full"
               >
                 <ShoppingBag size={18} />
                 Mis Compras
