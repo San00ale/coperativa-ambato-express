@@ -8,11 +8,15 @@ RUN npm ci --no-audit --no-fund
 
 COPY . .
 
+# Generar el cliente de Prisma (necesario para que la app funcione)
+RUN npx prisma generate
+
 ENV WATCHPACK_POLLING=true
 ENV HOSTNAME="0.0.0.0"
 
-# Regenerar cliente Prisma
-RUN npx prisma generate
+# No cambiamos de usuario; seguimos como root para evitar problemas de permisos en Windows
+# RUN chown -R node:node /app
+# USER node
 
 EXPOSE 3000
 
