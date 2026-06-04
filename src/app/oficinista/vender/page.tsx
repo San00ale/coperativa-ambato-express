@@ -16,10 +16,11 @@ interface Ruta {
     asientosVIP: number
     asientosVIPNumeros?: string
   }
-  frecuencia: {
+ frecuencia: {
     origen: string
     destino: string
     hora: string
+    duracion?: number
   }
   boletos?: { asiento: string; estado: string }[]
   asientosDisponibles?: number[]
@@ -46,6 +47,10 @@ export default function VenderBoleto() {
   const [mensaje, setMensaje] = useState('')
   const [paso, setPaso] = useState(1)
   const [errorCedula, setErrorCedula] = useState('')
+  const [clienteId, setClienteId] = useState('')
+const [clienteEmail, setClienteEmail] = useState('')
+const [errorCliente, setErrorCliente] = useState('')
+const [buscandoCliente, setBuscandoCliente] = useState(false)
 
 function validarCedula(cedula: string): boolean {
   if (!/^\d{10}$/.test(cedula)) return false
@@ -62,6 +67,31 @@ function validarCedula(cedula: string): boolean {
   const digitoVerificador = suma % 10 === 0 ? 0 : 10 - (suma % 10)
   return digitoVerificador === parseInt(cedula[9])
 }
+async function buscarCliente(ced: string) {
+  if (!validarCedula(ced)) return
+  setBuscandoCliente(true)
+  setErrorCliente('')
+  setNombre('')
+  setClienteId('')
+  setClienteEmail('')
+  try {
+    const res = await fetch(`/api/clientes/por-cedula?cedula=${ced}`)
+    if (res.ok) {
+      const data = await res.json()
+      setNombre(data.nombre)
+      setClienteId(data.id)
+      setClienteEmail(data.email)
+    } else {
+      setErrorCliente('Cliente no registrado. Debe crear una cuenta primero.')
+    }
+  } catch {
+    setErrorCliente('Error al buscar cliente')
+  } finally {
+    setBuscandoCliente(false)
+  }
+}
+
+
   const DESCUENTO: Record<TipoPasajero, number> = {
     ADULTO: 0,
     NINO: 0.5,
@@ -146,14 +176,18 @@ function validarCedula(cedula: string): boolean {
   }
 
  async function emitirBoletos() {
-  if (!rutaSeleccionada || asientosSeleccionados.length === 0 || !nombre || !cedula) {
-    setMensaje('Selecciona al menos un asiento y completa los datos del pasajero')
-    return
-  }
-  if (!validarCedula(cedula)) {
-    setMensaje('La cédula ingresada no es válida')
-    return
-  }
+  if (!rutaSeleccionada || asientosSeleccionados.length === 0 || !cedula) {
+  setMensaje('Selecciona al menos un asiento y completa la cédula del pasajero')
+  return
+}
+if (!validarCedula(cedula)) {
+  setMensaje('La cédula ingresada no es válida')
+  return
+}
+if (!clienteId) {
+  setMensaje('El cliente no está registrado. Debe crear una cuenta primero.')
+  return
+}
     setCargando(true)
     setMensaje('')
 
@@ -165,15 +199,15 @@ function validarCedula(cedula: string): boolean {
         const res = await fetch('/api/boletos', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            rutaId: rutaSeleccionada.id,
-            asiento,
-            nombre,
-            cedula,
-            tipoPasajero,
-            metodoPago,
-            precio: precioAsiento,
-          }),
+         body: JSON.stringify({
+  rutaId: rutaSeleccionada.id,
+  asiento,
+  pasajeroNombre: nombre,
+  pasajeroCedula: cedula,
+  tipoPasajero,
+  metodoPago,
+  precio: precioAsiento,
+}),
         })
         if (!res.ok) {
           const err = await res.json()
@@ -271,7 +305,10 @@ function validarCedula(cedula: string): boolean {
                       <span className="font-semibold text-gray-800">
                         {ruta.frecuencia.origen} → {ruta.frecuencia.destino}
                       </span>
-                      <span className="ml-3 text-sm text-gray-500">{ruta.frecuencia.hora}</span>
+                     <span className="ml-3 text-sm text-gray-500">
+  {ruta.frecuencia.hora}
+  {ruta.frecuencia.duracion && ` · ${ruta.frecuencia.duracion} min`}
+</span>
                       <div className="text-xs text-gray-400">
                         Bus: {ruta.bus.numero} ({ruta.bus.placa})
                       </div>
@@ -343,14 +380,16 @@ function validarCedula(cedula: string): boolean {
             <h2 className="text-lg font-semibold text-gray-700 mb-4">Datos del pasajero</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Nombre completo</label>
-                <input
-                  className="w-full border rounded-lg px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  value={nombre}
-                  onChange={e => setNombre(e.target.value)}
-                  placeholder="Juan Pérez"
-                />
-              </div>
+  <label className="block text-sm text-gray-600 mb-1">Nombre completo</label>
+  <input
+    className="w-full border rounded-lg px-3 py-2 text-gray-900 bg-gray-50 focus:outline-none"
+    value={buscandoCliente ? 'Buscando...' : nombre}
+    readOnly
+    placeholder="Se llena automáticamente con la cédula"
+  />
+  {errorCliente && <p className="text-red-500 text-xs mt-1">{errorCliente}</p>}
+  {nombre && <p className="text-green-600 text-xs mt-1">✅ Cliente encontrado</p>}
+</div>
               <div>
   <label className="block text-sm text-gray-600 mb-1">Cédula</label>
   <input
@@ -358,14 +397,19 @@ function validarCedula(cedula: string): boolean {
     value={cedula}
     maxLength={10}
     onChange={e => {
-      const val = e.target.value.replace(/\D/g, '')
-      setCedula(val)
-      if (val.length === 10) {
-        setErrorCedula(validarCedula(val) ? '' : 'Cédula ecuatoriana inválida')
-      } else {
-        setErrorCedula('')
-      }
-    }}
+  const val = e.target.value.replace(/\D/g, '')
+  setCedula(val)
+  if (val.length === 10) {
+    setErrorCedula(validarCedula(val) ? '' : 'Cédula ecuatoriana inválida')
+  } else {
+    setErrorCedula('')
+    setNombre('')
+    setClienteId('')
+    setClienteEmail('')
+    setErrorCliente('')
+  }
+}}
+onBlur={() => { if (cedula.length === 10 && validarCedula(cedula)) buscarCliente(cedula) }}
     placeholder="1234567890"
   />
   {errorCedula && <p className="text-red-500 text-xs mt-1">{errorCedula}</p>}
@@ -400,15 +444,29 @@ function validarCedula(cedula: string): boolean {
               <h3 className="font-semibold text-blue-800 mb-2">Resumen de venta</h3>
               <div className="text-sm text-blue-700 space-y-1">
                 <p>Ruta: <span className="font-medium">{rutaSeleccionada.frecuencia.origen} → {rutaSeleccionada.frecuencia.destino}</span></p>
-                <p>Hora: <span className="font-medium">{rutaSeleccionada.frecuencia.hora}</span></p>
+               <p>Hora: <span className="font-medium">{rutaSeleccionada.frecuencia.hora}</span></p>
+{rutaSeleccionada.frecuencia.duracion && (
+  <p>Duración: <span className="font-medium">{rutaSeleccionada.frecuencia.duracion} min</span></p>
+)}
                 <p>Bus: <span className="font-medium">{rutaSeleccionada.bus.numero} ({rutaSeleccionada.bus.placa})</span></p>
                 <p>Asientos: <span className="font-medium">{asientosSeleccionados.join(', ')}</span></p>
+                {/* DESPUÉS: */}
                 <p>Cantidad: <span className="font-medium">{asientosSeleccionados.length}</span></p>
-                <p>Precio unitario: <span className="font-medium">${precioBase.toFixed(2)}</span></p>
                 {DESCUENTO[tipoPasajero] > 0 && (
                   <p>Descuento: <span className="font-medium text-green-600">-{DESCUENTO[tipoPasajero] * 100}% por pasajero</span></p>
                 )}
-                <p className="text-lg font-bold text-blue-900 pt-1">Total: ${precioTotal.toFixed(2)}</p>
+                <div className="border-t border-blue-200 pt-2 mt-2 space-y-1">
+  {asientosSeleccionados.map(asiento => {
+    const vip = esVIP(asiento)
+    const precio = vip ? precioConDescuento * 1.2 : precioConDescuento
+    return (
+      <p key={asiento}>
+        Asiento {asiento}{vip ? ' ⭐ VIP' : ''}: <span className="font-medium">${precio.toFixed(2)}</span>
+      </p>
+    )
+  })}
+</div>
+<p className="text-lg font-bold text-blue-900 pt-1">Total: ${precioTotal.toFixed(2)}</p>
               </div>
             </div>
 

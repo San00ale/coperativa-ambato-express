@@ -139,7 +139,11 @@ export default function EscanearPage() {
   useEffect(() => {
     if (cameraPermission !== 'granted') return
 
-    startScanner()
+    const initScanner = async () => {
+      await startScanner()
+    }
+
+    void initScanner()
 
     return () => {
       if (html5QrcodeRef.current && scanning) {

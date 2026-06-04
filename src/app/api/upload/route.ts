@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { v2 as cloudinary } from 'cloudinary'
+import { v2 as cloudinary, type UploadApiResponse } from 'cloudinary'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
@@ -29,17 +29,17 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(bytes)
 
     // Subir a Cloudinary
-    const result = await new Promise((resolve, reject) => {
+    const result = await new Promise<UploadApiResponse>((resolve, reject) => {
       cloudinary.uploader.upload_stream(
         { folder: 'comprobantes' },
         (error, result) => {
           if (error) reject(error)
-          else resolve(result)
+          else resolve(result as UploadApiResponse)
         }
       ).end(buffer)
     })
 
-    return NextResponse.json({ url: (result as any).secure_url })
+    return NextResponse.json({ url: result.secure_url })
   } catch (error) {
     console.error('Error al subir archivo:', error)
     return NextResponse.json({ error: 'Error al subir el comprobante' }, { status: 500 })

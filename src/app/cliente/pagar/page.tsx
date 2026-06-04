@@ -5,8 +5,6 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { validarCedulaEcuatoriana } from "@/lib/validations";
 
-const PRECIO_BASE = 5.00;
-
 const DESCUENTOS: Record<string, number> = {
   ADULTO: 0,
   NINO: 0.5,
@@ -30,6 +28,7 @@ interface Frecuencia {
 interface Ruta {
   id: string;
   fecha: string;
+  precio: number;
   frecuencia: Frecuencia;
 }
 
@@ -38,6 +37,9 @@ function PagarContent() {
   const searchParams = useSearchParams();
   const rutaId = searchParams.get("rutaId");
   const asiento = searchParams.get("asiento");
+  const precioParam = searchParams.get("precio");
+
+  const precioBase = precioParam ? parseFloat(precioParam) : 0;
 
   const [nombre, setNombre] = useState("");
   const [cedula, setCedula] = useState("");
@@ -51,7 +53,7 @@ function PagarContent() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
 
-  const precioFinal = PRECIO_BASE * (1 - DESCUENTOS[tipoPasajero]);
+  const precioFinal = precioBase * (1 - DESCUENTOS[tipoPasajero]);
 
   useEffect(() => {
     if (!rutaId) return;
@@ -99,6 +101,24 @@ function PagarContent() {
   const handleArchivoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const tiposPermitidos = ["image/jpeg", "image/png"];
+    if (!tiposPermitidos.includes(file.type)) {
+      setError("Solo se permiten archivos de imagen (.jpg, .jpeg, .png).");
+      setArchivo(null);
+      setArchivoPreview("");
+      return;
+    }
+
+    const maxSize = 2 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setError("El archivo no debe superar los 2 MB.");
+      setArchivo(null);
+      setArchivoPreview("");
+      return;
+    }
+
+    setError("");
     setArchivo(file);
     setArchivoPreview(URL.createObjectURL(file));
   };
@@ -138,7 +158,7 @@ function PagarContent() {
         body: JSON.stringify({
           rutaId,
           asiento,
-          precio: PRECIO_BASE,
+          precio: precioFinal,
           tipoPasajero,
           metodoPago: "TRANSFERENCIA",
           comprobanteUrl,
@@ -154,9 +174,8 @@ function PagarContent() {
 
       router.push("/cliente/mis-compras");
     } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Error inesperado. Intenta de nuevo."
-      );
+      const message = err instanceof Error ? err.message : "Error inesperado. Intenta de nuevo.";
+      setError(message);
     } finally {
       setEnviando(false);
     }
@@ -179,9 +198,16 @@ function PagarContent() {
 
         {ruta && (
           <div className="bg-white rounded-lg shadow p-4 mb-6">
-            <p className="font-semibold text-gray-800">
-              {ruta.frecuencia.origen} → {ruta.frecuencia.destino}
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="font-semibold text-gray-800">
+                {ruta.frecuencia.origen} → {ruta.frecuencia.destino}
+              </p>
+              {precioBase > ruta.precio && (
+                <span className="text-xs font-medium px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 border border-yellow-300">
+                  ⭐ Asiento VIP
+                </span>
+              )}
+            </div>
             <p className="text-sm text-gray-500 mt-1">
               🕐 {ruta.frecuencia.hora} &nbsp;|&nbsp;
               💺 Asiento {asiento} &nbsp;|&nbsp;
@@ -262,11 +288,19 @@ function PagarContent() {
           </div>
 
           {/* Precio */}
-          <div className="bg-gray-50 rounded-md p-3 flex justify-between items-center">
-            <span className="text-sm text-gray-600">Precio a pagar:</span>
-            <span className="text-lg font-bold text-green-600">
-              ${precioFinal.toFixed(2)}
-            </span>
+          <div className="bg-gray-50 rounded-md p-3 space-y-1">
+            {precioBase !== precioFinal && (
+              <div className="flex justify-between items-center text-sm text-gray-500">
+                <span>Precio base:</span>
+                <span>${precioBase.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Precio a pagar:</span>
+              <span className="text-lg font-bold text-green-600">
+                ${precioFinal.toFixed(2)}
+              </span>
+            </div>
           </div>
 
           {/* Comprobante */}
@@ -276,10 +310,15 @@ function PagarContent() {
             </label>
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png"
               onChange={handleArchivoChange}
               className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
             />
+            {archivo && (
+              <p className="mt-2 text-xs text-gray-500">
+                📎 {archivo.name} ({(archivo.size / 1024).toFixed(1)} KB)
+              </p>
+            )}
             {archivoPreview && (
               <img
                 src={archivoPreview}

@@ -1,9 +1,11 @@
+import type { Prisma } from '@prisma/client'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import bcrypt from 'bcryptjs'
-
+import QRCode from 'qrcode'
+import { enviarCorreoQR } from '@/lib/email'
 // POST /api/boletos - Crear un nuevo boleto
 export async function POST(request: Request) {
   try {
@@ -13,7 +15,8 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    let { rutaId, asiento, precio, tipoPasajero, metodoPago, comprobanteUrl, pasajeroNombre, pasajeroCedula } = body
+    const { rutaId, asiento, precio, tipoPasajero, metodoPago, comprobanteUrl, pasajeroNombre, pasajeroCedula } = body
+    const asientoValue = String(asiento)
 
     // Validar campos requeridos
     if (!rutaId || !asiento || !precio) {
@@ -24,13 +27,13 @@ export async function POST(request: Request) {
     }
 
     // Convertir asiento a string (Prisma espera String)
-    asiento = String(asiento)
+    // ya está en asientoValue
 
     // Verificar que el asiento no esté ocupado en esa ruta
     const boletoExistente = await prisma.boleto.findFirst({
       where: {
         rutaId: rutaId,
-        asiento: asiento,
+        asiento: asientoValue,
         estado: { not: 'CANCELADO' }
       }
     })
@@ -86,7 +89,7 @@ export async function POST(request: Request) {
       data: {
         rutaId,
         pasajeroId,
-        asiento,
+        asiento: asientoValue,
         precio: precioFinal,
         descuento,
         tipoPasajero: tipoPasajero || 'ADULTO',
@@ -104,6 +107,41 @@ export async function POST(request: Request) {
         }
       }
     })
+    // DESPUÉS de prisma.boleto.create:
+let qrUrl = null
+if (metodoPago === 'EFECTIVO') {
+  const pasajero = await prisma.usuario.findUnique({ where: { id: pasajeroId } })
+  const ruta = await prisma.ruta.findUnique({
+    where: { id: rutaId },
+    include: { frecuencia: true }
+  })
+  if (pasajero && ruta) {
+    const qrData = JSON.stringify({
+      boletoId: boleto.id,
+      ruta: `${ruta.frecuencia.origen} → ${ruta.frecuencia.destino}`,
+      fecha: ruta.fecha,
+      hora: ruta.frecuencia.hora,
+      asiento: asientoValue,
+      pasajero: pasajero.nombre,
+      cedula: pasajero.cedula
+    })
+    qrUrl = await QRCode.toDataURL(qrData)
+    await prisma.boleto.update({
+      where: { id: boleto.id },
+      data: { qrUrl }
+    })
+    await enviarCorreoQR(
+      pasajero.email,
+      pasajero.nombre,
+      qrUrl,
+      `${ruta.frecuencia.origen} → ${ruta.frecuencia.destino}`,
+      ruta.fecha.toString(),
+      asientoValue
+    )
+  }
+}
+
+return NextResponse.json({ ...boleto, qrUrl }, { status: 201 })
 
     return NextResponse.json(boleto, { status: 201 })
   } catch (error) {
@@ -123,7 +161,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const pendientes = searchParams.get('pendientes') === 'true'
 
-    let where: any = {}
+    const where: Prisma.BoletoWhereInput = {}
 
     if (session.user.role === 'CLIENTE') {
       where.pasajeroId = session.user.id

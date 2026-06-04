@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -45,15 +45,7 @@ export default function BusesPage() {
   })
   const [selectedVIPSeats, setSelectedVIPSeats] = useState<number[]>([])
 
-  useEffect(() => {
-    if (session?.user?.role !== 'ADMIN') {
-      router.push('/login')
-      return
-    }
-    cargarBuses()
-  }, [session, router])
-
-  const cargarBuses = async () => {
+  const cargarBuses = useCallback(async () => {
     try {
       const response = await fetch('/api/buses')
       if (response.ok) {
@@ -67,7 +59,20 @@ export default function BusesPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (session?.user?.role !== 'ADMIN') {
+      router.push('/login')
+      return
+    }
+
+    const iniciarCarga = async () => {
+      await cargarBuses()
+    }
+
+    void iniciarCarga()
+  }, [session, router, cargarBuses])
 
   const resetForm = () => {
     setFormData({

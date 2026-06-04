@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
@@ -11,7 +12,7 @@ export async function GET(request: Request) {
     const origen = searchParams.get('origen')
     const destino = searchParams.get('destino')
     
-    const where: any = {}
+    const where: Prisma.RutaWhereInput = {}
 
     if (session?.user?.role === 'CHOFER') {
       where.choferId = session.user.id
@@ -20,8 +21,8 @@ export async function GET(request: Request) {
     if (fecha) {
       // Ecuador UTC-5: ajustar rango
       const [year, month, day] = fecha.split('-').map(Number)
-      const start = new Date(Date.UTC(year, month-1, day, 5, 0, 0, 0))
-      const end = new Date(Date.UTC(year, month-1, day, 28, 59, 59, 999))
+      const start = new Date(Date.UTC(year, month-1, day, 0, 0, 0, 0))
+const end = new Date(Date.UTC(year, month-1, day + 1, 0, 0, 0, 0))
       where.fecha = { gte: start, lt: end }
     }
     
@@ -83,6 +84,25 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Chofer no válido' }, { status: 400 })
       }
     }
+    // Validar duplicados
+const [year, month, day] = fecha.split('-').map(Number)
+const startDia = new Date(Date.UTC(year, month-1, day, 0, 0, 0, 0))
+const endDia = new Date(Date.UTC(year, month-1, day + 1, 0, 0, 0, 0))
+
+const rutaExistente = await prisma.ruta.findFirst({
+  where: {
+    frecuenciaId,
+    busId,
+    fecha: { gte: startDia, lt: endDia }
+  }
+})
+
+if (rutaExistente) {
+  return NextResponse.json(
+    { error: 'Ya existe una ruta asignada a este bus en la misma fecha y horario' },
+    { status: 400 }
+  )
+}
 
     const ruta = await prisma.ruta.create({
       data: {
