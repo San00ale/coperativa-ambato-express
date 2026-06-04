@@ -19,8 +19,8 @@ export default function AsientosGrid({
   precioBase = 0,
   onPrecioChange
 }: Props) {
-  const columnas = 4
-  const asientosNormales = capacidad - asientosVIP
+  const columnas = 5
+  const asientosNormales = Math.max(capacidad - asientosVIP, 0)
 
   const esVIP = (numeroAsiento: number): boolean => {
     if (asientosVIPNumeros) {
@@ -34,70 +34,53 @@ export default function AsientosGrid({
     return numeroAsiento > asientosNormales
   }
 
-  const calcularPrecio = (numeroAsiento: number, tipoPasajero: string): number => {
-    let precio = precioBase
-    
-    // Agregar recargo VIP (20%)
-    if (esVIP(numeroAsiento)) {
-      precio *= 1.2
-    }
-    
-    // Aplicar descuento según tipo pasajero (50%)
-    if (['MENOR', 'TERCERA_EDAD', 'DISCAPACITADO'].includes(tipoPasajero)) {
-      precio *= 0.5
-    }
-    
-    return Math.round(precio * 100) / 100
-  }
-
   return (
     <div className="space-y-4">
-      <h3 className="font-bold text-white">FRENTE DEL BUS</h3>
-      
-      <div className="grid gap-2 p-4 bg-gray-800 rounded-lg" 
-        style={{
-          gridTemplateColumns: `repeat(${columnas}, minmax(0, 1fr))`,
-          gap: '0.5rem'
-        }}>
-        {Array.from({ length: capacidad }).map((_, i) => {
-          const numeroAsiento = i + 1
-          const esOcupado = asientosOcupados.includes(numeroAsiento.toString())
-          const esSeleccionado = asientoSeleccionado === numeroAsiento.toString()
-          const esVIPAsiento = esVIP(numeroAsiento)
-          
-          // Agregar separador (pasillo) entre columnas 2 y 3
-          if (numeroAsiento % columnas === 3 && numeroAsiento % (columnas * 2) !== 3) {
-            return <div key={`pasillo-${i}`} className="col-span-1" />
-          }
+      <h3 className="font-bold text-gray-100">FRENTE DEL BUS</h3>
 
-          return (
-            <button
-              key={numeroAsiento}
-              onClick={() => !esOcupado && onAsientoClick(numeroAsiento.toString())}
-              disabled={esOcupado}
-              className={`
-                p-3 rounded font-bold text-sm transition relative
-                flex items-center justify-center
-                ${esOcupado 
-                  ? 'bg-red-600 text-white cursor-not-allowed opacity-50' 
-                  : esSeleccionado 
-                  ? 'bg-blue-600 text-white ring-2 ring-blue-400' 
-                  : 'bg-green-600 hover:bg-green-700 text-white cursor-pointer'
-                }
-              `}>
-              {numeroAsiento}
-              {esVIPAsiento && (
-                <span className="absolute top-0 right-0 text-xs">⭐</span>
-              )}
-            </button>
-          )
-        })}
+      <div className="rounded-2xl border border-gray-700 bg-gray-900 p-4 shadow-inner">
+        <div
+          className="grid gap-2"
+          style={{ gridTemplateColumns: `repeat(${columnas}, minmax(0, 1fr))` }}
+        >
+          {Array.from({ length: capacidad }).map((_, i) => {
+            const numeroAsiento = i + 1
+            const esOcupado = asientosOcupados.includes(numeroAsiento.toString())
+            const esSeleccionado = asientoSeleccionado === numeroAsiento.toString()
+            const esVIPAsiento = esVIP(numeroAsiento)
+            const posicionColumna = ((numeroAsiento - 1) % 4) < 2
+              ? ((numeroAsiento - 1) % 4)
+              : (((numeroAsiento - 1) % 4) + 1)
+
+            return (
+              <button
+                key={numeroAsiento}
+                type="button"
+                onClick={() => !esOcupado && onAsientoClick(numeroAsiento.toString())}
+                disabled={esOcupado}
+                style={{ gridColumn: `${posicionColumna + 1}` }}
+                className={`relative flex h-14 items-center justify-center rounded-xl border text-sm font-semibold shadow-sm transition ${
+                  esOcupado
+                    ? 'cursor-not-allowed border-red-500 bg-red-600 text-white'
+                    : esSeleccionado
+                      ? 'border-blue-400 bg-blue-600 text-white shadow-blue-900/50'
+                      : esVIPAsiento
+                        ? 'border-amber-400 bg-amber-500/90 text-gray-950 hover:bg-amber-400'
+                        : 'border-emerald-400 bg-emerald-500 text-white hover:bg-emerald-400'
+                }`}
+              >
+                {numeroAsiento}
+                {esVIPAsiento && <span className="absolute right-1 top-1 text-[10px]">⭐</span>}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {/* Leyenda */}
-      <div className="flex gap-4 flex-wrap text-sm text-gray-300">
+      <div className="flex gap-4 flex-wrap text-sm text-gray-200">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-green-600 rounded"></div>
+          <div className="w-4 h-4 bg-emerald-500 rounded"></div>
           <span>Disponible</span>
         </div>
         <div className="flex items-center gap-2">

@@ -1,7 +1,7 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AlertCircle, Loader, Bus, Ticket, DollarSign, CheckCircle2 } from 'lucide-react'
 import AsientosGrid from '@/components/AsientosGrid'
 import { validarCedulaEcuatoriana } from '@/lib/validations'
@@ -47,7 +47,7 @@ interface FormData {
   nombre: string
   cedula: string
   tipo: 'ADULTO' | 'MENOR' | 'TERCERA_EDAD' | 'DISCAPACITADO'
-  metodoPago: 'EFECTIVO' | 'TARJETA'
+  metodoPago: 'EFECTIVO'
   asiento: string
 }
 export default function VenderEnRutaPage() {
@@ -58,7 +58,11 @@ export default function VenderEnRutaPage() {
   const [asientoSeleccionado, setAsientoSeleccionado] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
   const [mensajeExito, setMensajeExito] = useState<string | null>(null)
-  const [cedulaError, setCedulaError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({
+    nombre: '',
+    cedula: '',
+    asiento: ''
+  })
 
   const [formData, setFormData] = useState<FormData>({
     nombre: '',
@@ -110,21 +114,6 @@ export default function VenderEnRutaPage() {
 
   const asientosOcupados = ruta?.boletos.map(b => b.asiento) || []
 
-  const calcularPrecioFinal = (): number => {
-    const precioBase = ruta?.precio ?? 0
-    let precio = precioBase
-
-    if (asientoSeleccionado && esVIP(asientoSeleccionado)) {
-      precio *= 1.2
-    }
-
-    if (['MENOR', 'TERCERA_EDAD', 'DISCAPACITADO'].includes(formData.tipo)) {
-      precio *= 0.5
-    }
-
-    return Math.round(precio * 100) / 100
-  }
-
   const esVIP = (num: string): boolean => {
     if (!ruta) return false;
     const vipSeatsNumeros = ruta.bus.asientosVIPNumeros;
@@ -137,31 +126,60 @@ export default function VenderEnRutaPage() {
     return parseInt(num) > capacidad - vipCount;
   }
 
+  const calcularPrecioFinal = useMemo(() => {
+    const precioBase = ruta?.precio ?? 0
+    let precio = precioBase
+
+    if (asientoSeleccionado && esVIP(asientoSeleccionado)) {
+      precio *= 1.2
+    }
+
+    if (['MENOR', 'TERCERA_EDAD', 'DISCAPACITADO'].includes(formData.tipo)) {
+      precio *= 0.5
+    }
+
+    return Math.round(precio * 100) / 100
+  }, [ruta?.precio, asientoSeleccionado, formData.tipo])
+
+  const recargarRuta = async () => {
+    if (!ruta) return
+
+    const response = await fetch(`/api/rutas/${ruta.id}`)
+    if (!response.ok) throw new Error('No se pudo recargar la ruta')
+
+    const rutaActualizada = await response.json()
+    setRuta(rutaActualizada)
+  }
+
   const handleAsientoClick = (asiento: string) => {
     if (!asientosOcupados.includes(asiento)) {
       setAsientoSeleccionado(asiento)
       setFormData(prev => ({ ...prev, asiento }))
+      setFieldErrors(prev => ({ ...prev, asiento: '' }))
     }
   }
 
   const validarFormulario = (): boolean => {
+    const errores = {
+      nombre: '',
+      cedula: '',
+      asiento: ''
+    }
+
     if (!formData.nombre.trim()) {
-      setError('El nombre del pasajero es requerido')
-      return false
+      errores.nombre = 'El nombre completo es requerido'
     }
     if (!formData.cedula.trim()) {
-      setError('La cédula es requerida')
-      return false
-    }
-    if (!validarCedulaEcuatoriana(formData.cedula)) {
-      setError('Cédula ecuatoriana inválida')
-      return false
+      errores.cedula = 'La cédula es requerida'
+    } else if (!validarCedulaEcuatoriana(formData.cedula)) {
+      errores.cedula = 'Cédula ecuatoriana inválida'
     }
     if (!asientoSeleccionado) {
-      setError('Debes seleccionar un asiento')
-      return false
+      errores.asiento = 'Debes seleccionar un asiento disponible'
     }
-    return true
+
+    setFieldErrors(errores)
+    return !errores.nombre && !errores.cedula && !errores.asiento
   }
 
   const handleEmitirBoleto = async () => {
@@ -173,9 +191,9 @@ export default function VenderEnRutaPage() {
       setEnviando(true)
       setError(null)
 
-      const precioFinal = calcularPrecioFinal()
+      const precioFinal = calcularPrecioFinal
 
-      const response = await fetch('/api/ventas-chofer', {
+      const response = await fetch('/api/boletos', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -196,26 +214,9 @@ export default function VenderEnRutaPage() {
         throw new Error(errorData.error || 'Error al emitir el boleto')
       }
 
-      const boleto = await response.json()
+      await recargarRuta()
 
-      // Mostrar mensaje de éxito
       setMensajeExito(`✓ Boleto emitido exitosamente para ${formData.nombre}`)
-      
-      // Actualizar la ruta para mostrar el nuevo asiento ocupado
-      setRuta(prev => {
-        if (!prev) return prev
-        return {
-          ...prev,
-          boletos: [
-            ...prev.boletos,
-            {
-              id: boleto.id,
-              asiento: formData.asiento,
-              estado: 'APROBADO'
-            }
-          ]
-        }
-      })
 
       // Limpiar formulario
       setFormData({
@@ -226,6 +227,7 @@ export default function VenderEnRutaPage() {
         asiento: ''
       })
       setAsientoSeleccionado(null)
+      setFieldErrors({ nombre: '', cedula: '', asiento: '' })
 
       // Limpiar mensaje después de 3 segundos
       setTimeout(() => setMensajeExito(null), 3000)
@@ -235,6 +237,8 @@ export default function VenderEnRutaPage() {
       setEnviando(false)
     }
   }
+
+  const formularioValido = Boolean(formData.nombre.trim() && formData.cedula.trim() && validarCedulaEcuatoriana(formData.cedula) && asientoSeleccionado)
 
   if (loading) {
     return (
@@ -262,14 +266,14 @@ export default function VenderEnRutaPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 text-slate-100">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+        <h1 className="text-3xl font-bold text-white flex items-center gap-3">
           <Ticket className="w-8 h-8 text-blue-600" />
           Vender Boletos en Ruta
         </h1>
-        <p className="text-gray-600 mt-2">
+        <p className="text-slate-300 mt-2">
           Vende boletos a bordo del bus a los pasajeros
         </p>
       </div>
@@ -297,29 +301,29 @@ export default function VenderEnRutaPage() {
       )}
 
       {/* Ruta Actual */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
+        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
           <Bus className="w-5 h-5" />
           Ruta Actual
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <span className="text-sm text-gray-600">Recorrido</span>
-            <p className="font-bold text-gray-900">
+            <span className="text-sm text-slate-300">Recorrido</span>
+            <p className="font-bold text-white">
               {ruta.frecuencia.origen} → {ruta.frecuencia.destino}
             </p>
           </div>
           <div>
-            <span className="text-sm text-gray-600">Bus</span>
-            <p className="font-bold text-gray-900">{ruta.bus.numero}</p>
+            <span className="text-sm text-slate-300">Bus</span>
+            <p className="font-bold text-white">{ruta.bus.numero}</p>
           </div>
           <div>
-            <span className="text-sm text-gray-600">Placa</span>
-            <p className="font-bold text-gray-900 uppercase">{ruta.bus.placa}</p>
+            <span className="text-sm text-slate-300">Placa</span>
+            <p className="font-bold text-white uppercase">{ruta.bus.placa}</p>
           </div>
           <div>
-            <span className="text-sm text-gray-600">Capacidad</span>
-            <p className="font-bold text-gray-900">
+            <span className="text-sm text-slate-300">Capacidad</span>
+            <p className="font-bold text-white">
               {ruta.boletos.length} / {ruta.bus.capacidad} ocupados
             </p>
           </div>
@@ -330,22 +334,22 @@ export default function VenderEnRutaPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Asientos - Columna Izquierda */}
         <div className="lg:col-span-2">
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6">Selecciona un Asiento</h2>
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
+            <h2 className="text-lg font-semibold text-white mb-6">Selecciona un Asiento</h2>
             
             {/* Leyenda */}
             <div className="flex gap-6 mb-6 flex-wrap">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 bg-green-100 border-2 border-green-500 rounded"></div>
-                <span className="text-sm text-gray-700">Disponible</span>
+                <span className="text-sm text-slate-200">Disponible</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 bg-red-100 border-2 border-red-500 rounded"></div>
-                <span className="text-sm text-gray-700">Ocupado</span>
+                <span className="text-sm text-slate-200">Ocupado</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 bg-blue-100 border-2 border-blue-500 rounded"></div>
-                <span className="text-sm text-gray-700">Seleccionado</span>
+                <span className="text-sm text-slate-200">Seleccionado</span>
               </div>
             </div>
 
@@ -363,27 +367,31 @@ export default function VenderEnRutaPage() {
 
         {/* Formulario - Columna Derecha */}
         <div className="lg:col-span-1">
-          <div className="bg-white border border-gray-200 rounded-lg p-6 sticky top-20">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6">Datos del Pasajero</h2>
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sticky top-20 shadow-lg">
+            <h2 className="text-lg font-semibold text-white mb-6">Datos del Pasajero</h2>
 
             <div className="space-y-4">
               {/* Nombre */}
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Nombre Completo
                 </label>
                 <input
                   type="text"
                   value={formData.nombre}
-                  onChange={(e) => setFormData(prev => ({ ...prev, nombre: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData(prev => ({ ...prev, nombre: e.target.value }))
+                    setFieldErrors(prev => ({ ...prev, nombre: e.target.value.trim() ? '' : 'El nombre completo es requerido' }))
+                  }}
                   placeholder="Ej: Juan García"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-900 text-white placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+                {fieldErrors.nombre && <p className="text-xs text-red-400 mt-1">{fieldErrors.nombre}</p>}
               </div>
 
               {/* Cédula */}
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Número de Cédula
                 </label>
                 <input
@@ -392,21 +400,22 @@ export default function VenderEnRutaPage() {
                   onChange={(e) => {
                     const soloNumeros = e.target.value.replace(/\D/g, '')
                     setFormData(prev => ({ ...prev, cedula: soloNumeros }))
-                    setCedulaError(
-                      soloNumeros && !validarCedulaEcuatoriana(soloNumeros)
-                        ? 'Cédula ecuatoriana inválida'
-                        : ''
-                    )
+                    setFieldErrors(prev => ({
+                      ...prev,
+                      cedula: soloNumeros
+                        ? (!validarCedulaEcuatoriana(soloNumeros) ? 'Cédula ecuatoriana inválida' : '')
+                        : 'La cédula es requerida'
+                    }))
                   }}
                   placeholder="Ej: 1234567890"
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${cedulaError ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`w-full px-3 py-2 border rounded-lg bg-gray-900 text-white placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${fieldErrors.cedula ? 'border-red-500' : 'border-gray-300'}`}
                 />
-                {cedulaError && <p className="text-xs text-red-600 mt-1">{cedulaError}</p>}
+                {fieldErrors.cedula && <p className="text-xs text-red-400 mt-1">{fieldErrors.cedula}</p>}
               </div>
 
               {/* Tipo de Pasajero */}
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Tipo de Pasajero
                 </label>
                 <select
@@ -423,24 +432,25 @@ export default function VenderEnRutaPage() {
 
               {/* Asiento Seleccionado */}
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Asiento Seleccionado
                 </label>
                 <div className={`w-full px-3 py-2 border-2 rounded-lg text-center font-bold ${
                   asientoSeleccionado
-                    ? 'border-blue-500 bg-blue-50 text-blue-900'
-                    : 'border-gray-300 bg-gray-50 text-gray-500'
+                    ? 'border-blue-500 bg-blue-950 text-blue-100'
+                    : 'border-gray-300 bg-gray-800 text-gray-300'
                 }`}>
                   {asientoSeleccionado || 'Selecciona un asiento'}
                 </div>
+                {fieldErrors.asiento && <p className="text-xs text-red-400 mt-1">{fieldErrors.asiento}</p>}
               </div>
 
               {/* Método de Pago */}
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Método de Pago
                 </label>
-                <div className="p-3 border border-green-200 rounded-lg bg-green-50 flex items-center gap-2 text-green-800">
+                <div className="p-3 border border-green-200 rounded-lg bg-green-900/90 flex items-center gap-2 text-green-100">
                   <DollarSign size={18} className="text-green-600" />
                   <span className="font-medium">Solo efectivo</span>
                 </div>
@@ -449,7 +459,7 @@ export default function VenderEnRutaPage() {
               {/* Botón Emitir */}
               <button
                 onClick={handleEmitirBoleto}
-                disabled={enviando || !asientoSeleccionado}
+                disabled={enviando || !formularioValido}
                 className="w-full mt-6 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold rounded-lg transition flex items-center justify-center gap-2"
               >
                 {enviando ? (
@@ -468,27 +478,43 @@ export default function VenderEnRutaPage() {
               {/* Resumen */}
               {asientoSeleccionado && (
                 <div className="mt-6 pt-6 border-t border-gray-200">
-                  <h3 className="font-semibold text-gray-900 mb-3">Resumen</h3>
-                  <div className="space-y-2 text-sm text-gray-600">
+                  <h3 className="font-semibold text-white mb-3">Resumen</h3>
+                  <div className="space-y-2 text-sm text-slate-200">
                     <div className="flex justify-between">
                       <span>Pasajero:</span>
-                      <span className="font-medium text-gray-900">{formData.nombre || '-'}</span>
+                      <span className="font-medium text-white">{formData.nombre || '-'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Asiento:</span>
-                      <span className="font-medium text-gray-900">{asientoSeleccionado}</span>
+                      <span className="font-medium text-white">{asientoSeleccionado}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Tipo:</span>
-                      <span className="font-medium text-gray-900">{formData.tipo}</span>
+                      <span className="font-medium text-white">{formData.tipo}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Pago:</span>
-                      <span className="font-medium text-gray-900">EFECTIVO</span>
+                      <span className="font-medium text-white">EFECTIVO</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Precio:</span>
-                      <span className="font-semibold text-green-700">${calcularPrecioFinal().toFixed(2)}</span>
+                      <span>Base:</span>
+                      <span className="font-medium text-gray-900">${(ruta?.precio ?? 0).toFixed(2)}</span>
+                    </div>
+                    {asientoSeleccionado && esVIP(asientoSeleccionado) && (
+                      <div className="flex justify-between">
+                        <span>VIP +20%:</span>
+                        <span className="font-medium text-amber-600">+${(((ruta?.precio ?? 0) * 0.2)).toFixed(2)}</span>
+                      </div>
+                    )}
+                    {['MENOR', 'TERCERA_EDAD', 'DISCAPACITADO'].includes(formData.tipo) && (
+                      <div className="flex justify-between">
+                        <span>Descuento 50%:</span>
+                        <span className="font-medium text-green-600">-${(((ruta?.precio ?? 0) * 0.5)).toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between border-t border-gray-200 pt-2">
+                      <span>Total:</span>
+                      <span className="font-semibold text-green-300">${calcularPrecioFinal.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
