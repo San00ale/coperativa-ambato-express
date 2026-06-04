@@ -27,7 +27,7 @@ interface ModalConfirmarAbordajeProps {
   onConfirmar: () => Promise<void>
   onCancelar: () => void
   cargando?: boolean
-  error?: string
+  error?: string | null
 }
 
 export default function ModalConfirmarAbordaje({

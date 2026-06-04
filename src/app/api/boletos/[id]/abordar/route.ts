@@ -6,7 +6,7 @@ import { authOptions } from '@/lib/auth'
 /**
  * PATCH /api/boletos/[id]/abordar
  * Registra el abordaje de un pasajero
- * 
+ *
  * Body:
  * {
  *   rutaId: "ruta-123"  // Para validar que es la ruta actual
@@ -14,11 +14,11 @@ import { authOptions } from '@/lib/auth'
  */
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }  // ← Promise
 ) {
   try {
     const session = await getServerSession(authOptions)
-    
+
     if (!session || session.user?.role !== 'CHOFER') {
       return NextResponse.json(
         { error: 'No autenticado o no eres chofer' },
@@ -26,7 +26,7 @@ export async function PATCH(
       )
     }
 
-    const boletoId = params.id
+    const { id: boletoId } = await params  // ← await
     const { rutaId } = await request.json()
 
     // ✅ Obtener boleto con relaciones
@@ -58,7 +58,7 @@ export async function PATCH(
     // ✅ Validación 1: Boleto ya abordado
     if (boleto.estado === 'ABORDADO') {
       return NextResponse.json(
-        { 
+        {
           error: 'Este boleto ya fue utilizado para abordar el bus',
           code: 'ALREADY_BOARDED',
           boleto
@@ -70,7 +70,7 @@ export async function PATCH(
     // ✅ Validación 2: Boleto rechazado o cancelado
     if (['RECHAZADO', 'CANCELADO'].includes(boleto.estado)) {
       return NextResponse.json(
-        { 
+        {
           error: `El boleto no está vigente (estado: ${boleto.estado})`,
           code: 'INVALID_STATE',
           boleto
@@ -82,7 +82,7 @@ export async function PATCH(
     // ✅ Validación 3: Boleto no aprobado
     if (boleto.estado !== 'APROBADO') {
       return NextResponse.json(
-        { 
+        {
           error: `Boleto en estado inválido: ${boleto.estado}`,
           code: 'WRONG_STATE',
           boleto
@@ -94,7 +94,7 @@ export async function PATCH(
     // ✅ Validación 4: Ruta actual del chofer
     if (boleto.ruta.id !== rutaId) {
       return NextResponse.json(
-        { 
+        {
           error: 'Este boleto corresponde a otra ruta',
           code: 'WRONG_ROUTE',
           boleto,
@@ -105,10 +105,10 @@ export async function PATCH(
       )
     }
 
-    // ✅ Validación 5: Chofer correcto (opcional, pero recomendado)
+    // ✅ Validación 5: Chofer correcto
     if (boleto.ruta.choferId !== session.user.id) {
       return NextResponse.json(
-        { 
+        {
           error: 'Este boleto no es de tu ruta actual',
           code: 'WRONG_CHOFER'
         },
@@ -121,8 +121,6 @@ export async function PATCH(
       where: { id: boletoId },
       data: {
         estado: 'ABORDADO',
-        // Opcional: guardar timestamp de abordaje
-        // abordajeEn: new Date()
       },
       include: {
         ruta: {
@@ -158,11 +156,11 @@ export async function PATCH(
  */
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }  // ← Promise
 ) {
   try {
     const session = await getServerSession(authOptions)
-    
+
     if (!session || session.user?.role !== 'CHOFER') {
       return NextResponse.json(
         { error: 'No autenticado' },
@@ -170,8 +168,10 @@ export async function GET(
       )
     }
 
+    const { id } = await params  // ← await
+
     const boleto = await prisma.boleto.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         ruta: {
           include: {
