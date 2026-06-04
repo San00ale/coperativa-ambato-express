@@ -11,8 +11,8 @@ interface SeatSelectorProps {
 export default function SeatSelector({ capacidad, selectedVIPSeats, onSeatToggle }: SeatSelectorProps) {
   const seats = Array.from({ length: capacidad }, (_, i) => i + 1)
   
-  // Calculate grid layout (2 seats per row for typical bus layout)
-  const seatsPerRow = 2
+  // Calculate grid layout (4 seats per row: 2 left + aisle + 2 right)
+  const seatsPerRow = 4
   const rows = Math.ceil(seats.length / seatsPerRow)
 
   return (
@@ -32,10 +32,12 @@ export default function SeatSelector({ capacidad, selectedVIPSeats, onSeatToggle
           </div>
         </div>
         
-        {/* Seats grid */}
-        <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${seatsPerRow}, 1fr)` }}>
+        {/* Seats grid with aisle */}
+        <div className="grid gap-2 grid-cols-2 md:grid-cols-4">
           {seats.map((seatNumber) => {
             const isVIP = selectedVIPSeats.includes(seatNumber)
+            // Add aisle gap after column 2 (seat numbers 2, 6, 10, etc.)
+            const isAfterAisle = (seatNumber % 4) === 3 || (seatNumber % 4) === 0
             return (
               <button
                 key={seatNumber}
@@ -48,6 +50,7 @@ export default function SeatSelector({ capacidad, selectedVIPSeats, onSeatToggle
                     : 'bg-white border-gray-300 text-gray-700 hover:border-blue-400'
                   }
                   hover:shadow-md
+                  ${isAfterAisle ? 'md:ml-4' : ''}
                 `}
               >
                 <div className="text-sm font-bold">
