@@ -43,7 +43,7 @@ export default function ModalConfirmarAbordaje({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-md w-full shadow-2xl">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 text-white">
+        <div className="bg-linear-to-r from-blue-600 to-blue-700 px-6 py-4 text-white">
           <h2 className="text-lg font-bold">Datos del Pasajero</h2>
         </div>
 
@@ -52,7 +52,7 @@ export default function ModalConfirmarAbordaje({
           {/* Error */}
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-              <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <XCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
               <div>
                 <h3 className="font-semibold text-red-900">Error</h3>
                 <p className="text-red-700 text-sm mt-1">{error}</p>
