@@ -33,6 +33,9 @@ export default function DetallePago() {
   const [rechazando, setRechazando] = useState(false)
   const [mensaje, setMensaje] = useState('')
   const [imagenGrande, setImagenGrande] = useState(false)
+  const [motivoRechazo, setMotivoRechazo] = useState('')
+const [mostrarModalRechazo, setMostrarModalRechazo] = useState(false)
+const [mostrarModalAprobacion, setMostrarModalAprobacion] = useState(false)
 
   useEffect(() => {
     fetch(`/api/boletos/pendientes`)
@@ -45,50 +48,60 @@ export default function DetallePago() {
       .catch(() => { setMensaje('Error al cargar el boleto'); setCargando(false) })
   }, [id])
 
-  async function aprobarPago() {
-    setAprobando(true)
-    setMensaje('')
-    try {
-      const res = await fetch(`/api/boletos/${id}/aprobar`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-      })
-      if (res.ok) {
-        setMensaje('✅ Pago aprobado. QR generado correctamente.')
-        setTimeout(() => router.push('/oficinista/pagos-pendientes'), 2000)
-      } else {
-        const err = await res.json()
-        setMensaje(err.error || 'Error al aprobar el pago')
-      }
-    } catch {
-      setMensaje('Error al conectar con el servidor')
-    } finally {
-      setAprobando(false)
-    }
+ async function aprobarPago() {
+  if (!boleto?.comprobanteUrl) {
+    setMensaje('No se puede aprobar: el cliente no ha subido un comprobante.')
+    return
   }
+  setMostrarModalAprobacion(true)
+}
 
-  async function rechazarPago() {
-    if (!confirm('¿Estás seguro de rechazar este pago? El asiento quedará libre.')) return
-    setRechazando(true)
-    setMensaje('')
-    try {
-      const res = await fetch(`/api/boletos/${id}/rechazar`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-      })
-      if (res.ok) {
-        setMensaje('❌ Pago rechazado. El asiento ha sido liberado.')
-        setTimeout(() => router.push('/oficinista/pagos-pendientes'), 2000)
-      } else {
-        const err = await res.json()
-        setMensaje(err.error || 'Error al rechazar el pago')
-      }
-    } catch {
-      setMensaje('Error al conectar con el servidor')
-    } finally {
-      setRechazando(false)
+async function confirmarAprobacion() {
+  setMostrarModalAprobacion(false)
+  setAprobando(true)
+  setMensaje('')
+  try {
+    const res = await fetch(`/api/boletos/${id}/aprobar`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    if (res.ok) {
+      setMensaje('✅ Pago aprobado. QR generado correctamente.')
+      setTimeout(() => router.push('/oficinista/pagos-pendientes'), 2000)
+    } else {
+      const err = await res.json()
+      setMensaje(err.error || 'Error al aprobar el pago')
     }
+  } catch {
+    setMensaje('Error al conectar con el servidor')
+  } finally {
+    setAprobando(false)
   }
+}
+
+  async function confirmarRechazo() {
+  setMostrarModalRechazo(false)
+  setRechazando(true)
+  setMensaje('')
+  try {
+    const res = await fetch(`/api/boletos/${id}/rechazar`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ motivoRechazo }),
+    })
+    if (res.ok) {
+      setMensaje('❌ Pago rechazado. El asiento ha sido liberado.')
+      setTimeout(() => router.push('/oficinista/pagos-pendientes'), 2000)
+    } else {
+      const err = await res.json()
+      setMensaje(err.error || 'Error al rechazar el pago')
+    }
+  } catch {
+    setMensaje('Error al conectar con el servidor')
+  } finally {
+    setRechazando(false)
+  }
+}
 
   if (cargando) return (
     <div className="flex items-center justify-center min-h-[40vh]">
@@ -169,7 +182,7 @@ export default function DetallePago() {
               {aprobando ? 'Aprobando...' : '✅ Aprobar pago'}
             </button>
             <button
-              onClick={rechazarPago}
+              onClick={() => setMostrarModalRechazo(true)}
               disabled={aprobando || rechazando}
               className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-semibold text-lg disabled:opacity-50"
             >
@@ -194,6 +207,43 @@ export default function DetallePago() {
             </div>
           </div>
         )}
+        {/* Modal aprobación */}
+{mostrarModalAprobacion && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white rounded-xl p-6 max-w-sm w-full mx-4">
+      <h3 className="font-semibold text-gray-900 mb-2">¿Aprobar este pago?</h3>
+      <p className="text-sm text-gray-500 mb-4">Esta acción generará el QR y notificará al cliente.</p>
+      <div className="flex gap-3">
+        <button onClick={() => setMostrarModalAprobacion(false)} className="flex-1 border rounded-lg py-2 text-gray-700 hover:bg-gray-50">Cancelar</button>
+        <button onClick={confirmarAprobacion} className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-lg py-2 font-medium">Aprobar</button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Modal rechazo */}
+{mostrarModalRechazo && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white rounded-xl p-6 max-w-sm w-full mx-4">
+      <h3 className="font-semibold text-gray-900 mb-2">¿Rechazar este pago?</h3>
+      <p className="text-sm text-gray-500 mb-2">El asiento quedará libre.</p>
+      <label className="block text-sm text-gray-600 mb-1">Motivo del rechazo (opcional)</label>
+      <textarea
+        className="w-full border rounded-lg px-3 py-2 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 mb-4"
+        rows={3}
+        placeholder="Ej: Imagen borrosa, monto incorrecto..."
+        value={motivoRechazo}
+        onChange={e => setMotivoRechazo(e.target.value)}
+      />
+      <div className="flex gap-3">
+        <button onClick={() => setMostrarModalRechazo(false)} className="flex-1 border rounded-lg py-2 text-gray-700 hover:bg-gray-50">Cancelar</button>
+        <button onClick={confirmarRechazo} className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg py-2 font-medium">Rechazar</button>
+      </div>
+    </div>
+  </div>
+)}
+
+
       </div>
     </div>
   )

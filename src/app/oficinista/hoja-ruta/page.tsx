@@ -43,6 +43,8 @@ export default function HojaRuta() {
   const [mensaje, setMensaje] = useState('')
   const [reasignando, setReasignando] = useState<string | null>(null)
   const [nuevoBusId, setNuevoBusId] = useState('')
+  const [mostrarModalReasignar, setMostrarModalReasignar] = useState(false)
+const [rutaAReasignar, setRutaAReasignar] = useState<string | null>(null)
   const obtenerFechaLocal = () => new Date().toLocaleDateString('en-CA')
 const [fechaFiltro, setFechaFiltro] = useState(obtenerFechaLocal())
 
@@ -244,40 +246,13 @@ const [fechaFiltro, setFechaFiltro] = useState(obtenerFechaLocal())
 </p>
                     </div>
                     <button
-                      onClick={() => { setReasignando(ruta.id); setNuevoBusId('') }}
+                      onClick={() => { setRutaAReasignar(ruta.id); setNuevoBusId(''); setMostrarModalReasignar(true) }}
                       className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
                     >
                       Reasignar bus
                     </button>
                   </div>
-                  {reasignando === ruta.id && (
-                    <div className="mt-3 pt-3 border-t flex flex-wrap gap-3 items-center">
-                      <select
-                        className="flex-1 min-w-[150px] border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                        value={nuevoBusId}
-                        onChange={e => setNuevoBusId(e.target.value)}
-                      >
-                        <option value="">Seleccionar nuevo bus...</option>
-                        {buses.filter(b => b.id !== ruta.busId).map(b => (
-                          <option key={b.id} value={b.id}>
-                            {b.placa} ({b.capacidad} asientos)
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        onClick={() => reasignarBus(ruta.id)}
-                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
-                      >
-                        Confirmar
-                      </button>
-                      <button
-                        onClick={() => setReasignando(null)}
-                        className="text-gray-500 hover:text-gray-700 text-sm px-2"
-                      >
-                        Cancelar
-                      </button>
-                    </div>
-                  )}
+              
                 </div>
               ))}
             </div>
@@ -290,6 +265,44 @@ const [fechaFiltro, setFechaFiltro] = useState(obtenerFechaLocal())
             {mensaje}
           </div>
         )}
+       {/* Modal reasignar bus */}
+{mostrarModalReasignar && rutaAReasignar && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white rounded-xl p-6 max-w-sm w-full mx-4">
+      <h3 className="font-semibold text-gray-900 mb-4">Reasignar bus</h3>
+      <label className="block text-sm text-gray-600 mb-1">Nuevo bus</label>
+      <select
+        className="w-full border rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-400 mb-4"
+        value={nuevoBusId}
+        onChange={e => setNuevoBusId(e.target.value)}
+      >
+        <option value="">Seleccionar bus...</option>
+       {buses.filter(b => {
+  const ruta = rutas.find(r => r.id === rutaAReasignar)
+  return b.id !== ruta?.busId
+}).map(b => (
+  <option key={b.id} value={b.id}>
+    {b.placa} ({b.capacidad} asientos)
+  </option>
+))}
+      </select>
+      <div className="flex gap-3">
+        <button
+          onClick={() => { setMostrarModalReasignar(false); setRutaAReasignar(null); setNuevoBusId('') }}
+          className="flex-1 border rounded-lg py-2 text-gray-700 hover:bg-gray-50"
+        >
+          Cancelar
+        </button>
+        <button
+          onClick={() => { reasignarBus(rutaAReasignar); setMostrarModalReasignar(false) }}
+          className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg py-2 font-medium"
+        >
+          Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+)} 
       </div>
     </div>
   )
