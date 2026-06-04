@@ -1,378 +1,390 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { QrCode, CheckCircle2, AlertCircle, Loader, Camera, X, RotateCcw } from 'lucide-react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { Html5Qrcode } from 'html5-qrcode'
+import { AlertCircle, Loader, Keyboard } from 'lucide-react'
+import ModalConfirmarAbordaje from '@/components/ModalConfirmarAbordaje'
 
-interface PasajeroInfo {
-  nombre: string
-  cedula: string
+interface Boleto {
+  id: string
   asiento: string
-  tipo: string
-  metodoPago: string
+  estado: string
+  pasajeroNombre?: string
+  pasajeroCedula?: string
+  ruta: {
+    id: string
+    frecuencia: {
+      origen: string
+      destino: string
+      hora: string
+    }
+    bus: {
+      numero: string
+      capacidad: number
+    }
+  }
+}
+
+interface Ruta {
+  id: string
+  estado: string
+  frecuencia: {
+    origen: string
+    destino: string
+  }
+  bus: {
+    numero: string
+  }
 }
 
 export default function EscanearPage() {
-  const { data: session } = useSession()
-  const [cameraPermission, setCameraPermission] = useState<'pending' | 'granted' | 'denied'>('pending')
-  const [scanner, setScanner] = useState<Html5Qrcode | null>(null)
-  const [scanning, setScanning] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [rutaActual, setRutaActual] = useState<Ruta | null>(null)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
-  const [pasajeroActual, setPasajeroActual] = useState<PasajeroInfo | null>(null)
-  const [validando, setValidando] = useState(false)
-  const QR_REGION_ID = 'html5qr-code-full-region'
-  const html5QrcodeRef = useRef<Html5Qrcode | null>(null)
-  const startingRef = useRef(false)
 
-  const onScanFailure = useCallback((errorMessage: string) => {
-    if (!errorMessage.includes('No QR code found')) {
-      console.debug('QR Scan error:', errorMessage)
-    }
-  }, [])
+  // Estado del escáner
+  const [escánerActivo, setEscánerActivo] = useState(true)
+  const [boletoDetectado, setBoletoDetectado] = useState<Boleto | null>(null)
+  const [modalError, setModalError] = useState<string | null>(null)
+  const [errorEscaner, setErrorEscaner] = useState<string | null>(null)
+  const [confirmando, setConfirmando] = useState(false)
+  const [exito, setExito] = useState(false)
 
-  const onScanSuccess = useCallback(
-    async (decodedText: string) => {
+  // Ingreso manual
+  const [mostrarManual, setMostrarManual] = useState(false)
+  const [codigoManual, setCodigoManual] = useState('')
+  const [validandoManual, setValidandoManual] = useState(false)
+
+  // Referencias
+  const escánerRef = useRef<Html5Qrcode | null>(null)
+  const rutaActualRef = useRef<Ruta | null>(null)
+
+  // Mantener ref sincronizada para usarla dentro de callbacks
+  useEffect(() => {
+    rutaActualRef.current = rutaActual
+  }, [rutaActual])
+
+  // Obtener ruta actual del chofer
+  useEffect(() => {
+    const fetchRuta = async () => {
       try {
         setLoading(true)
-        setError(null)
-
-        if (scanning && html5QrcodeRef.current) {
-          await html5QrcodeRef.current.stop()
-          setScanning(false)
-        }
-
-        const response = await fetch('/api/boletos/validar', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            qrData: decodedText.trim(),
-          }),
-        })
+        const today = new Date().toLocaleDateString('en-CA')
+        const response = await fetch(`/api/rutas?fecha=${today}`)
 
         if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Error al procesar el boleto')
+          throw new Error('Error al obtener la ruta')
         }
 
-        const result = await response.json()
+        const rutas = await response.json()
 
-        if (!result.boleto && !result.pasajero) {
-          throw new Error(result.error || result.message || 'Error al procesar el boleto')
-        }
+        const rutaActiva = rutas.find((r: Ruta) =>
+          ['pendiente', 'en_curso'].includes(r.estado)
+        )
 
-        const boletoData = result.boleto || {
-          asiento: result.asiento,
-          pasajero: {
-            nombre: result.pasajero,
-            cedula: result.cedula,
-          },
-          tipoPasajero: result.tipo || 'ADULTO',
-          metodoPago: result.pago || 'EFECTIVO',
-        }
-
-        setPasajeroActual({
-          nombre: boletoData.pasajero.nombre || result.pasajero,
-          cedula: boletoData.pasajero.cedula || result.cedula,
-          asiento: boletoData.asiento,
-          tipo: boletoData.tipoPasajero || 'ADULTO',
-          metodoPago: boletoData.metodoPago || 'EFECTIVO',
-        })
+        setRutaActual(rutaActiva || null)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error al procesar el QR')
-        setPasajeroActual(null)
+        setError(err instanceof Error ? err.message : 'Error desconocido')
       } finally {
         setLoading(false)
       }
-    },
-    [scanning]
-  )
-
-  const startScanner = useCallback(
-    async () => {
-      if (startingRef.current || scanning) return
-
-      startingRef.current = true
-
-      try {
-        const qr = new Html5Qrcode(QR_REGION_ID)
-        html5QrcodeRef.current = qr
-        setScanner(qr)
-
-        await qr.start(
-          { facingMode: 'environment' },
-          { fps: 10, qrbox: { width: 510, height: 510 } },
-          onScanSuccess,
-          onScanFailure
-        )
-
-        setScanning(true)
-      } catch (err) {
-        setError('Error al inicializar la cámara')
-        console.error('Error initializing scanner:', err)
-      } finally {
-        startingRef.current = false
-      }
-    },
-    [onScanSuccess, onScanFailure, scanning]
-  )
-
-  useEffect(() => {
-    const requestCameraPermission = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true })
-        stream.getTracks().forEach((track) => track.stop())
-        setCameraPermission('granted')
-      } catch {
-        setCameraPermission('denied')
-        setError('Permiso de cámara denegado. No se puede usar el escaneo.')
-      }
     }
 
-    requestCameraPermission()
+    fetchRuta()
   }, [])
 
-  useEffect(() => {
-    if (cameraPermission !== 'granted') return
+  // Manejar detección de QR — declarada ANTES del useEffect que la usa
+  const handleQRDetected = useCallback(async (qrData: string) => {
+    setEscánerActivo(false)
+    setErrorEscaner(null)
 
-    const initScanner = async () => {
-      await startScanner()
+    try {
+      // Parsear el QR — puede ser JSON {"boletoId": "..."} o ID directo
+      let boletoId: string
+      try {
+        const parsed = JSON.parse(qrData)
+        boletoId = parsed.boletoId
+      } catch {
+        boletoId = qrData.trim()
+      }
+
+      if (!boletoId) {
+        setErrorEscaner('Código QR inválido. Intenta de nuevo.')
+        setEscánerActivo(true)
+        return
+      }
+
+      const response = await fetch(`/api/boletos/${boletoId}/abordar`)
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        setErrorEscaner(errorData.error || 'Boleto no encontrado.')
+        setEscánerActivo(true)
+        return
+      }
+
+      const boleto = await response.json()
+
+      setBoletoDetectado({
+        ...boleto,
+        pasajeroNombre: boleto.pasajero?.nombre,
+        pasajeroCedula: boleto.pasajero?.cedula,
+      })
+      setModalError(null)
+    } catch {
+      setErrorEscaner('Error de red. Intenta nuevamente.')
+      setEscánerActivo(true)
+    }
+  }, [])
+
+  // Inicializar / destruir escáner QR
+  useEffect(() => {
+    if (loading) return
+
+    if (!escánerActivo) {
+      if (escánerRef.current) {
+        escánerRef.current
+          .stop()
+          .then(() => escánerRef.current?.clear())
+          .catch(() => {})
+        escánerRef.current = null
+      }
+      return
     }
 
-    void initScanner()
+    const timer = setTimeout(() => {
+      const scanner = new Html5Qrcode('qr-reader')
+      escánerRef.current = scanner
+
+      scanner
+        .start(
+          { facingMode: 'environment' },
+          {
+            fps: 10,
+            qrbox: { width: 300, height: 300 },
+            aspectRatio: 1.0,
+          },
+          (decodedText) => handleQRDetected(decodedText),
+          () => {}
+        )
+        .catch(() => {
+          setError('No se pudo acceder a la cámara. Verifica los permisos del navegador.')
+        })
+    }, 100)
 
     return () => {
-      if (html5QrcodeRef.current && scanning) {
-        html5QrcodeRef.current.stop().catch(console.error)
+      clearTimeout(timer)
+      if (escánerRef.current) {
+        escánerRef.current
+          .stop()
+          .then(() => escánerRef.current?.clear())
+          .catch(() => {})
+        escánerRef.current = null
       }
     }
-  }, [cameraPermission, scanning, startScanner])
+  }, [escánerActivo, loading, handleQRDetected])
 
-  const handleConfirmarValidacion = useCallback(
-    async () => {
-      if (!pasajeroActual) return
+  // Confirmar abordaje
+  const handleConfirmarAbordaje = async () => {
+    if (!boletoDetectado || !rutaActual) return
 
-      try {
-        setValidando(true)
-        setError(null)
-        setSuccessMessage(`✓ ${pasajeroActual.nombre} ha abordado correctamente`)
+    setConfirmando(true)
+    setModalError(null)
 
-        setTimeout(async () => {
-          setPasajeroActual(null)
-          setSuccessMessage(null)
-          await startScanner()
-        }, 3000)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error al confirmar')
-      } finally {
-        setValidando(false)
+    try {
+      const response = await fetch(`/api/boletos/${boletoDetectado.id}/abordar`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rutaId: rutaActual.id }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+
+        const mensajes: Record<string, string> = {
+          ALREADY_BOARDED:
+            'Este boleto ya fue utilizado para abordar el bus. No se puede registrar nuevamente.',
+          WRONG_ROUTE:
+            'Este boleto corresponde a otra ruta (origen/destino diferente). No puede abordar aquí.',
+          INVALID_STATE: `El boleto no está vigente (estado: ${boletoDetectado.estado}).`,
+          WRONG_STATE: `El boleto no está en estado APROBADO (estado actual: ${boletoDetectado.estado}).`,
+          WRONG_CHOFER: 'Este boleto no pertenece a tu ruta actual.',
+          NOT_FOUND: 'Boleto no encontrado.',
+          SERVER_ERROR: 'Error en el servidor. Intenta nuevamente.',
+        }
+
+        setModalError(
+          mensajes[errorData.code] || errorData.error || 'Error al registrar abordaje.'
+        )
+        return
       }
-    },
-    [pasajeroActual, startScanner]
-  )
 
-  const handleReiniciar = async () => {
-    setPasajeroActual(null)
-    setError(null)
-    setSuccessMessage(null)
+      setExito(true)
+      setBoletoDetectado(null)
 
-    if (scanner && !scanning) {
-      try {
-        await scanner.resume()
-        setScanning(true)
-      } catch (err) {
-        console.error('Error resuming scanner:', err)
-        setError('Error al reiniciar la cámara')
-      }
+      setTimeout(() => {
+        setExito(false)
+        setEscánerActivo(true)
+      }, 2500)
+    } catch {
+      setModalError('Error de conexión. Intenta nuevamente.')
+    } finally {
+      setConfirmando(false)
     }
   }
 
-  if (cameraPermission === 'pending') {
+  // Validar código ingresado manualmente
+  const handleValidarManual = async () => {
+    if (!codigoManual.trim()) return
+
+    try {
+      setValidandoManual(true)
+      await handleQRDetected(codigoManual.trim())
+      setCodigoManual('')
+      setMostrarManual(false)
+    } finally {
+      setValidandoManual(false)
+    }
+  }
+
+  // Renders condicionales
+
+  if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <Loader className="w-12 h-12 text-blue-600 animate-spin mx-auto" />
-          <p className="text-gray-600 mt-4">Solicitando acceso a cámara...</p>
-        </div>
+        <Loader className="w-8 h-8 text-blue-600 animate-spin" />
       </div>
     )
   }
 
-  if (cameraPermission === 'denied') {
+  if (!rutaActual) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-8 text-center">
-        <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
-        <h3 className="font-semibold text-red-900 text-lg">Permiso de Cámara Denegado</h3>
-        <p className="text-red-700 mt-2">
-          Necesitas permitir acceso a la cámara para escanear códigos QR.
-        </p>
-        <p className="text-red-600 text-sm mt-4">
-          Por favor, habilita los permisos de cámara en tu navegador y recarga la página.
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-8 text-center">
+        <AlertCircle className="w-12 h-12 text-yellow-600 mx-auto mb-4" />
+        <h3 className="font-semibold text-yellow-900 text-lg">No hay ruta activa</h3>
+        <p className="text-yellow-700 mt-2">
+          Primero debes iniciar una ruta antes de poder escanear.
         </p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-          <QrCode className="w-8 h-8 text-blue-600" />
-          Escanear Abordaje de Pasajeros
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-900">Escanear Abordaje</h1>
         <p className="text-gray-600 mt-2">
-          Escanea el código QR del boleto para validar el abordaje del pasajero
+          Escanea el QR de cada pasajero para registrar su abordaje
         </p>
       </div>
 
+      {/* Ruta Actual */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p className="text-sm text-blue-700">
+          <strong>Ruta actual:</strong>{' '}
+          {rutaActual.frecuencia.origen} → {rutaActual.frecuencia.destino} | Bus{' '}
+          {rutaActual.bus.numero}
+        </p>
+      </div>
+
+      {/* Error general */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <h3 className="font-semibold text-red-900">Error</h3>
-            <p className="text-red-700 text-sm">{error}</p>
+          <p className="text-red-700">{error}</p>
+        </div>
+      )}
+
+      {/* Mensaje de éxito */}
+      {exito && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
+          <span className="text-lg">✅</span>
+          <p className="text-green-700 font-bold">Abordaje registrado correctamente</p>
+        </div>
+      )}
+
+      {/* Escáner QR */}
+      {escánerActivo && !boletoDetectado && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+          <div className="flex justify-center">
+            <div
+              id="qr-reader"
+              className="rounded-lg overflow-hidden"
+              style={{ width: '320px', height: '320px' }}
+            />
           </div>
-          <button onClick={() => setError(null)} className="text-red-600 hover:text-red-900">
-            <X size={20} />
+
+          <p className="text-center text-gray-600 text-sm">
+            📱 Coloca el QR del boleto frente a la cámara
+          </p>
+
+          {errorEscaner && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+              <p className="text-red-700 text-sm">{errorEscaner}</p>
+            </div>
+          )}
+
+          <button
+            onClick={() => setMostrarManual(!mostrarManual)}
+            className="w-full px-4 py-2 border border-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-50 transition flex items-center justify-center gap-2"
+          >
+            <Keyboard size={18} />
+            Ingresar Código Manualmente
           </button>
         </div>
       )}
 
-      {successMessage && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3 animate-in">
-          <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
-          <div>
-            <h3 className="font-semibold text-green-900">Validación Completada</h3>
-            <p className="text-green-700 text-sm">{successMessage}</p>
+      {/* Ingreso Manual */}
+      {mostrarManual && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+          <h3 className="font-bold text-gray-900">Ingresar código QR manualmente</h3>
+          <div className="space-y-3">
+            <input
+              type="text"
+              value={codigoManual}
+              onChange={(e) => setCodigoManual(e.target.value)}
+              placeholder="Pega el código QR aquí"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onKeyDown={(e) => e.key === 'Enter' && handleValidarManual()}
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleValidarManual}
+                disabled={validandoManual || !codigoManual.trim()}
+                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold rounded-lg transition"
+              >
+                {validandoManual ? 'Validando...' : 'Validar'}
+              </button>
+              <button
+                onClick={() => {
+                  setMostrarManual(false)
+                  setCodigoManual('')
+                }}
+                className="px-4 py-2 border border-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-50 transition"
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-            <div className="bg-black aspect-video relative">
-              <div id={QR_REGION_ID} className="w-full h-full" />
-              {!scanning || cameraPermission !== 'granted' ? (
-                <div className="absolute inset-0 flex items-center justify-center flex-col gap-4 bg-black/70">
-                  <Camera className="w-12 h-12 text-gray-200" />
-                  <p className="text-gray-200 text-center">
-                    {loading ? 'Procesando QR...' : 'Inicializando cámara...'}
-                  </p>
-                </div>
-              ) : null}
-            </div>
-
-            <div className="bg-blue-50 border-t border-blue-200 p-4">
-              <p className="text-sm text-blue-800">
-                💡 <strong>Instrucciones:</strong> Apunta el código QR del boleto hacia la cámara.
-                La lectura se realizará automáticamente.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="lg:col-span-1">
-          <div className="bg-white border border-gray-200 rounded-lg p-6 sticky top-20">
-            {pasajeroActual ? (
-              <div className="space-y-6">
-                <h2 className="text-lg font-semibold text-gray-900">Pasajero Detectado</h2>
-
-                <div className="bg-linear-to-br from-blue-50 to-blue-100 rounded-lg p-4 space-y-3">
-                  <div>
-                    <div className="text-xs text-blue-700 font-semibold">NOMBRE</div>
-                    <p className="text-lg font-bold text-blue-900">{pasajeroActual.nombre}</p>
-                  </div>
-
-                  <div className="border-t border-blue-200 pt-3">
-                    <div className="text-xs text-blue-700 font-semibold">CÉDULA</div>
-                    <p className="text-sm font-mono text-blue-900">{pasajeroActual.cedula}</p>
-                  </div>
-
-                  <div className="border-t border-blue-200 pt-3">
-                    <div className="text-xs text-blue-700 font-semibold">ASIENTO</div>
-                    <p className="text-xl font-bold text-blue-900">{pasajeroActual.asiento}</p>
-                  </div>
-
-                  <div className="border-t border-blue-200 pt-3">
-                    <div className="text-xs text-blue-700 font-semibold">TIPO DE PASAJERO</div>
-                    <p className="text-sm text-blue-900 capitalize">{pasajeroActual.tipo}</p>
-                  </div>
-
-                  <div className="border-t border-blue-200 pt-3">
-                    <div className="text-xs text-blue-700 font-semibold">MÉTODO DE PAGO</div>
-                    <p className="text-sm text-blue-900 capitalize">{pasajeroActual.metodoPago}</p>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <button
-                    onClick={handleConfirmarValidacion}
-                    disabled={validando}
-                    className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-bold rounded-lg transition flex items-center justify-center gap-2"
-                  >
-                    {validando ? (
-                      <>
-                        <Loader size={20} className="animate-spin" />
-                        Validando...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 size={20} />
-                        Confirmar Abordaje
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={handleReiniciar}
-                    disabled={validando}
-                    className="w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 text-gray-800 font-medium rounded-lg transition flex items-center justify-center gap-2"
-                  >
-                    <RotateCcw size={18} />
-                    Cancelar
-                  </button>
-                </div>
-
-                <div className="bg-green-50 border border-green-200 rounded p-3">
-                  <p className="text-sm text-green-800">✓ Boleto válido y aprobado</p>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4 text-center py-8">
-                <QrCode className="w-12 h-12 text-gray-400 mx-auto" />
-                <div>
-                  <p className="text-gray-600 font-medium">Esperando lectura de QR</p>
-                  <p className="text-gray-500 text-sm">Apunta el código QR del boleto a la cámara</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-        <h2 className="font-semibold text-gray-900 mb-4">ℹ️ Información</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <h3 className="font-medium text-gray-900 mb-2">📱 Escaneo</h3>
-            <p className="text-sm text-gray-600">Coloca el código QR del boleto frente a la cámara. El dispositivo detectará automáticamente el código.</p>
-          </div>
-          <div>
-            <h3 className="font-medium text-gray-900 mb-2">✓ Validación</h3>
-            <p className="text-sm text-gray-600">Verifica que el nombre y asiento del pasajero sean correctos antes de confirmar el abordaje.</p>
-          </div>
-          <div>
-            <h3 className="font-medium text-gray-900 mb-2">💾 Registro</h3>
-            <p className="text-sm text-gray-600">Al confirmar, se registra el abordaje en el sistema con fecha y hora exacta.</p>
-          </div>
-        </div>
-      </div>
+      {/* Modal de Confirmación */}
+      {boletoDetectado && (
+        <ModalConfirmarAbordaje
+          boleto={boletoDetectado}
+          onConfirmar={handleConfirmarAbordaje}
+          onCancelar={() => {
+            setBoletoDetectado(null)
+            setModalError(null)
+            setEscánerActivo(true)
+          }}
+          cargando={confirmando}
+          error={modalError ?? undefined}
+        />
+      )}
     </div>
   )
 }
-

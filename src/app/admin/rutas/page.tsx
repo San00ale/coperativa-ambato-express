@@ -53,11 +53,18 @@ export default function RutasPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
+  const obtenerFechaLocal = () => {
+    const hoy = new Date()
+    return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
+  }
+
+  const fechaMinima = obtenerFechaLocal()
+
   // Formulario (incluye precio y choferId)
   const [formData, setFormData] = useState({
     frecuenciaId: '',
     busId: '',
-    fecha: '',
+    fecha: fechaMinima,
     precio: '',
     choferId: ''          // ← nuevo campo
   })
@@ -232,7 +239,7 @@ export default function RutasPage() {
                   value={formData.fecha}
                   onChange={handleInputChange}
                   required
-                  min={new Date().toISOString().split('T')[0]}
+                  min={fechaMinima}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 />
               </div>

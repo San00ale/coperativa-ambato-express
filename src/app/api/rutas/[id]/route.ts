@@ -46,7 +46,7 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions)
     // Permitir ADMIN y CHOFER (chofer solo puede marcar completada)
-    if (session?.user?.role !== 'ADMIN' && session?.user?.role !== 'CHOFER') {
+    if (session?.user?.role !== 'ADMIN' && session?.user?.role !== 'CHOFER' && session?.user?.role !== 'OFICINISTA') {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 

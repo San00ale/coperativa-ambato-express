@@ -6,6 +6,8 @@ import { authOptions } from '@/lib/auth'
 import bcrypt from 'bcryptjs'
 import QRCode from 'qrcode'
 import { enviarCorreoQR } from '@/lib/email'
+import { validarCedulaEcuatoriana } from '@/lib/validations'
+
 // POST /api/boletos - Crear un nuevo boleto
 export async function POST(request: Request) {
   try {
@@ -26,8 +28,29 @@ export async function POST(request: Request) {
       )
     }
 
-    // Convertir asiento a string (Prisma espera String)
-    // ya está en asientoValue
+    if (pasajeroCedula && !validarCedulaEcuatoriana(String(pasajeroCedula))) {
+      return NextResponse.json(
+        { error: 'Cédula ecuatoriana inválida' },
+        { status: 400 }
+      )
+    }
+
+    const rutaExistente = await prisma.ruta.findUnique({
+      where: { id: rutaId },
+      include: { boletos: true }
+    })
+
+    if (!rutaExistente) {
+      return NextResponse.json({ error: 'Ruta no encontrada' }, { status: 404 })
+    }
+
+    const asientoOcupado = rutaExistente.boletos.some(
+      (b) => b.asiento === asientoValue && ['APROBADO', 'ABORDADO'].includes(b.estado)
+    )
+
+    if (asientoOcupado) {
+      return NextResponse.json({ error: 'Asiento no disponible' }, { status: 400 })
+    }
 
     // Verificar que el asiento no esté ocupado en esa ruta
     const boletoExistente = await prisma.boleto.findFirst({
@@ -53,7 +76,7 @@ export async function POST(request: Request) {
     const precioFinal = precio - descuento
 
     // Determinar estado según método de pago
-    const estado = metodoPago === 'TRANSFERENCIA' ? 'PENDIENTE_APROBACION' : 'APROBADO'
+    const estado = metodoPago === 'TRANSFERENCIA' ? 'PENDIENTE_APROBACION' : 'ABORDADO'
 
     // *** LÓGICA CORREGIDA PARA ASIGNAR PASAJERO ***
     let pasajeroId = session.user.id
@@ -96,7 +119,8 @@ export async function POST(request: Request) {
         metodoPago,
         comprobanteUrl: comprobanteUrl || null,
         estado,
-        vendidoPor: session.user.role === 'CHOFER' ? 'chofer' : 'oficinista'
+        vendidoPor: session.user.role === 'CHOFER' ? 'chofer' : 'oficinista',
+        vendidoPorChoferId: session.user.role === 'CHOFER' ? session.user.id : null
       },
       include: {
         ruta: {
@@ -107,43 +131,40 @@ export async function POST(request: Request) {
         }
       }
     })
-    // DESPUÉS de prisma.boleto.create:
-let qrUrl = null
-if (metodoPago === 'EFECTIVO') {
-  const pasajero = await prisma.usuario.findUnique({ where: { id: pasajeroId } })
-  const ruta = await prisma.ruta.findUnique({
-    where: { id: rutaId },
-    include: { frecuencia: true }
-  })
-  if (pasajero && ruta) {
-    const qrData = JSON.stringify({
-      boletoId: boleto.id,
-      ruta: `${ruta.frecuencia.origen} → ${ruta.frecuencia.destino}`,
-      fecha: ruta.fecha,
-      hora: ruta.frecuencia.hora,
-      asiento: asientoValue,
-      pasajero: pasajero.nombre,
-      cedula: pasajero.cedula
-    })
-    qrUrl = await QRCode.toDataURL(qrData)
-    await prisma.boleto.update({
-      where: { id: boleto.id },
-      data: { qrUrl }
-    })
-    await enviarCorreoQR(
-      pasajero.email,
-      pasajero.nombre,
-      qrUrl,
-      `${ruta.frecuencia.origen} → ${ruta.frecuencia.destino}`,
-      ruta.fecha.toString(),
-      asientoValue
-    )
-  }
-}
+    let qrUrl = null
+    if (metodoPago === 'EFECTIVO') {
+      const pasajero = await prisma.usuario.findUnique({ where: { id: pasajeroId } })
+      const ruta = await prisma.ruta.findUnique({
+        where: { id: rutaId },
+        include: { frecuencia: true }
+      })
+      if (pasajero && ruta) {
+        const qrData = JSON.stringify({
+          boletoId: boleto.id,
+          ruta: `${ruta.frecuencia.origen} → ${ruta.frecuencia.destino}`,
+          fecha: ruta.fecha,
+          hora: ruta.frecuencia.hora,
+          asiento: asientoValue,
+          pasajero: pasajero.nombre,
+          cedula: pasajero.cedula
+        })
+        qrUrl = await QRCode.toDataURL(qrData)
+        await prisma.boleto.update({
+          where: { id: boleto.id },
+          data: { qrUrl }
+        })
+        await enviarCorreoQR(
+          pasajero.email,
+          pasajero.nombre,
+          qrUrl,
+          `${ruta.frecuencia.origen} → ${ruta.frecuencia.destino}`,
+          ruta.fecha.toString(),
+          asientoValue
+        )
+      }
+    }
 
-return NextResponse.json({ ...boleto, qrUrl }, { status: 201 })
-
-    return NextResponse.json(boleto, { status: 201 })
+    return NextResponse.json({ ...boleto, qrUrl }, { status: 201 })
   } catch (error) {
     console.error('Error al crear boleto:', error)
     return NextResponse.json({ error: 'Error al crear el boleto' }, { status: 500 })

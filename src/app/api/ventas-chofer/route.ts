@@ -37,9 +37,11 @@ export async function POST(request: Request) {
       )
     }
 
-    // Calcular descuento (50% para niño, tercera edad, discapacitado)
+    const tipoNormalizado = (tipoPasajero === 'NINO' || tipoPasajero === 'MENOR' ? 'MENOR' : tipoPasajero) || 'ADULTO'
+
+    // Calcular descuento (50% para menor, tercera edad, discapacitado)
     let descuento = 0
-    if (tipoPasajero === 'NINO' || tipoPasajero === 'TERCERA_EDAD' || tipoPasajero === 'DISCAPACITADO') {
+    if (tipoNormalizado === 'MENOR' || tipoNormalizado === 'TERCERA_EDAD' || tipoNormalizado === 'DISCAPACITADO') {
       descuento = precio * 0.5
     }
     const precioFinal = precio - descuento
@@ -69,7 +71,7 @@ export async function POST(request: Request) {
         asiento,
         precio: precioFinal,
         descuento,
-        tipoPasajero: tipoPasajero || 'ADULTO',
+        tipoPasajero: tipoNormalizado,
         metodoPago: metodoPago || 'EFECTIVO',
         estado: 'APROBADO',
         vendidoPor: 'chofer',

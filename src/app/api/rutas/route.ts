@@ -45,7 +45,7 @@ const end = new Date(Date.UTC(year, month-1, day + 1, 0, 0, 0, 0))
         bus: true,
         chofer: true,
         boletos: {
-          where: { estado: 'APROBADO' }
+          where: { estado: { in: ['APROBADO', 'ABORDADO'] } }
         }
       },
       orderBy: { fecha: 'asc' }
@@ -103,6 +103,23 @@ if (rutaExistente) {
     { status: 400 }
   )
 }
+// Validar disponibilidad del chofer
+if (choferId) {
+  const choferOcupado = await prisma.ruta.findFirst({
+    where: {
+      choferId,
+      frecuenciaId,
+      fecha: { gte: startDia, lt: endDia }
+    }
+  })
+  if (choferOcupado) {
+    return NextResponse.json(
+      { error: 'El chofer ya tiene una ruta asignada en esta fecha y horario' },
+      { status: 400 }
+    )
+  }
+}
+
 
     const ruta = await prisma.ruta.create({
       data: {

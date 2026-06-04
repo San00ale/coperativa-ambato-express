@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-
+import { esFechaPasada, getFechaHoy } from "@/lib/validations";
 
 interface Frecuencia {
   origen: string;
@@ -26,18 +26,17 @@ interface Ruta {
   fecha: string;
   frecuencia: Frecuencia;
   bus: Bus;
-  boletos: Boleto[]; 
+  boletos: Boleto[];
 }
 
 export default function BuscarRutasPage() {
   const router = useRouter();
 
-  // Estados del formulario
   const [origen, setOrigen] = useState("");
   const [destino, setDestino] = useState("");
   const [fecha, setFecha] = useState("");
+  const [errorFecha, setErrorFecha] = useState("");
 
-  // Estados de UI
   const [resultados, setResultados] = useState<Ruta[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -45,35 +44,42 @@ export default function BuscarRutasPage() {
   const [ciudadesOrigen, setCiudadesOrigen] = useState<string[]>([]);
   const [ciudadesDestino, setCiudadesDestino] = useState<string[]>([]);
 
-  // Cargar ciudades únicas desde /api/frecuencias al montar el componente
   useEffect(() => {
     const cargarCiudades = async () => {
       try {
         const res = await fetch("/api/frecuencias");
         const data: { origen: string; destino: string }[] = await res.json();
-
         const origenes = [...new Set(data.map((f) => f.origen))].sort();
         const destinos = [...new Set(data.map((f) => f.destino))].sort();
-
         setCiudadesOrigen(origenes);
         setCiudadesDestino(destinos);
       } catch {
-        // Si falla, los selects quedan vacíos
         console.error("No se pudieron cargar las ciudades");
       }
     };
     cargarCiudades();
   }, []);
-  
-    const handleBuscar = async () => {
-    if (!origen || !destino || !fecha) {
-      setError("Por favor completa todos los campos.");
-      return;
+
+  const handleFechaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const valor = e.target.value;
+    setFecha(valor);
+    if (valor && esFechaPasada(valor)) {
+      setErrorFecha("❌ No se pueden buscar rutas en fechas pasadas.");
+    } else {
+      setErrorFecha("");
     }
-    if (origen === destino) {
-      setError("El origen y destino no pueden ser iguales.");
-      return;
-    }
+  };
+
+  const buscarHabilitado =
+    !!origen &&
+    !!destino &&
+    !!fecha &&
+    !errorFecha &&
+    origen !== destino &&
+    !loading;
+
+  const handleBuscar = async () => {
+    if (!buscarHabilitado) return;
 
     setError("");
     setLoading(true);
@@ -94,35 +100,31 @@ export default function BuscarRutasPage() {
     }
   };
 
-  // Calcular asientos disponibles: capacidad del bus - boletos APROBADOS
   const getAsientosDisponibles = (ruta: Ruta) => {
     return ruta.bus.capacidad - ruta.boletos.length;
   };
 
-  // Ir a selección de asiento pasando el id de la ruta
   const handleSeleccionar = (rutaId: string) => {
     router.push(`/cliente/seleccionar-asiento?rutaId=${rutaId}`);
   };
+
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-3xl mx-auto">
-
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">
-          Buscar Rutas
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-800 mb-6">Buscar Rutas</h1>
 
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
             {/* Origen */}
             <div>
-<label className="block text-sm font-medium text-gray-900 mb-1">
+              <label className="block text-sm font-medium text-gray-900 mb-1">
                 Origen
               </label>
               <select
                 value={origen}
                 onChange={(e) => setOrigen(e.target.value)}
-                className="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-md p-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Selecciona ciudad</option>
                 {ciudadesOrigen.map((ciudad) => (
@@ -135,12 +137,13 @@ export default function BuscarRutasPage() {
 
             {/* Destino */}
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1">                Destino
+              <label className="block text-sm font-medium text-gray-900 mb-1">
+                Destino
               </label>
               <select
                 value={destino}
                 onChange={(e) => setDestino(e.target.value)}
-                className="w-full border border-gray-300 rounded-md p-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"  
+                className="w-full border border-gray-300 rounded-md p-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Selecciona ciudad</option>
                 {ciudadesDestino.map((ciudad) => (
@@ -151,34 +154,44 @@ export default function BuscarRutasPage() {
               </select>
             </div>
 
-            {/* Fecha */}
+            {/* Fecha nativa */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-900 mb-1">
                 Fecha
               </label>
               <input
                 type="date"
                 value={fecha}
-                onChange={(e) => setFecha(e.target.value)}
-                min={new Date().toISOString().split("T")[0]}
-                className="w-full border border-gray-300 rounded-md p-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                min={getFechaHoy()}
+                onChange={handleFechaChange}
+                className={`w-full border rounded-md p-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  errorFecha ? "border-red-500" : "border-gray-300"
+                }`}
               />
+              {errorFecha && (
+                <p className="text-red-600 text-xs mt-1">{errorFecha}</p>
+              )}
             </div>
           </div>
 
-          {error && (
-            <p className="text-red-700 text-sm mt-3">{error}</p>  
+          {origen === destino && origen !== "" && (
+            <p className="text-red-600 text-sm mt-3">
+              ❌ El origen y destino no pueden ser iguales.
+            </p>
           )}
+
+          {error && <p className="text-red-700 text-sm mt-3">{error}</p>}
 
           <button
             onClick={handleBuscar}
-            disabled={loading}
-            className="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-md font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            disabled={!buscarHabilitado}
+            className="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-md font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? "Buscando..." : "Buscar"}
           </button>
         </div>
-                {buscado && (
+
+        {buscado && (
           <div>
             <h2 className="text-lg font-semibold text-gray-900 mb-3">
               Resultados ({resultados.length})
@@ -205,14 +218,19 @@ export default function BuscarRutasPage() {
                           🕐 {ruta.frecuencia.hora} &nbsp;|&nbsp; 🚌 Bus #{ruta.bus.numero}
                         </p>
                         <p className="text-sm mt-1">
-                          <span className={asientos > 0 ? "text-green-600 font-medium" : "text-red-500 font-medium"}>
+                          <span
+                            className={
+                              asientos > 0
+                                ? "text-green-600 font-medium"
+                                : "text-red-500 font-medium"
+                            }
+                          >
                             {asientos > 0
                               ? `${asientos} asientos disponibles`
                               : "Sin asientos disponibles"}
                           </span>
                         </p>
                       </div>
-
                       <button
                         onClick={() => handleSeleccionar(ruta.id)}
                         disabled={asientos === 0}
@@ -227,7 +245,6 @@ export default function BuscarRutasPage() {
             )}
           </div>
         )}
-
       </div>
     </div>
   );
