@@ -45,7 +45,7 @@ const end = new Date(Date.UTC(year, month-1, day + 1, 0, 0, 0, 0))
         bus: true,
         chofer: true,
         boletos: {
-          where: { estado: 'APROBADO' }
+          where: { estado: { in: ['APROBADO', 'ABORDADO'] } }
         }
       },
       orderBy: { fecha: 'asc' }

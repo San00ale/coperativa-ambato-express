@@ -1,10 +1,12 @@
-interface AsientosGridProps {
+interface Props {
   capacidad: number
   asientosVIP: number
   asientosVIPNumeros?: string
   asientosOcupados: string[]
   asientoSeleccionado: string | null
   onAsientoClick: (asiento: string) => void
+  precioBase?: number
+  onPrecioChange?: (precio: number) => void
 }
 
 export default function AsientosGrid({
@@ -14,158 +16,84 @@ export default function AsientosGrid({
   asientosOcupados,
   asientoSeleccionado,
   onAsientoClick,
-}: AsientosGridProps) {
-  // Parsear asientos VIP específicos si existen
-  const vipSeatsArray = asientosVIPNumeros
-    ? asientosVIPNumeros.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n))
-    : []
+  precioBase = 0,
+  onPrecioChange
+}: Props) {
+  const columnas = 5
+  const asientosNormales = Math.max(capacidad - asientosVIP, 0)
 
-  // Generar lista de asientos
-  const generarAsientos = () => {
-    const asientos = []
-    const filas = Math.ceil(capacidad / 4) // 4 columnas
-    let contador = 1
-
-    for (let i = 0; i < filas; i++) {
-      for (let j = 0; j < 4; j++) {
-        if (contador <= capacidad) {
-          // Generar letra (A, B, C, D, E, F, G...) y número
-          const fila = String.fromCharCode(65 + i)
-          const numero = j + 1
-          const asiento = `${fila}${numero}`
-          
-          // Determinar si es VIP (usar asientosVIPNumeros si existe, sino cálculo automático)
-          const isVIP = vipSeatsArray.length > 0
-            ? vipSeatsArray.includes(contador)
-            : contador <= asientosVIP
-          
-          asientos.push({
-            id: asiento,
-            numero: contador,
-            isVIP,
-            isOcupado: asientosOcupados.includes(asiento),
-            isSelected: asientoSeleccionado === asiento,
-          })
-          contador++
-        }
-      }
+  const esVIP = (numeroAsiento: number): boolean => {
+    if (asientosVIPNumeros) {
+      const vipNumeros = asientosVIPNumeros
+        .split(',')
+        .map((n) => parseInt(n.trim(), 10))
+        .filter((n) => !Number.isNaN(n))
+      return vipNumeros.includes(numeroAsiento)
     }
-    return asientos
+
+    return numeroAsiento > asientosNormales
   }
 
-  const asientos = generarAsientos()
-
   return (
-    <div className="space-y-6">
-      {/* Grid de asientos - mostrar en filas de 4 */}
-      <div className="bg-gray-50 p-6 rounded-lg">
-        <div className="grid grid-cols-4 gap-3 max-w-md mx-auto">
-          {asientos.map((asiento) => (
-            <button
-              key={asiento.id}
-              onClick={() => onAsientoClick(asiento.id)}
-              disabled={asiento.isOcupado}
-              className={`
-                aspect-square rounded-lg font-bold text-sm transition-all flex items-center justify-center relative
-                ${asiento.isSelected
-                  ? 'border-2 border-blue-500 bg-blue-100 text-blue-900 scale-105'
-                  : asiento.isOcupado
-                  ? 'border-2 border-red-400 bg-red-50 text-red-600 cursor-not-allowed opacity-60'
-                  : 'border-2 border-green-400 bg-green-50 text-green-700 hover:bg-green-100 cursor-pointer'
-                }
-                ${asiento.isVIP ? 'ring-2 ring-yellow-400' : ''}
-              `}
-              title={`${asiento.id}${asiento.isVIP ? ' (VIP)' : ''}${asiento.isOcupado ? ' - Ocupado' : ''}`}
-            >
-              <div>
-                <div className="text-lg">{asiento.id}</div>
-                {asiento.isVIP && <div className="text-xs">VIP</div>}
-              </div>
-            </button>
-          ))}
-        </div>
+    <div className="space-y-4">
+      <h3 className="font-bold text-gray-900">FRENTE DEL BUS</h3>
 
-        {/* Representación gráfica del autobús */}
-        <div className="mt-8 pt-6 border-t border-gray-300">
-          <div className="text-center mb-4">
-            <div className="inline-block bg-gray-800 text-white px-4 py-2 rounded font-bold">
-              FRENTE DEL BUS
-            </div>
-          </div>
+      <div className="rounded-2xl border border-gray-700 bg-gray-900 p-4 shadow-inner">
+        <div
+          className="grid gap-2"
+          style={{ gridTemplateColumns: `repeat(${columnas}, minmax(0, 1fr))` }}
+        >
+          {Array.from({ length: capacidad }).map((_, i) => {
+            const numeroAsiento = i + 1
+            const esOcupado = asientosOcupados.includes(numeroAsiento.toString())
+            const esSeleccionado = asientoSeleccionado === numeroAsiento.toString()
+            const esVIPAsiento = esVIP(numeroAsiento)
+            const posicionColumna = ((numeroAsiento - 1) % 4) < 2
+              ? ((numeroAsiento - 1) % 4)
+              : (((numeroAsiento - 1) % 4) + 1)
 
-          {/* Recrear vista frontal del bus */}
-          <div className="flex justify-center gap-4">
-            {/* Columnas A y B */}
-            <div className="space-y-2">
-              {[1, 2, 3].map((num) => {
-                const asiento = asientos.find(a => a.id === `A${num}`)
-                if (!asiento) return null
-                return (
-                  <div
-                    key={asiento.id}
-                    className={`
-                      w-12 h-12 rounded flex items-center justify-center font-bold text-sm
-                      ${asiento.isSelected
-                        ? 'bg-blue-500 text-white'
-                        : asiento.isOcupado
-                        ? 'bg-red-400 text-white opacity-50'
-                        : 'bg-green-400 text-white'
-                      }
-                    `}
-                  >
-                    {asiento.id}
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Pasillo central */}
-            <div className="w-8"></div>
-
-            {/* Columnas C y D */}
-            <div className="space-y-2">
-              {[1, 2, 3].map((num) => {
-                const asiento = asientos.find(a => a.id === `A${num + 2}`)
-                if (!asiento) return null
-                return (
-                  <div
-                    key={asiento.id}
-                    className={`
-                      w-12 h-12 rounded flex items-center justify-center font-bold text-sm
-                      ${asiento.isSelected
-                        ? 'bg-blue-500 text-white'
-                        : asiento.isOcupado
-                        ? 'bg-red-400 text-white opacity-50'
-                        : 'bg-green-400 text-white'
-                      }
-                    `}
-                  >
-                    {asiento.id}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+            return (
+              <button
+                key={numeroAsiento}
+                type="button"
+                onClick={() => !esOcupado && onAsientoClick(numeroAsiento.toString())}
+                disabled={esOcupado}
+                style={{ gridColumn: `${posicionColumna + 1}` }}
+                className={`relative flex h-14 items-center justify-center rounded-xl border text-sm font-semibold shadow-sm transition ${
+                  esOcupado
+                    ? 'cursor-not-allowed border-red-500 bg-red-600 text-white'
+                    : esSeleccionado
+                      ? 'border-blue-400 bg-blue-600 text-white shadow-blue-900/50'
+                      : esVIPAsiento
+                        ? 'border-amber-400 bg-amber-500/90 text-gray-950 hover:bg-amber-400'
+                        : 'border-emerald-400 bg-emerald-500 text-white hover:bg-emerald-400'
+                }`}
+              >
+                {numeroAsiento}
+                {esVIPAsiento && <span className="absolute right-1 top-1 text-[10px]">⭐</span>}
+              </button>
+            )
+          })}
         </div>
       </div>
 
-      {/* Información adicional */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-        <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-          <div className="font-semibold text-blue-900">Capacidad Total</div>
-          <div className="text-2xl font-bold text-blue-600">{capacidad}</div>
+      {/* Leyenda */}
+      <div className="flex gap-4 flex-wrap text-sm text-gray-900">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-emerald-500 rounded"></div>
+          <span>Disponible</span>
         </div>
-        <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
-          <div className="font-semibold text-yellow-900">Asientos VIP</div>
-          <div className="text-2xl font-bold text-yellow-600">{vipSeatsArray.length > 0 ? vipSeatsArray.length : asientosVIP}</div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-blue-600 rounded"></div>
+          <span>Seleccionado</span>
         </div>
-        <div className="bg-red-50 p-3 rounded-lg border border-red-200">
-          <div className="font-semibold text-red-900">Ocupados</div>
-          <div className="text-2xl font-bold text-red-600">{asientosOcupados.length}</div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-red-600 rounded"></div>
+          <span>Ocupado</span>
         </div>
-        <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-          <div className="font-semibold text-green-900">Disponibles</div>
-          <div className="text-2xl font-bold text-green-600">{capacidad - asientosOcupados.length}</div>
+        <div className="flex items-center gap-2">
+          <span className="text-lg">⭐</span>
+          <span>VIP</span>
         </div>
       </div>
     </div>

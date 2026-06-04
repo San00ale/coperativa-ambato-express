@@ -1,9 +1,10 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useEffect, useState } from 'react'
-import { AlertCircle, Loader, Bus, Ticket, CreditCard, DollarSign, CheckCircle2 } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { AlertCircle, Loader, Bus, Ticket, DollarSign, CheckCircle2 } from 'lucide-react'
 import AsientosGrid from '@/components/AsientosGrid'
+import { validarCedulaEcuatoriana } from '@/lib/validations'
 
 interface Bus {
   id: string
@@ -46,7 +47,7 @@ interface FormData {
   nombre: string
   cedula: string
   tipo: 'ADULTO' | 'MENOR' | 'TERCERA_EDAD' | 'DISCAPACITADO'
-  metodoPago: 'EFECTIVO' | 'TARJETA'
+  metodoPago: 'EFECTIVO'
   asiento: string
 }
 export default function VenderEnRutaPage() {
@@ -57,6 +58,11 @@ export default function VenderEnRutaPage() {
   const [asientoSeleccionado, setAsientoSeleccionado] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
   const [mensajeExito, setMensajeExito] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState({
+    nombre: '',
+    cedula: '',
+    asiento: ''
+  })
 
   const [formData, setFormData] = useState<FormData>({
     nombre: '',
@@ -120,27 +126,60 @@ export default function VenderEnRutaPage() {
     return parseInt(num) > capacidad - vipCount;
   }
 
+  const calcularPrecioFinal = useMemo(() => {
+    const precioBase = ruta?.precio ?? 0
+    let precio = precioBase
+
+    if (asientoSeleccionado && esVIP(asientoSeleccionado)) {
+      precio *= 1.2
+    }
+
+    if (['MENOR', 'TERCERA_EDAD', 'DISCAPACITADO'].includes(formData.tipo)) {
+      precio *= 0.5
+    }
+
+    return Math.round(precio * 100) / 100
+  }, [ruta?.precio, asientoSeleccionado, formData.tipo])
+
+  const recargarRuta = async () => {
+    if (!ruta) return
+
+    const response = await fetch(`/api/rutas/${ruta.id}`)
+    if (!response.ok) throw new Error('No se pudo recargar la ruta')
+
+    const rutaActualizada = await response.json()
+    setRuta(rutaActualizada)
+  }
+
   const handleAsientoClick = (asiento: string) => {
     if (!asientosOcupados.includes(asiento)) {
       setAsientoSeleccionado(asiento)
       setFormData(prev => ({ ...prev, asiento }))
+      setFieldErrors(prev => ({ ...prev, asiento: '' }))
     }
   }
 
   const validarFormulario = (): boolean => {
+    const errores = {
+      nombre: '',
+      cedula: '',
+      asiento: ''
+    }
+
     if (!formData.nombre.trim()) {
-      setError('El nombre del pasajero es requerido')
-      return false
+      errores.nombre = 'El nombre completo es requerido'
     }
     if (!formData.cedula.trim()) {
-      setError('La cédula es requerida')
-      return false
+      errores.cedula = 'La cédula es requerida'
+    } else if (!validarCedulaEcuatoriana(formData.cedula)) {
+      errores.cedula = 'Cédula ecuatoriana inválida'
     }
     if (!asientoSeleccionado) {
-      setError('Debes seleccionar un asiento')
-      return false
+      errores.asiento = 'Debes seleccionar un asiento disponible'
     }
-    return true
+
+    setFieldErrors(errores)
+    return !errores.nombre && !errores.cedula && !errores.asiento
   }
 
   const handleEmitirBoleto = async () => {
@@ -152,23 +191,21 @@ export default function VenderEnRutaPage() {
       setEnviando(true)
       setError(null)
 
-      const vip = esVIP(asientoSeleccionado!)
-      const precioBase = ruta.precio || 0
-      const precioFinal = vip ? precioBase * 1.2 : precioBase
+      const precioFinal = calcularPrecioFinal
 
-      const response = await fetch('/api/ventas-chofer', {
+      const response = await fetch('/api/boletos', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           rutaId: ruta.id,
-          nombre: formData.nombre,
-          cedula: formData.cedula,
+          asiento: asientoSeleccionado,
+          pasajeroNombre: formData.nombre,
+          pasajeroCedula: formData.cedula,
           tipoPasajero: formData.tipo,
-          asiento: formData.asiento,
-          metodoPago: formData.metodoPago,
           precio: precioFinal,
+          metodoPago: 'EFECTIVO',
         }),
       })
 
@@ -177,26 +214,9 @@ export default function VenderEnRutaPage() {
         throw new Error(errorData.error || 'Error al emitir el boleto')
       }
 
-      const boleto = await response.json()
+      await recargarRuta()
 
-      // Mostrar mensaje de éxito
       setMensajeExito(`✓ Boleto emitido exitosamente para ${formData.nombre}`)
-      
-      // Actualizar la ruta para mostrar el nuevo asiento ocupado
-      setRuta(prev => {
-        if (!prev) return prev
-        return {
-          ...prev,
-          boletos: [
-            ...prev.boletos,
-            {
-              id: boleto.id,
-              asiento: formData.asiento,
-              estado: 'APROBADO'
-            }
-          ]
-        }
-      })
 
       // Limpiar formulario
       setFormData({
@@ -207,6 +227,7 @@ export default function VenderEnRutaPage() {
         asiento: ''
       })
       setAsientoSeleccionado(null)
+      setFieldErrors({ nombre: '', cedula: '', asiento: '' })
 
       // Limpiar mensaje después de 3 segundos
       setTimeout(() => setMensajeExito(null), 3000)
@@ -216,6 +237,8 @@ export default function VenderEnRutaPage() {
       setEnviando(false)
     }
   }
+
+  const formularioValido = Boolean(formData.nombre.trim() && formData.cedula.trim() && validarCedulaEcuatoriana(formData.cedula) && asientoSeleccionado)
 
   if (loading) {
     return (
@@ -350,41 +373,55 @@ export default function VenderEnRutaPage() {
             <div className="space-y-4">
               {/* Nombre */}
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Nombre Completo
                 </label>
                 <input
                   type="text"
                   value={formData.nombre}
-                  onChange={(e) => setFormData(prev => ({ ...prev, nombre: e.target.value }))}
+                  onChange={(e) => {
+                    setFormData(prev => ({ ...prev, nombre: e.target.value }))
+                    setFieldErrors(prev => ({ ...prev, nombre: e.target.value.trim() ? '' : 'El nombre completo es requerido' }))
+                  }}
                   placeholder="Ej: Juan García"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+                {fieldErrors.nombre && <p className="text-xs text-red-400 mt-1">{fieldErrors.nombre}</p>}
               </div>
 
               {/* Cédula */}
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Número de Cédula
                 </label>
                 <input
                   type="text"
                   value={formData.cedula}
-                  onChange={(e) => setFormData(prev => ({ ...prev, cedula: e.target.value }))}
+                  onChange={(e) => {
+                    const soloNumeros = e.target.value.replace(/\D/g, '')
+                    setFormData(prev => ({ ...prev, cedula: soloNumeros }))
+                    setFieldErrors(prev => ({
+                      ...prev,
+                      cedula: soloNumeros
+                        ? (!validarCedulaEcuatoriana(soloNumeros) ? 'Cédula ecuatoriana inválida' : '')
+                        : 'La cédula es requerida'
+                    }))
+                  }}
                   placeholder="Ej: 1234567890"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full px-3 py-2 border rounded-lg bg-white text-gray-900 placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${fieldErrors.cedula ? 'border-red-500' : 'border-gray-300'}`}
                 />
+                {fieldErrors.cedula && <p className="text-xs text-red-400 mt-1">{fieldErrors.cedula}</p>}
               </div>
 
               {/* Tipo de Pasajero */}
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Tipo de Pasajero
                 </label>
                 <select
                   value={formData.tipo}
                   onChange={(e) => setFormData(prev => ({ ...prev, tipo: e.target.value as FormData['tipo'] }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="ADULTO">Adulto</option>
                   <option value="MENOR">Menor de edad</option>
@@ -395,60 +432,34 @@ export default function VenderEnRutaPage() {
 
               {/* Asiento Seleccionado */}
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Asiento Seleccionado
                 </label>
                 <div className={`w-full px-3 py-2 border-2 rounded-lg text-center font-bold ${
                   asientoSeleccionado
                     ? 'border-blue-500 bg-blue-50 text-blue-900'
-                    : 'border-gray-300 bg-gray-50 text-gray-500'
+                    : 'border-gray-300 bg-white text-gray-900'
                 }`}>
                   {asientoSeleccionado || 'Selecciona un asiento'}
                 </div>
+                {fieldErrors.asiento && <p className="text-xs text-red-400 mt-1">{fieldErrors.asiento}</p>}
               </div>
 
               {/* Método de Pago */}
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Método de Pago
                 </label>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-3 cursor-pointer p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
-                    style={{ backgroundColor: formData.metodoPago === 'EFECTIVO' ? '#f0fdf4' : 'transparent' }}>
-                    <input
-                      type="radio"
-                      value="EFECTIVO"
-                      checked={formData.metodoPago === 'EFECTIVO'}
-                      onChange={(e) => setFormData(prev => ({ ...prev, metodoPago: e.target.value as 'EFECTIVO' | 'TARJETA' }))}
-                      className="w-4 h-4"
-                    />
-                    <span className="flex items-center gap-2 flex-1">
-                      <DollarSign size={18} className="text-green-600" />
-                      <span className="font-medium text-gray-900">Efectivo</span>
-                    </span>
-                  </label>
-
-                  <label className="flex items-center gap-3 cursor-pointer p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
-                    style={{ backgroundColor: formData.metodoPago === 'TARJETA' ? '#f0fdf4' : 'transparent' }}>
-                    <input
-                      type="radio"
-                      value="TARJETA"
-                      checked={formData.metodoPago === 'TARJETA'}
-                      onChange={(e) => setFormData(prev => ({ ...prev, metodoPago: e.target.value as 'EFECTIVO' | 'TARJETA' }))}
-                      className="w-4 h-4"
-                    />
-                    <span className="flex items-center gap-2 flex-1">
-                      <CreditCard size={18} className="text-blue-600" />
-                      <span className="font-medium text-gray-900">Tarjeta</span>
-                    </span>
-                  </label>
+                <div className="p-3 border border-green-200 rounded-lg bg-green-50 flex items-center gap-2 text-green-900">
+                  <DollarSign size={18} className="text-green-600" />
+                  <span className="font-medium">Solo efectivo</span>
                 </div>
               </div>
 
               {/* Botón Emitir */}
               <button
                 onClick={handleEmitirBoleto}
-                disabled={enviando || !asientoSeleccionado}
+                disabled={enviando || !formularioValido}
                 className="w-full mt-6 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold rounded-lg transition flex items-center justify-center gap-2"
               >
                 {enviando ? (
@@ -483,7 +494,27 @@ export default function VenderEnRutaPage() {
                     </div>
                     <div className="flex justify-between">
                       <span>Pago:</span>
-                      <span className="font-medium text-gray-900">{formData.metodoPago}</span>
+                      <span className="font-medium text-gray-900">EFECTIVO</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Base:</span>
+                      <span className="font-medium text-gray-900">${(ruta?.precio ?? 0).toFixed(2)}</span>
+                    </div>
+                    {asientoSeleccionado && esVIP(asientoSeleccionado) && (
+                      <div className="flex justify-between">
+                        <span>VIP +20%:</span>
+                        <span className="font-medium text-amber-600">+${(((ruta?.precio ?? 0) * 0.2)).toFixed(2)}</span>
+                      </div>
+                    )}
+                    {['MENOR', 'TERCERA_EDAD', 'DISCAPACITADO'].includes(formData.tipo) && (
+                      <div className="flex justify-between">
+                        <span>Descuento 50%:</span>
+                        <span className="font-medium text-green-600">-${(((ruta?.precio ?? 0) * 0.5)).toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between border-t border-gray-200 pt-2">
+                      <span>Total:</span>
+                      <span className="font-semibold text-gray-900">${calcularPrecioFinal.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>

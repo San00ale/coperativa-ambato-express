@@ -1,6 +1,8 @@
 /**
- * Valida una cédula ecuatoriana usando el algoritmo módulo 10.
+ * Funciones de validación reutilizables en toda la aplicación.
  */
+
+// ----- VALIDACIÓN DE CÉDULA ECUATORIANA (versión completa) -----
 export function validarCedulaEcuatoriana(cedula: string): boolean {
   if (!/^\d{10}$/.test(cedula)) return false;
 
@@ -26,9 +28,7 @@ export function validarCedulaEcuatoriana(cedula: string): boolean {
   return calculado === digitoVerificador;
 }
 
-/**
- * Retorna la fecha de hoy en formato YYYY-MM-DD (zona horaria local).
- */
+// ----- UTILIDADES DE FECHA -----
 export function getFechaHoy(): string {
   const hoy = new Date();
   const año = hoy.getFullYear();
@@ -37,9 +37,50 @@ export function getFechaHoy(): string {
   return `${año}-${mes}-${dia}`;
 }
 
-/**
- * Retorna true si la fecha dada (YYYY-MM-DD) es anterior a hoy.
- */
 export function esFechaPasada(fecha: string): boolean {
   return fecha < getFechaHoy();
+}
+
+export function validarFechaNoEsPasada(fechaString: string): boolean {
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const fechaSeleccionada = new Date(fechaString + 'T00:00:00');
+  fechaSeleccionada.setHours(0, 0, 0, 0);
+  return fechaSeleccionada >= hoy;
+}
+
+// ----- OTRAS VALIDACIONES -----
+export function validarNombre(nombre: string): boolean {
+  return nombre.trim().length >= 3;
+}
+
+export function validarEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+export function validarTelefonoEcuatoriano(telefono: string): boolean {
+  return /^\d{9}$/.test(telefono);
+}
+
+export function validarArchivoImagen(archivo: File): boolean {
+  const tiposValidos = ['image/jpeg', 'image/png', 'image/webp'];
+  return tiposValidos.includes(archivo.type) && archivo.size <= 5 * 1024 * 1024;
+}
+
+// ----- OBTENER MENSAJES DE ERROR -----
+export function obtenerErrorCedula(cedula: string): string {
+  if (!cedula) return 'La cédula es requerida';
+  if (!/^\d*$/.test(cedula)) return 'La cédula solo debe contener números';
+  if (cedula.length !== 10) return `La cédula debe tener 10 dígitos (${cedula.length} ingresados)`;
+  return validarCedulaEcuatoriana(cedula) ? '' : 'Cédula inválida';
+}
+
+export function obtenerErrorNombre(nombre: string): string {
+  if (!nombre.trim()) return 'El nombre es requerido';
+  return nombre.trim().length < 3 ? 'El nombre debe tener mínimo 3 caracteres' : '';
+}
+
+export function obtenerErrorFecha(fecha: string): string {
+  if (!fecha) return 'La fecha es requerida';
+  return validarFechaNoEsPasada(fecha) ? '' : 'No se pueden buscar rutas en fechas pasadas';
 }
