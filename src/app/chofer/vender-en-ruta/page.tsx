@@ -266,14 +266,14 @@ export default function VenderEnRutaPage() {
   }
 
   return (
-    <div className="space-y-8 text-slate-100">
+    <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
           <Ticket className="w-8 h-8 text-blue-600" />
           Vender Boletos en Ruta
         </h1>
-        <p className="text-slate-300 mt-2">
+        <p className="text-gray-600 mt-2">
           Vende boletos a bordo del bus a los pasajeros
         </p>
       </div>
@@ -301,29 +301,29 @@ export default function VenderEnRutaPage() {
       )}
 
       {/* Ruta Actual */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
-        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <Bus className="w-5 h-5" />
           Ruta Actual
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <span className="text-sm text-slate-300">Recorrido</span>
-            <p className="font-bold text-white">
+            <span className="text-sm text-gray-600">Recorrido</span>
+            <p className="font-bold text-gray-900">
               {ruta.frecuencia.origen} → {ruta.frecuencia.destino}
             </p>
           </div>
           <div>
-            <span className="text-sm text-slate-300">Bus</span>
-            <p className="font-bold text-white">{ruta.bus.numero}</p>
+            <span className="text-sm text-gray-600">Bus</span>
+            <p className="font-bold text-gray-900">{ruta.bus.numero}</p>
           </div>
           <div>
-            <span className="text-sm text-slate-300">Placa</span>
-            <p className="font-bold text-white uppercase">{ruta.bus.placa}</p>
+            <span className="text-sm text-gray-600">Placa</span>
+            <p className="font-bold text-gray-900 uppercase">{ruta.bus.placa}</p>
           </div>
           <div>
-            <span className="text-sm text-slate-300">Capacidad</span>
-            <p className="font-bold text-white">
+            <span className="text-sm text-gray-600">Capacidad</span>
+            <p className="font-bold text-gray-900">
               {ruta.boletos.length} / {ruta.bus.capacidad} ocupados
             </p>
           </div>
@@ -334,22 +334,22 @@ export default function VenderEnRutaPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Asientos - Columna Izquierda */}
         <div className="lg:col-span-2">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg">
-            <h2 className="text-lg font-semibold text-white mb-6">Selecciona un Asiento</h2>
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">Selecciona un Asiento</h2>
             
             {/* Leyenda */}
             <div className="flex gap-6 mb-6 flex-wrap">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 bg-green-100 border-2 border-green-500 rounded"></div>
-                <span className="text-sm text-slate-200">Disponible</span>
+                <span className="text-sm text-gray-700">Disponible</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 bg-red-100 border-2 border-red-500 rounded"></div>
-                <span className="text-sm text-slate-200">Ocupado</span>
+                <span className="text-sm text-gray-700">Ocupado</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 bg-blue-100 border-2 border-blue-500 rounded"></div>
-                <span className="text-sm text-slate-200">Seleccionado</span>
+                <span className="text-sm text-gray-700">Seleccionado</span>
               </div>
             </div>
 
@@ -367,8 +367,8 @@ export default function VenderEnRutaPage() {
 
         {/* Formulario - Columna Derecha */}
         <div className="lg:col-span-1">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sticky top-20 shadow-lg">
-            <h2 className="text-lg font-semibold text-white mb-6">Datos del Pasajero</h2>
+          <div className="bg-white border border-gray-200 rounded-lg p-6 sticky top-20">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">Datos del Pasajero</h2>
 
             <div className="space-y-4">
               {/* Nombre */}
@@ -384,7 +384,7 @@ export default function VenderEnRutaPage() {
                     setFieldErrors(prev => ({ ...prev, nombre: e.target.value.trim() ? '' : 'El nombre completo es requerido' }))
                   }}
                   placeholder="Ej: Juan García"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-900 text-white placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 {fieldErrors.nombre && <p className="text-xs text-red-400 mt-1">{fieldErrors.nombre}</p>}
               </div>
@@ -408,7 +408,7 @@ export default function VenderEnRutaPage() {
                     }))
                   }}
                   placeholder="Ej: 1234567890"
-                  className={`w-full px-3 py-2 border rounded-lg bg-gray-900 text-white placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${fieldErrors.cedula ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`w-full px-3 py-2 border rounded-lg bg-white text-gray-900 placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${fieldErrors.cedula ? 'border-red-500' : 'border-gray-300'}`}
                 />
                 {fieldErrors.cedula && <p className="text-xs text-red-400 mt-1">{fieldErrors.cedula}</p>}
               </div>
@@ -421,7 +421,7 @@ export default function VenderEnRutaPage() {
                 <select
                   value={formData.tipo}
                   onChange={(e) => setFormData(prev => ({ ...prev, tipo: e.target.value as FormData['tipo'] }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="ADULTO">Adulto</option>
                   <option value="MENOR">Menor de edad</option>
@@ -437,8 +437,8 @@ export default function VenderEnRutaPage() {
                 </label>
                 <div className={`w-full px-3 py-2 border-2 rounded-lg text-center font-bold ${
                   asientoSeleccionado
-                    ? 'border-blue-500 bg-blue-950 text-blue-100'
-                    : 'border-gray-300 bg-gray-800 text-gray-300'
+                    ? 'border-blue-500 bg-blue-50 text-blue-900'
+                    : 'border-gray-300 bg-white text-gray-900'
                 }`}>
                   {asientoSeleccionado || 'Selecciona un asiento'}
                 </div>
@@ -450,7 +450,7 @@ export default function VenderEnRutaPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Método de Pago
                 </label>
-                <div className="p-3 border border-green-200 rounded-lg bg-green-900/90 flex items-center gap-2 text-green-100">
+                <div className="p-3 border border-green-200 rounded-lg bg-green-50 flex items-center gap-2 text-green-900">
                   <DollarSign size={18} className="text-green-600" />
                   <span className="font-medium">Solo efectivo</span>
                 </div>
@@ -478,23 +478,23 @@ export default function VenderEnRutaPage() {
               {/* Resumen */}
               {asientoSeleccionado && (
                 <div className="mt-6 pt-6 border-t border-gray-200">
-                  <h3 className="font-semibold text-white mb-3">Resumen</h3>
-                  <div className="space-y-2 text-sm text-slate-200">
+                  <h3 className="font-semibold text-gray-900 mb-3">Resumen</h3>
+                  <div className="space-y-2 text-sm text-gray-600">
                     <div className="flex justify-between">
                       <span>Pasajero:</span>
-                      <span className="font-medium text-white">{formData.nombre || '-'}</span>
+                      <span className="font-medium text-gray-900">{formData.nombre || '-'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Asiento:</span>
-                      <span className="font-medium text-white">{asientoSeleccionado}</span>
+                      <span className="font-medium text-gray-900">{asientoSeleccionado}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Tipo:</span>
-                      <span className="font-medium text-white">{formData.tipo}</span>
+                      <span className="font-medium text-gray-900">{formData.tipo}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Pago:</span>
-                      <span className="font-medium text-white">EFECTIVO</span>
+                      <span className="font-medium text-gray-900">EFECTIVO</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Base:</span>
@@ -514,7 +514,7 @@ export default function VenderEnRutaPage() {
                     )}
                     <div className="flex justify-between border-t border-gray-200 pt-2">
                       <span>Total:</span>
-                      <span className="font-semibold text-green-300">${calcularPrecioFinal.toFixed(2)}</span>
+                      <span className="font-semibold text-gray-900">${calcularPrecioFinal.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>

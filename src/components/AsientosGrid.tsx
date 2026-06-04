@@ -36,7 +36,7 @@ export default function AsientosGrid({
 
   return (
     <div className="space-y-4">
-      <h3 className="font-bold text-gray-100">FRENTE DEL BUS</h3>
+      <h3 className="font-bold text-gray-900">FRENTE DEL BUS</h3>
 
       <div className="rounded-2xl border border-gray-700 bg-gray-900 p-4 shadow-inner">
         <div
@@ -78,7 +78,7 @@ export default function AsientosGrid({
       </div>
 
       {/* Leyenda */}
-      <div className="flex gap-4 flex-wrap text-sm text-gray-200">
+      <div className="flex gap-4 flex-wrap text-sm text-gray-900">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 bg-emerald-500 rounded"></div>
           <span>Disponible</span>
