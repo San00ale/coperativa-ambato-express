@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
@@ -51,7 +51,7 @@ export default function VenderBoleto() {
 const [clienteEmail, setClienteEmail] = useState('')
 const [errorCliente, setErrorCliente] = useState('')
 const [buscandoCliente, setBuscandoCliente] = useState(false)
-
+const [ciudades, setCiudades] = useState<string[]>([])
 function validarCedula(cedula: string): boolean {
   if (!/^\d{10}$/.test(cedula)) return false
   const provincia = parseInt(cedula.substring(0, 2))
@@ -90,7 +90,16 @@ async function buscarCliente(ced: string) {
     setBuscandoCliente(false)
   }
 }
-
+useEffect(() => {
+  fetch('/api/frecuencias')
+    .then(r => r.json())
+    .then((frecuencias: { origen: string; destino: string }[]) => {
+      const todas = frecuencias.flatMap(f => [f.origen, f.destino])
+      const unicas = Array.from(new Set(todas)).sort()
+      setCiudades(unicas)
+    })
+    .catch(() => {})
+}, [])
 
   const DESCUENTO: Record<TipoPasajero, number> = {
     ADULTO: 0,
@@ -253,21 +262,29 @@ if (!clienteId) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm text-gray-600 mb-1">Origen</label>
-              <input
-                className="w-full border rounded-lg px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                value={origen}
-                onChange={e => setOrigen(e.target.value)}
-                placeholder="Ej: Ambato"
-              />
+             <select
+  className="w-full border rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
+  value={origen}
+  onChange={e => setOrigen(e.target.value)}
+>
+  <option value="">Seleccionar ciudad...</option>
+  {ciudades.map(c => (
+    <option key={c} value={c}>{c}</option>
+  ))}
+</select>
             </div>
             <div>
               <label className="block text-sm text-gray-600 mb-1">Destino</label>
-              <input
-                className="w-full border rounded-lg px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                value={destino}
-                onChange={e => setDestino(e.target.value)}
-                placeholder="Ej: Quito"
-              />
+             <select
+  className="w-full border rounded-lg px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
+  value={destino}
+  onChange={e => setDestino(e.target.value)}
+>
+  <option value="">Seleccionar ciudad...</option>
+  {ciudades.map(c => (
+    <option key={c} value={c}>{c}</option>
+  ))}
+</select>
             </div>
             <div>
               <label className="block text-sm text-gray-600 mb-1">Fecha</label>
