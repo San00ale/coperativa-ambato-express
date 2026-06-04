@@ -1,7 +1,6 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { Html5Qrcode } from 'html5-qrcode'
 import { AlertCircle, Loader, Keyboard } from 'lucide-react'
 import ModalConfirmarAbordaje from '@/components/ModalConfirmarAbordaje'
@@ -39,7 +38,6 @@ interface Ruta {
 }
 
 export default function EscanearPage() {
-  const { data: session } = useSession()
   const [rutaActual, setRutaActual] = useState<Ruta | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -59,6 +57,12 @@ export default function EscanearPage() {
 
   // Referencias
   const escánerRef = useRef<Html5Qrcode | null>(null)
+  const rutaActualRef = useRef<Ruta | null>(null)
+
+  // Mantener ref sincronizada para usarla dentro de callbacks
+  useEffect(() => {
+    rutaActualRef.current = rutaActual
+  }, [rutaActual])
 
   // Obtener ruta actual del chofer
   useEffect(() => {
@@ -89,59 +93,8 @@ export default function EscanearPage() {
     fetchRuta()
   }, [])
 
-  // Inicializar / destruir escáner QR
-  useEffect(() => {
-    if (loading) return
-
-    // Si el escáner no está activo, detener y limpiar
-    if (!escánerActivo) {
-      if (escánerRef.current) {
-        escánerRef.current
-          .stop()
-          .then(() => escánerRef.current?.clear())
-          .catch(() => {})
-        escánerRef.current = null
-      }
-      return
-    }
-
-    // Pequeño delay para asegurar que el div ya está en el DOM
-    const timer = setTimeout(() => {
-      const scanner = new Html5Qrcode('qr-reader')
-      escánerRef.current = scanner
-
-      scanner
-        .start(
-          { facingMode: 'environment' },
-          {
-            fps: 10,
-            qrbox: { width: 300, height: 300 },
-            aspectRatio: 1.0, // fuerza forma cuadrada
-          },
-          (decodedText) => handleQRDetected(decodedText),
-          () => {} // ignorar errores de frame
-        )
-        .catch(() => {
-          setError('No se pudo acceder a la cámara. Verifica los permisos del navegador.')
-        })
-    }, 100)
-
-    return () => {
-      clearTimeout(timer)
-      if (escánerRef.current) {
-        escánerRef.current
-          .stop()
-          .then(() => escánerRef.current?.clear())
-          .catch(() => {})
-        escánerRef.current = null
-      }
-    }
-  }, [escánerActivo, loading])
-
-  // Manejar detección de QR (cámara o manual)
-  const handleQRDetected = async (qrData: string) => {
-    if (!escánerActivo) return
-
+  // Manejar detección de QR — declarada ANTES del useEffect que la usa
+  const handleQRDetected = useCallback(async (qrData: string) => {
     setEscánerActivo(false)
     setErrorEscaner(null)
 
@@ -161,7 +114,6 @@ export default function EscanearPage() {
         return
       }
 
-      // Obtener datos del boleto
       const response = await fetch(`/api/boletos/${boletoId}/abordar`)
 
       if (!response.ok) {
@@ -173,7 +125,6 @@ export default function EscanearPage() {
 
       const boleto = await response.json()
 
-      // Mapear campos del pasajero al formato que espera el modal
       setBoletoDetectado({
         ...boleto,
         pasajeroNombre: boleto.pasajero?.nombre,
@@ -184,7 +135,54 @@ export default function EscanearPage() {
       setErrorEscaner('Error de red. Intenta nuevamente.')
       setEscánerActivo(true)
     }
-  }
+  }, [])
+
+  // Inicializar / destruir escáner QR
+  useEffect(() => {
+    if (loading) return
+
+    if (!escánerActivo) {
+      if (escánerRef.current) {
+        escánerRef.current
+          .stop()
+          .then(() => escánerRef.current?.clear())
+          .catch(() => {})
+        escánerRef.current = null
+      }
+      return
+    }
+
+    const timer = setTimeout(() => {
+      const scanner = new Html5Qrcode('qr-reader')
+      escánerRef.current = scanner
+
+      scanner
+        .start(
+          { facingMode: 'environment' },
+          {
+            fps: 10,
+            qrbox: { width: 300, height: 300 },
+            aspectRatio: 1.0,
+          },
+          (decodedText) => handleQRDetected(decodedText),
+          () => {}
+        )
+        .catch(() => {
+          setError('No se pudo acceder a la cámara. Verifica los permisos del navegador.')
+        })
+    }, 100)
+
+    return () => {
+      clearTimeout(timer)
+      if (escánerRef.current) {
+        escánerRef.current
+          .stop()
+          .then(() => escánerRef.current?.clear())
+          .catch(() => {})
+        escánerRef.current = null
+      }
+    }
+  }, [escánerActivo, loading, handleQRDetected])
 
   // Confirmar abordaje
   const handleConfirmarAbordaje = async () => {
@@ -221,7 +219,6 @@ export default function EscanearPage() {
         return
       }
 
-      // Éxito
       setExito(true)
       setBoletoDetectado(null)
 
@@ -291,7 +288,7 @@ export default function EscanearPage() {
         </p>
       </div>
 
-      {/* Error general (cámara, permisos, red) */}
+      {/* Error general */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
@@ -310,7 +307,6 @@ export default function EscanearPage() {
       {/* Escáner QR */}
       {escánerActivo && !boletoDetectado && (
         <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
-          {/* Contenedor centrado con tamaño fijo — evita que la librería estire el video */}
           <div className="flex justify-center">
             <div
               id="qr-reader"
@@ -323,7 +319,6 @@ export default function EscanearPage() {
             📱 Coloca el QR del boleto frente a la cámara
           </p>
 
-          {/* Error del escáner (QR inválido, boleto no encontrado, etc.) */}
           {errorEscaner && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
