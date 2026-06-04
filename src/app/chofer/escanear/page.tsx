@@ -133,65 +133,89 @@ export default function EscanearPage() {
   }, [escánerActivo, loading])
 
   // Manejar detección de QR
-  const handleQRDetected = async (qrData: string) => {
-    if (!escánerActivo) return
+const handleQRDetected = async (qrData: string) => {
+  if (!escánerActivo) return
+  setEscánerActivo(false)
 
-    setEscánerActivo(false) // Pausar escáner
-
+  try {
+    // 1. Parsear el QR — puede ser JSON o ID directo
+    let boletoId: string
     try {
-      // Obtener datos del boleto
-      const response = await fetch(`/api/boletos/${qrData}`)
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        setModalError(errorData.error || 'Boleto no encontrado')
-        setEscánerActivo(true)
-        return
-      }
-
-      const boleto = await response.json()
-      setBoletoDetectado(boleto)
-      setModalError(null)
-    } catch (err) {
-      setModalError('Error al validar boleto. Intenta nuevamente.')
-      setEscánerActivo(true)
+      const parsed = JSON.parse(qrData)
+      boletoId = parsed.boletoId
+    } catch {
+      boletoId = qrData.trim() // Si es texto plano, usarlo directo
     }
+
+    if (!boletoId) {
+      setModalError('Código QR inválido. Intenta de nuevo.')
+      setEscánerActivo(true)
+      return
+    }
+
+    // 2. Llamar al GET de abordar para obtener los datos
+    const response = await fetch(`/api/boletos/${boletoId}/abordar`)
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      setModalError(errorData.error || 'Boleto no encontrado')
+      setEscánerActivo(true)
+      return
+    }
+
+    const boleto = await response.json()
+    // Mapear pasajero al campo que espera el modal
+    setBoletoDetectado({
+      ...boleto,
+      pasajeroNombre: boleto.pasajero?.nombre,
+      pasajeroCedula: boleto.pasajero?.cedula,
+    })
+    setModalError(null)
+  } catch {
+    setModalError('Error de red. Intenta nuevamente.')
+    setEscánerActivo(true)
   }
+}
 
   // Confirmar abordaje
-  const handleConfirmarAbordaje = async () => {
-    if (!boletoDetectado || !rutaActual) return
+const handleConfirmarAbordaje = async () => {
+  if (!boletoDetectado || !rutaActual) return
+  setConfirmando(true)
+  setModalError(null)
 
-    try {
-      setConfirmando(true)
-      setModalError(null)
+  try {
+    const response = await fetch(`/api/boletos/${boletoDetectado.id}/abordar`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rutaId: rutaActual.id })
+    })
 
-      const response = await fetch(`/api/boletos/${boletoDetectado.id}/abordar`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rutaId: rutaActual.id })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        setModalError(errorData.error || 'Error al registrar abordaje')
-        return
+    if (!response.ok) {
+      const errorData = await response.json()
+      // Mensajes personalizados por código
+      const mensajes: Record<string, string> = {
+        ALREADY_BOARDED: 'Este boleto ya fue utilizado. No se puede registrar nuevamente.',
+        WRONG_ROUTE: `Este boleto corresponde a otra ruta. No puede abordar aquí.`,
+        INVALID_STATE: `El boleto no está vigente (estado: ${boletoDetectado.estado}).`,
+        WRONG_CHOFER: 'Este boleto no pertenece a tu ruta actual.',
+        NOT_FOUND: 'Boleto no encontrado.',
       }
-
-      // ✅ Éxito
-      setExito(true)
-      setBoletoDetectado(null)
-
-      setTimeout(() => {
-        setExito(false)
-        setEscánerActivo(true)
-      }, 2000)
-    } catch (err) {
-      setModalError('Error de conexión. Intenta nuevamente.')
-    } finally {
-      setConfirmando(false)
+      setModalError(mensajes[errorData.code] || errorData.error || 'Error al registrar abordaje')
+      return
     }
+
+    setExito(true)
+    setBoletoDetectado(null)
+    setTimeout(() => {
+      setExito(false)
+      setEscánerActivo(true)
+    }, 2500)
+  } catch {
+    setModalError('Error de conexión. Intenta nuevamente.')
+  } finally {
+    setConfirmando(false)
   }
+}
 
   // Validar código manual
   const handleValidarManual = async () => {
