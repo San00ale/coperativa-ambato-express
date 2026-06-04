@@ -277,11 +277,14 @@ const [fechaFiltro, setFechaFiltro] = useState(obtenerFechaLocal())
         onChange={e => setNuevoBusId(e.target.value)}
       >
         <option value="">Seleccionar bus...</option>
-        {buses.map(b => (
-          <option key={b.id} value={b.id}>
-            {b.placa} ({b.capacidad} asientos)
-          </option>
-        ))}
+       {buses.filter(b => {
+  const ruta = rutas.find(r => r.id === rutaAReasignar)
+  return b.id !== ruta?.busId
+}).map(b => (
+  <option key={b.id} value={b.id}>
+    {b.placa} ({b.capacidad} asientos)
+  </option>
+))}
       </select>
       <div className="flex gap-3">
         <button
