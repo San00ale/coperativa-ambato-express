@@ -8,17 +8,19 @@ datasource db {
 }
 
 model Usuario {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  password     String
-  nombre       String
-  cedula       String   @unique
-  rol          String
-  activo       Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  boletos      Boleto[]
-  vendidosChofer Boleto[] @relation("VendidoPorChofer")
-  rutasAsignadas      Ruta[]   @relation("ChofersRutas")
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  password            String
+  nombre              String
+  cedula              String    @unique
+  rol                 String
+  activo              Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  resetToken          String?
+  resetTokenExpires   DateTime?
+  boletos             Boleto[]
+  vendidosChofer      Boleto[]  @relation("VendidoPorChofer")
+  rutasAsignadas      Ruta[]    @relation("ChofersRutas")
 }
 
 model Bus {
