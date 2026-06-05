@@ -4,10 +4,6 @@ import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { Clock, MapPin, Bus, CheckCircle2, Circle, AlertCircle, Loader } from 'lucide-react'
 
-// ─────────────────────────────────────────────
-// INTERFAZ CORREGIDA
-// registrosParada va en la RAÍZ de Ruta, NO dentro de frecuencia
-// ─────────────────────────────────────────────
 interface Ruta {
   id: string
   fecha: string
@@ -39,7 +35,6 @@ interface Ruta {
   boletos: Array<{
     id: string
   }>
-  // ← CORRECTO: registrosParada en la raíz, no en frecuencia
   registrosParada: Array<{
     id: string
     paradaId: string
@@ -70,8 +65,6 @@ export default function MisRutasPage() {
       const response = await fetch(`/api/rutas?fecha=${fechaSeleccionada}`)
       if (!response.ok) throw new Error('Error al obtener las rutas')
       const data = await response.json()
-      // Garantizar que cada ruta tenga registrosParada como array
-      // por si el backend aún no lo devuelve tras la migración
       setRutas(data.map((r: Ruta) => ({
         ...r,
         registrosParada: r.registrosParada ?? []
@@ -89,25 +82,22 @@ export default function MisRutasPage() {
   }, [fechaSeleccionada])
 
   // ─────────────────────────────────────────────
-  // INICIAR VIAJE
+  // INICIAR VIAJE — re-fetch para traer datos frescos
   // ─────────────────────────────────────────────
   const handleIniciarViaje = async (rutaId: string) => {
     try {
       setActualizando(rutaId)
       setError(null)
-      const ahora = new Date().toISOString()
       const response = await fetch(`/api/rutas/${rutaId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ estado: 'en_curso', inicio: ahora }),
+        body: JSON.stringify({ estado: 'en_curso', inicio: new Date().toISOString() }),
       })
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.error || 'Error al iniciar viaje')
       }
-      setRutas(rutas.map(ruta =>
-        ruta.id === rutaId ? { ...ruta, estado: 'en_curso', inicio: ahora } : ruta
-      ))
+      await fetchRutas()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al iniciar viaje')
     } finally {
@@ -116,7 +106,7 @@ export default function MisRutasPage() {
   }
 
   // ─────────────────────────────────────────────
-  // FINALIZAR VIAJE
+  // FINALIZAR VIAJE — re-fetch para traer datos frescos
   // ─────────────────────────────────────────────
   const handleFinalizarViaje = async (rutaId: string) => {
     try {
@@ -131,9 +121,7 @@ export default function MisRutasPage() {
         const errorData = await response.json()
         throw new Error(errorData.error || 'Error al finalizar viaje')
       }
-      setRutas(rutas.map(ruta =>
-        ruta.id === rutaId ? { ...ruta, estado: 'completada', completada: true } : ruta
-      ))
+      await fetchRutas()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al finalizar viaje')
     } finally {
@@ -218,7 +206,6 @@ export default function MisRutasPage() {
     setFechaSeleccionada(e.target.value)
   }
 
-  // Conteos resumen
   const totalRutas = rutas.length
   const rutasEnCurso = rutas.filter(r => r.estado === 'en_curso').length
   const rutasCompletadas = rutas.filter(r => r.estado === 'completada').length
@@ -241,7 +228,6 @@ export default function MisRutasPage() {
             onChange={handleFechaChange}
             className="px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          {/* Botón actualizar manual */}
           <button
             onClick={fetchRutas}
             className="px-3 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition"
@@ -299,7 +285,6 @@ export default function MisRutasPage() {
           </div>
         ) : (
           rutas.map(ruta => {
-            // Calcular paradas pendientes para esta ruta
             const paradasPendientes = ruta.frecuencia.paradas.filter(
               p => !ruta.registrosParada.some(r => r.paradaId === p.id)
             )
@@ -394,12 +379,12 @@ export default function MisRutasPage() {
                         </button>
                       )}
 
-                      {/* Parada intermedia — solo si está en curso y hay paradas pendientes */}
+                      {/* Parada intermedia */}
                       {ruta.estado === 'en_curso' && paradasPendientes.length > 0 && (
                         <button
                           onClick={() => { setModalParada(ruta.id); setParadaSeleccionada('') }}
                           disabled={actualizando === ruta.id}
-                          className="w-full px-4 py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 text-white font-bold rounded-lg transition flex items-center justify-center gap-2"
+                          className="w-full px-4 py-3 bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-400 text-white font-bold rounded-lg transition flex items-center justify-center gap-2"
                         >
                           <MapPin size={18} />
                           Parada intermedia
@@ -432,7 +417,7 @@ export default function MisRutasPage() {
                   </div>
                 </div>
 
-                {/* ── Sección de paradas con progreso ── */}
+                {/* ── Paradas con progreso ── */}
                 {ruta.frecuencia.paradas.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <div className="flex items-center justify-between mb-2">
@@ -491,7 +476,7 @@ export default function MisRutasPage() {
                     key={parada.id}
                     className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition ${
                       paradaSeleccionada === parada.id
-                        ? 'border-orange-500 bg-orange-50'
+                        ? 'border-yellow-500 bg-yellow-50'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
@@ -501,7 +486,7 @@ export default function MisRutasPage() {
                       value={parada.id}
                       checked={paradaSeleccionada === parada.id}
                       onChange={() => setParadaSeleccionada(parada.id)}
-                      className="accent-orange-500"
+                      className="accent-yellow-500"
                     />
                     <span className="font-medium text-gray-900">{parada.orden}. {parada.ciudad}</span>
                   </label>
@@ -517,7 +502,7 @@ export default function MisRutasPage() {
                 <button
                   onClick={() => handleParadaIntermedia(modalParada)}
                   disabled={!paradaSeleccionada || actualizando === modalParada}
-                  className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white py-2 rounded-lg font-bold"
+                  className="flex-1 bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-300 text-white py-2 rounded-lg font-bold"
                 >
                   {actualizando === modalParada ? 'Guardando...' : 'Confirmar llegada'}
                 </button>
