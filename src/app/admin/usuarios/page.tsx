@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { obtenerErrorCedula, obtenerErrorEmailCoperativa, obtenerErrorContrasena, obtenerErrorConfirmacionContrasena, validarEmail } from '@/lib/validations'
 
 interface Usuario {
   id: string
@@ -32,9 +33,17 @@ export default function UsuariosPage() {
     email: '',
     cedula: '',
     password: '',
+    confirmPassword: '',
     rol: 'CHOFER' as 'CHOFER' | 'OFICINISTA'
   })
   const [submitting, setSubmitting] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState({
+    nombre: '',
+    email: '',
+    cedula: '',
+    password: '',
+    confirmPassword: ''
+  })
 
   // Modal agregar cliente
   const [showAgregarClienteModal, setShowAgregarClienteModal] = useState(false)
@@ -43,9 +52,17 @@ export default function UsuariosPage() {
     nombre: '',
     email: '',
     cedula: '',
-    password: ''
+    password: '',
+    confirmPassword: ''
   })
   const [submittingCliente, setSubmittingCliente] = useState(false)
+  const [clienteFieldErrors, setClienteFieldErrors] = useState({
+    nombre: '',
+    email: '',
+    cedula: '',
+    password: '',
+    confirmPassword: ''
+  })
 
   // ---------- Funciones de carga (optimizadas con useCallback) ----------
   const cargarUsuarios = useCallback(async () => {
@@ -98,7 +115,41 @@ export default function UsuariosPage() {
   // ---------- Handlers para usuarios ----------
   const handleAgregar = () => {
     setModalError('')
+    setFieldErrors({ nombre: '', email: '', cedula: '', password: '', confirmPassword: '' })
+    setFormData({
+      nombre: '',
+      email: '',
+      cedula: '',
+      password: '',
+      confirmPassword: '',
+      rol: 'CHOFER'
+    })
     setShowAgregarModal(true)
+  }
+
+  const handleFieldChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+    
+    // Validación en vivo
+    let error = ''
+    if (field === 'cedula') {
+      error = obtenerErrorCedula(value)
+    } else if (field === 'email') {
+      error = obtenerErrorEmailCoperativa(value)
+    } else if (field === 'password') {
+      error = obtenerErrorContrasena(value)
+      // También validar confirmación si ya tiene valor
+      if (formData.confirmPassword) {
+        setFieldErrors(prev => ({
+          ...prev,
+          confirmPassword: obtenerErrorConfirmacionContrasena(value, formData.confirmPassword)
+        }))
+      }
+    } else if (field === 'confirmPassword') {
+      error = obtenerErrorConfirmacionContrasena(formData.password, value)
+    }
+    
+    setFieldErrors(prev => ({ ...prev, [field]: error }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -121,6 +172,7 @@ export default function UsuariosPage() {
           email: '',
           cedula: '',
           password: '',
+          confirmPassword: '',
           rol: 'CHOFER'
         })
         await cargarUsuarios()
@@ -162,7 +214,40 @@ export default function UsuariosPage() {
   // ---------- Handlers para clientes ----------
   const handleAgregarCliente = () => {
     setModalClienteError('')
+    setClienteFieldErrors({ nombre: '', email: '', cedula: '', password: '', confirmPassword: '' })
+    setClienteFormData({
+      nombre: '',
+      email: '',
+      cedula: '',
+      password: '',
+      confirmPassword: ''
+    })
     setShowAgregarClienteModal(true)
+  }
+
+  const handleClienteFieldChange = (field: string, value: string) => {
+    setClienteFormData(prev => ({ ...prev, [field]: value }))
+    
+    // Validación en vivo
+    let error = ''
+    if (field === 'cedula') {
+      error = obtenerErrorCedula(value)
+    } else if (field === 'email') {
+      error = !validarEmail(value) ? 'Email inválido' : ''
+    } else if (field === 'password') {
+      error = obtenerErrorContrasena(value)
+      // También validar confirmación si ya tiene valor
+      if (clienteFormData.confirmPassword) {
+        setClienteFieldErrors(prev => ({
+          ...prev,
+          confirmPassword: obtenerErrorConfirmacionContrasena(value, clienteFormData.confirmPassword)
+        }))
+      }
+    } else if (field === 'confirmPassword') {
+      error = obtenerErrorConfirmacionContrasena(clienteFormData.password, value)
+    }
+    
+    setClienteFieldErrors(prev => ({ ...prev, [field]: error }))
   }
 
   const handleSubmitCliente = async (e: React.FormEvent) => {
@@ -184,7 +269,8 @@ export default function UsuariosPage() {
           nombre: '',
           email: '',
           cedula: '',
-          password: ''
+          password: '',
+          confirmPassword: ''
         })
         await cargarClientes()
       } else {
@@ -358,6 +444,7 @@ export default function UsuariosPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cédula</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
@@ -373,6 +460,11 @@ export default function UsuariosPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {cliente.cedula}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                        Cliente
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -421,7 +513,7 @@ export default function UsuariosPage() {
                     type="text"
                     required
                     value={formData.nombre}
-                    onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                    onChange={(e) => handleFieldChange('nombre', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   />
                 </div>
@@ -432,10 +524,15 @@ export default function UsuariosPage() {
                     type="email"
                     required
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+                    onChange={(e) => handleFieldChange('email', e.target.value)}
+                    className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 text-gray-900 placeholder:text-gray-400 ${
+                      fieldErrors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                    }`}
                     placeholder="usuario@coperativa.com"
                   />
+                  {fieldErrors.email && (
+                    <p className="mt-1 text-xs text-red-600">{fieldErrors.email}</p>
+                  )}
                 </div>
 
                 <div className="mb-4">
@@ -444,11 +541,16 @@ export default function UsuariosPage() {
                     type="text"
                     required
                     value={formData.cedula}
-                    onChange={(e) => setFormData({ ...formData, cedula: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+                    onChange={(e) => handleFieldChange('cedula', e.target.value)}
+                    className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 text-gray-900 placeholder:text-gray-400 ${
+                      fieldErrors.cedula ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                    }`}
                     placeholder="10 dígitos"
                     maxLength={10}
                   />
+                  {fieldErrors.cedula && (
+                    <p className="mt-1 text-xs text-red-600">{fieldErrors.cedula}</p>
+                  )}
                 </div>
 
                 <div className="mb-4">
@@ -457,9 +559,32 @@ export default function UsuariosPage() {
                     type="password"
                     required
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    onChange={(e) => handleFieldChange('password', e.target.value)}
+                    className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 text-gray-900 ${
+                      fieldErrors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                    }`}
+                    minLength={6}
                   />
+                  {fieldErrors.password && (
+                    <p className="mt-1 text-xs text-red-600">{fieldErrors.password}</p>
+                  )}
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar Contraseña *</label>
+                  <input
+                    type="password"
+                    required
+                    value={formData.confirmPassword}
+                    onChange={(e) => handleFieldChange('confirmPassword', e.target.value)}
+                    className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 text-gray-900 ${
+                      fieldErrors.confirmPassword ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                    }`}
+                    minLength={6}
+                  />
+                  {fieldErrors.confirmPassword && (
+                    <p className="mt-1 text-xs text-red-600">{fieldErrors.confirmPassword}</p>
+                  )}
                 </div>
 
                 <div className="mb-4">
@@ -516,7 +641,7 @@ export default function UsuariosPage() {
                     type="text"
                     required
                     value={clienteFormData.nombre}
-                    onChange={(e) => setClienteFormData({ ...clienteFormData, nombre: e.target.value })}
+                    onChange={(e) => handleClienteFieldChange('nombre', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900"
                   />
                 </div>
@@ -527,10 +652,15 @@ export default function UsuariosPage() {
                     type="email"
                     required
                     value={clienteFormData.email}
-                    onChange={(e) => setClienteFormData({ ...clienteFormData, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 placeholder:text-gray-400"
+                    onChange={(e) => handleClienteFieldChange('email', e.target.value)}
+                    className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 text-gray-900 placeholder:text-gray-400 ${
+                      clienteFieldErrors.email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500'
+                    }`}
                     placeholder="cliente@email.com"
                   />
+                  {clienteFieldErrors.email && (
+                    <p className="mt-1 text-xs text-red-600">{clienteFieldErrors.email}</p>
+                  )}
                 </div>
 
                 <div className="mb-4">
@@ -539,11 +669,16 @@ export default function UsuariosPage() {
                     type="text"
                     required
                     value={clienteFormData.cedula}
-                    onChange={(e) => setClienteFormData({ ...clienteFormData, cedula: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 placeholder:text-gray-400"
+                    onChange={(e) => handleClienteFieldChange('cedula', e.target.value)}
+                    className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 text-gray-900 placeholder:text-gray-400 ${
+                      clienteFieldErrors.cedula ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500'
+                    }`}
                     placeholder="10 dígitos"
                     maxLength={10}
                   />
+                  {clienteFieldErrors.cedula && (
+                    <p className="mt-1 text-xs text-red-600">{clienteFieldErrors.cedula}</p>
+                  )}
                 </div>
 
                 <div className="mb-4">
@@ -552,9 +687,32 @@ export default function UsuariosPage() {
                     type="password"
                     required
                     value={clienteFormData.password}
-                    onChange={(e) => setClienteFormData({ ...clienteFormData, password: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900"
+                    onChange={(e) => handleClienteFieldChange('password', e.target.value)}
+                    className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 text-gray-900 ${
+                      clienteFieldErrors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500'
+                    }`}
+                    minLength={6}
                   />
+                  {clienteFieldErrors.password && (
+                    <p className="mt-1 text-xs text-red-600">{clienteFieldErrors.password}</p>
+                  )}
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar Contraseña *</label>
+                  <input
+                    type="password"
+                    required
+                    value={clienteFormData.confirmPassword}
+                    onChange={(e) => handleClienteFieldChange('confirmPassword', e.target.value)}
+                    className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 text-gray-900 ${
+                      clienteFieldErrors.confirmPassword ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500'
+                    }`}
+                    minLength={6}
+                  />
+                  {clienteFieldErrors.confirmPassword && (
+                    <p className="mt-1 text-xs text-red-600">{clienteFieldErrors.confirmPassword}</p>
+                  )}
                 </div>
 
                 {modalClienteError && (
