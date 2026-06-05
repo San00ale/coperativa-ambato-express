@@ -3,7 +3,7 @@
     "next/core-web-vitals",
     "eslint:recommended"
   ],
-  "ignorePatterns": [".github/scripts/**/*.js"],
+  "ignorePatterns": [".github/scripts/**/*.js", "scripts/**/*.js"],
   "rules": {
     "semi": ["error", "never"],
     "quotes": ["error", "single"],
