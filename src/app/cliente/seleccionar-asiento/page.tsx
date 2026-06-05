@@ -31,6 +31,7 @@ function SeleccionarAsientoContent() {
   const [ruta, setRuta] = useState<Ruta | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [asientosSeleccionados, setAsientosSeleccionados] = useState<number[]>([]);
 
   useEffect(() => {
     const cargarRuta = async () => {
@@ -77,10 +78,32 @@ function SeleccionarAsientoContent() {
 
   const handleSeleccionarAsiento = (num: number) => {
     if (getEstadoAsiento(num) !== "DISPONIBLE") return;
-    const precioBase = ruta!.precio;
-    const vip = esVIP(num);
-    const precioFinal = vip ? precioBase * 1.2 : precioBase;
-    router.push(`/cliente/pagar?rutaId=${rutaId}&asiento=${num}&precio=${precioFinal}`);
+
+    setAsientosSeleccionados(prev => {
+      if (prev.includes(num)) {
+        return prev.filter(a => a !== num);
+      } else {
+        return [...prev, num];
+      }
+    });
+  };
+
+  const calcularPrecioTotal = () => {
+    if (!ruta) return 0;
+    return asientosSeleccionados.reduce((total, num) => {
+      const vip = esVIP(num);
+      const precioFinal = vip ? ruta.precio * 1.2 : ruta.precio;
+      return total + precioFinal;
+    }, 0);
+  };
+
+  const handleContinuarPago = () => {
+    if (asientosSeleccionados.length === 0) return;
+
+    const precioTotal = calcularPrecioTotal();
+    const asientosParam = asientosSeleccionados.join(',');
+
+    router.push(`/cliente/pagar?rutaId=${rutaId}&asientos=${asientosParam}&precio=${precioTotal}`);
   };
 
   if (loading) {
@@ -111,8 +134,31 @@ function SeleccionarAsientoContent() {
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">
-          Selecciona tu asiento
+          Selecciona tus asientos
         </h1>
+
+        {/* Resumen de asientos seleccionados */}
+        {asientosSeleccionados.length > 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="font-semibold text-blue-800">
+                  Asientos seleccionados: {asientosSeleccionados.sort((a, b) => a - b).join(', ')}
+                </p>
+                <p className="text-sm text-blue-600">
+                  Total: ${calcularPrecioTotal().toFixed(2)}
+                </p>
+              </div>
+              <button
+                onClick={handleContinuarPago}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+              >
+                Continuar al pago →
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="bg-white rounded-lg shadow p-6">
           <div className="w-full h-12 bg-gray-300 rounded mb-6 flex items-center justify-center text-gray-600">
             🔴 Parte delantera del bus 🔴
@@ -120,11 +166,13 @@ function SeleccionarAsientoContent() {
           <div className="grid grid-cols-4 gap-3 max-w-md mx-auto">
             {Array.from({ length: totalAsientos }, (_, i) => i + 1).map((num) => {
               const estado = getEstadoAsiento(num);
+              const seleccionado = asientosSeleccionados.includes(num);
               const vip = esVIP(num);
               let bgClass = "bg-green-100 hover:bg-green-200 text-green-800";
               if (estado === "PENDIENTE") bgClass = "bg-yellow-100 text-yellow-800 cursor-not-allowed opacity-70";
               if (estado === "OCUPADO") bgClass = "bg-red-200 text-red-800 cursor-not-allowed opacity-70";
-              if (vip && estado === "DISPONIBLE") bgClass = "bg-green-100 hover:bg-green-200 text-green-800 border-2 border-yellow-500";
+              if (seleccionado) bgClass = "bg-blue-500 text-white hover:bg-blue-600";
+              if (vip && estado === "DISPONIBLE" && !seleccionado) bgClass = "bg-green-100 hover:bg-green-200 text-green-800 border-2 border-yellow-500";
               return (
                 <button
                   key={num}
@@ -137,9 +185,14 @@ function SeleccionarAsientoContent() {
               );
             })}
           </div>
-          <div className="flex justify-center gap-6 mt-6 text-sm text-gray-700">            <span className="flex items-center gap-1">
+          <div className="flex justify-center gap-6 mt-6 text-sm text-gray-700">
+            <span className="flex items-center gap-1">
               <span className="w-4 h-4 bg-green-100 rounded inline-block"></span>
               Disponible
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-4 h-4 bg-blue-500 rounded inline-block"></span>
+              Seleccionado
             </span>
             <span className="flex items-center gap-1">
               <span className="w-4 h-4 bg-yellow-100 rounded inline-block"></span>
