@@ -17,13 +17,15 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { rutaId, asiento, precio, tipoPasajero, metodoPago, comprobanteUrl, pasajeroNombre, pasajeroCedula } = body
-    const asientoValue = String(asiento)
+    const { rutaId, asiento, asientos, precio, tipoPasajero, metodoPago, comprobanteUrl, pasajeroNombre, pasajeroCedula } = body
+
+    // Soportar tanto asiento (string) como asientos (array) para compatibilidad
+    const listaAsientos = asientos ? (Array.isArray(asientos) ? asientos : [asientos]) : (asiento ? [asiento] : [])
 
     // Validar campos requeridos
-    if (!rutaId || !asiento || !precio) {
+    if (!rutaId || listaAsientos.length === 0 || !precio) {
       return NextResponse.json(
-        { error: 'Faltan campos requeridos: rutaId, asiento, precio' },
+        { error: 'Faltan campos requeridos: rutaId, asientos, precio' },
         { status: 400 }
       )
     }
@@ -44,26 +46,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Ruta no encontrada' }, { status: 404 })
     }
 
-    const asientoOcupado = rutaExistente.boletos.some(
-      (b) => b.asiento === asientoValue && ['APROBADO', 'ABORDADO'].includes(b.estado)
+    // Verificar que todos los asientos estén disponibles
+    const asientosOcupados = listaAsientos.filter((asientoNum: number | string) =>
+      rutaExistente.boletos.some(
+        (b) => b.asiento === String(asientoNum) && ['APROBADO', 'ABORDADO'].includes(b.estado)
+      )
     )
 
-    if (asientoOcupado) {
-      return NextResponse.json({ error: 'Asiento no disponible' }, { status: 400 })
+    if (asientosOcupados.length > 0) {
+      return NextResponse.json(
+        { error: `Asientos no disponibles: ${asientosOcupados.join(', ')}` },
+        { status: 400 }
+      )
     }
 
-    // Verificar que el asiento no esté ocupado en esa ruta
-    const boletoExistente = await prisma.boleto.findFirst({
+    // Verificar que los asientos no estén ocupados en esa ruta
+    const boletosExistentes = await prisma.boleto.findMany({
       where: {
         rutaId: rutaId,
-        asiento: asientoValue,
+        asiento: { in: listaAsientos.map((a: number | string) => String(a)) },
         estado: { not: 'CANCELADO' }
       }
     })
 
-    if (boletoExistente) {
+    if (boletosExistentes.length > 0) {
       return NextResponse.json(
-        { error: 'El asiento ya está ocupado' },
+        { error: 'Algunos asientos ya están ocupados' },
         { status: 409 }
       )
     }
@@ -107,50 +115,62 @@ export async function POST(request: Request) {
       }
     }
 
-    // Crear el boleto
-    const boleto = await prisma.boleto.create({
-      data: {
-        rutaId,
-        pasajeroId,
-        asiento: asientoValue,
-        precio: precioFinal,
-        descuento,
-        tipoPasajero: tipoPasajero || 'ADULTO',
-        metodoPago,
-        comprobanteUrl: comprobanteUrl || null,
-        estado,
-        vendidoPor: session.user.role === 'CHOFER' ? 'chofer' : 'oficinista',
-        vendidoPorChoferId: session.user.role === 'CHOFER' ? session.user.id : null
-      },
-      include: {
-        ruta: {
+    // Crear múltiples boletos en una transacción
+    const boletosCreados = await prisma.$transaction(async (tx) => {
+      const boletos = []
+      for (const asientoNum of listaAsientos) {
+        const asientoValue = String(asientoNum)
+        const boleto = await tx.boleto.create({
+          data: {
+            rutaId,
+            pasajeroId,
+            asiento: asientoValue,
+            precio: precioFinal / listaAsientos.length, // Dividir precio entre asientos
+            descuento: descuento / listaAsientos.length,
+            tipoPasajero: tipoPasajero || 'ADULTO',
+            metodoPago,
+            comprobanteUrl: comprobanteUrl || null,
+            estado,
+            vendidoPor: session.user.role === 'CHOFER' ? 'chofer' : 'oficinista',
+            vendidoPorChoferId: session.user.role === 'CHOFER' ? session.user.id : null
+          },
           include: {
-            frecuencia: true,
-            bus: true
+            ruta: {
+              include: {
+                frecuencia: true,
+                bus: true
+              }
+            }
           }
-        }
+        })
+        boletos.push(boleto)
       }
+      return boletos
     })
+
+    // Generar QR para pagos en efectivo (solo para el primer boleto)
     let qrUrl = null
-    if (metodoPago === 'EFECTIVO') {
+    if (metodoPago === 'EFECTIVO' && boletosCreados.length > 0) {
+      const primerBoleto = boletosCreados[0]
       const pasajero = await prisma.usuario.findUnique({ where: { id: pasajeroId } })
       const ruta = await prisma.ruta.findUnique({
         where: { id: rutaId },
         include: { frecuencia: true }
       })
       if (pasajero && ruta) {
+        const asientosStr = listaAsientos.map((a: number | string) => String(a)).join(', ')
         const qrData = JSON.stringify({
-          boletoId: boleto.id,
+          boletoId: primerBoleto.id,
           ruta: `${ruta.frecuencia.origen} → ${ruta.frecuencia.destino}`,
           fecha: ruta.fecha,
           hora: ruta.frecuencia.hora,
-          asiento: asientoValue,
+          asientos: asientosStr,
           pasajero: pasajero.nombre,
           cedula: pasajero.cedula
         })
         qrUrl = await QRCode.toDataURL(qrData)
         await prisma.boleto.update({
-          where: { id: boleto.id },
+          where: { id: primerBoleto.id },
           data: { qrUrl }
         })
         await enviarCorreoQR(
@@ -159,12 +179,12 @@ export async function POST(request: Request) {
           qrUrl,
           `${ruta.frecuencia.origen} → ${ruta.frecuencia.destino}`,
           ruta.fecha.toString(),
-          asientoValue
+          asientosStr
         )
       }
     }
 
-    return NextResponse.json({ ...boleto, qrUrl }, { status: 201 })
+    return NextResponse.json({ boletos: boletosCreados, qrUrl }, { status: 201 })
   } catch (error) {
     console.error('Error al crear boleto:', error)
     return NextResponse.json({ error: 'Error al crear el boleto' }, { status: 500 })
