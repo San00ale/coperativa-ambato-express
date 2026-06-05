@@ -19,5 +19,5 @@ ENV HOSTNAME="0.0.0.0"
 
 EXPOSE 3000
 
-# Al iniciar, regenerar cliente (por si acaso) y luego arrancar Next.js
-CMD ["sh", "-c", "npx prisma generate && npm run dev"]
+# Al iniciar, ejecutar migraciones, regenerar cliente y arrancar Next.js
+CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma generate && npm run dev"]
