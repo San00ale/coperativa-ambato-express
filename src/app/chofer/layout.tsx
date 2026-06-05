@@ -71,7 +71,7 @@ export default function ChoferLayout({
             <div className="hidden md:flex items-center gap-4">
               <div className="text-sm">
                 <p className="font-medium">{session?.user?.name}</p>
-                <p className="text-gray-600 text-xs">Chofer</p>
+                <p className="text-black text-xs">Chofer</p>
               </div>
               <button
                 onClick={handleLogout}

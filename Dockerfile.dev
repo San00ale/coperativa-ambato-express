@@ -1,0 +1,23 @@
+ARG NODE_VERSION=20.18.0-slim
+FROM node:${NODE_VERSION} AS dev
+
+# Instalar OpenSSL (necesario para Prisma)
+RUN apt-get update -y && apt-get install -y openssl
+
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm ci --no-audit --no-fund
+
+COPY . .
+
+# Generar cliente de Prisma durante el build
+RUN npx prisma generate
+
+ENV WATCHPACK_POLLING=true
+ENV HOSTNAME="0.0.0.0"
+
+EXPOSE 3000
+
+# Al iniciar, regenerar cliente (por si acaso) y luego arrancar Next.js
+CMD ["sh", "-c", "npx prisma generate && npm run dev"]

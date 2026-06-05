@@ -6,30 +6,47 @@ import { authOptions } from '@/lib/auth'
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+    }
+
+    const { id } = await context.params
 
     const ruta = await prisma.ruta.findUnique({
       where: { id },
       include: {
-        frecuencia: true,
+        frecuencia: {
+          include: {
+            paradas: { orderBy: { orden: 'asc' } }
+          }
+        },
         bus: true,
         boletos: {
           where: {
             estado: { in: ['APROBADO', 'PENDIENTE_APROBACION', 'ABORDADO'] }
           },
-          select: {
-            asiento: true,
-            estado: true
-          }
+          select: { asiento: true, estado: true }
+        },
+        chofer: {
+          select: { id: true, nombre: true, email: true }
+        },
+        registrosParada: {
+          include: { parada: true },
+          orderBy: { llegada: 'asc' }
         }
       }
     })
 
     if (!ruta) {
       return NextResponse.json({ error: 'Ruta no encontrada' }, { status: 404 })
+    }
+
+    if (session.user?.role === 'CHOFER' && ruta.choferId !== session.user.id) {
+      return NextResponse.json({ error: 'No tienes acceso a esta ruta' }, { status: 403 })
     }
 
     return NextResponse.json(ruta)
@@ -41,45 +58,84 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
-    // Permitir ADMIN y CHOFER (chofer solo puede marcar completada)
-    if (session?.user?.role !== 'ADMIN' && session?.user?.role !== 'CHOFER' && session?.user?.role !== 'OFICINISTA') {
+
+    if (
+      session?.user?.role !== 'ADMIN' &&
+      session?.user?.role !== 'CHOFER' &&
+      session?.user?.role !== 'OFICINISTA'
+    ) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    const { id } = await params
+    const { id } = await context.params
     const body = await request.json()
-    const { busId, fecha, estado, completada } = body
+    const { busId, fecha, estado, completada, inicio } = body
 
-    // Si es chofer, solo permitir cambiar completada (no otros campos)
-    if (session?.user?.role === 'CHOFER') {
+    // El chofer solo puede cambiar estado/completada/inicio
+    if (session.user?.role === 'CHOFER') {
       if (busId !== undefined || fecha !== undefined) {
         return NextResponse.json(
-          { error: 'Los choferes solo pueden marcar la ruta como completada' },
+          { error: 'Los choferes solo pueden actualizar el estado del viaje' },
           { status: 403 }
         )
       }
     }
 
-    const updateData: Prisma.RutaUpdateInput = {}
-    if (busId !== undefined) {
-      updateData.bus = {
-        connect: { id: busId }
-      }
+    const rutaActual = await prisma.ruta.findUnique({ where: { id } })
+
+    if (!rutaActual) {
+      return NextResponse.json({ error: 'Ruta no encontrada' }, { status: 404 })
     }
+
+    if (session.user?.role === 'CHOFER' && rutaActual.choferId !== session.user.id) {
+      return NextResponse.json(
+        { error: 'No tienes permiso para modificar esta ruta' },
+        { status: 403 }
+      )
+    }
+
+    if (rutaActual.estado === 'completada') {
+      return NextResponse.json(
+        { error: 'No puedes modificar una ruta que ya está completada' },
+        { status: 400 }
+      )
+    }
+
+    const updateData: Prisma.RutaUpdateInput = {}
+
+    if (busId !== undefined) updateData.bus = { connect: { id: busId } }
     if (fecha !== undefined) updateData.fecha = new Date(fecha)
     if (estado !== undefined) updateData.estado = estado
     if (completada !== undefined) updateData.completada = completada
+    if (inicio !== undefined) updateData.inicio = new Date(inicio)
+
     if (completada === true && estado === undefined) {
       updateData.estado = 'completada'
     }
 
+    if (estado === 'en_curso' && inicio === undefined) {
+      updateData.inicio = new Date()
+    }
+
     const ruta = await prisma.ruta.update({
       where: { id },
-      data: updateData
+      data: updateData,
+      include: {
+        frecuencia: {
+          include: {
+            paradas: { orderBy: { orden: 'asc' } }
+          }
+        },
+        bus: true,
+        registrosParada: {
+          include: { parada: true },
+          orderBy: { llegada: 'asc' }
+        }
+      }
     })
 
     return NextResponse.json(ruta)
@@ -91,7 +147,7 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -99,11 +155,9 @@ export async function DELETE(
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    const { id } = await params
+    const { id } = await context.params
 
-    const ruta = await prisma.ruta.delete({
-      where: { id }
-    })
+    await prisma.ruta.delete({ where: { id } })
 
     return NextResponse.json({ message: 'Ruta eliminada correctamente' })
   } catch (error) {
