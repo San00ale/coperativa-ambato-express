@@ -1,113 +1,72 @@
-import type { Prisma } from '@prisma/client'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
+export async function POST(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session || session.user?.role !== 'CHOFER') {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
+    const { id: rutaId } = await context.params
+    const { paradaId } = await request.json()
+
+    if (!paradaId) {
+      return NextResponse.json({ error: 'paradaId es requerido' }, { status: 400 })
+    }
+
+    const ruta = await prisma.ruta.findUnique({ where: { id: rutaId } })
+
+    if (!ruta) return NextResponse.json({ error: 'Ruta no encontrada' }, { status: 404 })
+    if (ruta.choferId !== session.user.id) {
+      return NextResponse.json({ error: 'No tienes permiso sobre esta ruta' }, { status: 403 })
+    }
+    if (ruta.estado !== 'en_curso') {
+      return NextResponse.json({ error: 'La ruta no está en curso' }, { status: 400 })
+    }
+
+    // Verificar que no se registre la misma parada dos veces
+    const yaRegistrada = await prisma.registroParada.findFirst({
+      where: { rutaId, paradaId }
+    })
+    if (yaRegistrada) {
+      return NextResponse.json({ error: 'Esta parada ya fue registrada' }, { status: 400 })
+    }
+
+    const registro = await prisma.registroParada.create({
+      data: { rutaId, paradaId }
+    })
+
+    return NextResponse.json(registro, { status: 201 })
+  } catch (error) {
+    console.error('Error al registrar parada:', error)
+    return NextResponse.json({ error: 'Error interno' }, { status: 500 })
+  }
+}
+
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params
-
-    const ruta = await prisma.ruta.findUnique({
-      where: { id },
-      include: {
-        frecuencia: true,
-        bus: true,
-        boletos: {
-          where: {
-            estado: { in: ['APROBADO', 'PENDIENTE_APROBACION', 'ABORDADO'] }
-          },
-          select: {
-            asiento: true,
-            estado: true
-          }
-        }
-      }
-    })
-
-    if (!ruta) {
-      return NextResponse.json({ error: 'Ruta no encontrada' }, { status: 404 })
-    }
-
-    return NextResponse.json(ruta)
-  } catch (error) {
-    console.error('Error al obtener ruta:', error)
-    return NextResponse.json({ error: 'Error al obtener la ruta' }, { status: 500 })
-  }
-}
-
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
-    // Permitir ADMIN y CHOFER (chofer solo puede marcar completada)
-    if (session?.user?.role !== 'ADMIN' && session?.user?.role !== 'CHOFER' && session?.user?.role !== 'OFICINISTA') {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
+    if (!session) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
-    const { id } = await params
-    const body = await request.json()
-    const { busId, fecha, estado, completada } = body
+    const { id: rutaId } = await context.params
 
-    // Si es chofer, solo permitir cambiar completada (no otros campos)
-    if (session?.user?.role === 'CHOFER') {
-      if (busId !== undefined || fecha !== undefined) {
-        return NextResponse.json(
-          { error: 'Los choferes solo pueden marcar la ruta como completada' },
-          { status: 403 }
-        )
-      }
-    }
-
-    const updateData: Prisma.RutaUpdateInput = {}
-    if (busId !== undefined) {
-      updateData.bus = {
-        connect: { id: busId }
-      }
-    }
-    if (fecha !== undefined) updateData.fecha = new Date(fecha)
-    if (estado !== undefined) updateData.estado = estado
-    if (completada !== undefined) updateData.completada = completada
-    if (completada === true && estado === undefined) {
-      updateData.estado = 'completada'
-    }
-
-    const ruta = await prisma.ruta.update({
-      where: { id },
-      data: updateData
+    const registros = await prisma.registroParada.findMany({
+      where: { rutaId },
+      include: { parada: true },
+      orderBy: { llegada: 'asc' }
     })
 
-    return NextResponse.json(ruta)
+    return NextResponse.json(registros)
   } catch (error) {
-    console.error('Error al actualizar ruta:', error)
-    return NextResponse.json({ error: 'Error al actualizar la ruta' }, { status: 500 })
-  }
-}
-
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const session = await getServerSession(authOptions)
-    if (session?.user?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
-
-    const { id } = await params
-
-    const ruta = await prisma.ruta.delete({
-      where: { id }
-    })
-
-    return NextResponse.json({ message: 'Ruta eliminada correctamente' })
-  } catch (error) {
-    console.error('Error al eliminar ruta:', error)
-    return NextResponse.json({ error: 'Error al eliminar la ruta' }, { status: 500 })
+    return NextResponse.json({ error: 'Error interno' }, { status: 500 })
   }
 }
