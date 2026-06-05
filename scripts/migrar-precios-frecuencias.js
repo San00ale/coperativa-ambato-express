@@ -1,20 +1,16 @@
-const { PrismaClient } = require('@prisma/client')
+import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
 async function main() {
   console.log('Iniciando migración de precios base para frecuencias...')
 
-  // Obtener todas las frecuencias sin precioBase
   const frecuenciasSinPrecio = await prisma.frecuencia.findMany({
-    where: {
-      precioBase: null
-    }
+    where: { precioBase: null }
   })
 
   console.log(`Encontradas ${frecuenciasSinPrecio.length} frecuencias sin precio base`)
 
-  // Asignar precio base por defecto de $5.00
   for (const frecuencia of frecuenciasSinPrecio) {
     await prisma.frecuencia.update({
       where: { id: frecuencia.id },
