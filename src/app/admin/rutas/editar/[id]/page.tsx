@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { signOut } from 'next-auth/react'
 
 interface Frecuencia {
   id: string
@@ -156,156 +155,153 @@ export default function EditarRutaPage() {
   }
 
   return (
-    <div className="p-8">
-      <div className="max-w-2xl mx-auto">
+    <div>
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center">
+          <div className="flex items-center gap-4">
             <Link
               href="/admin/rutas"
-              className="text-blue-600 hover:text-blue-800 mr-4"
+              className="text-blue-600 hover:text-blue-800 font-medium flex items-center"
             >
-              ← Volver
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Volver
             </Link>
-            <h1 className="text-2xl font-bold">Editar Ruta</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Editar Ruta</h1>
           </div>
-          <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition flex items-center space-x-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            <span>Cerrar Sesión</span>
-          </button>
         </div>
 
-        {error && (
-          <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">
-            {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="mb-4 p-4 bg-green-100 text-green-700 rounded">
-            {success}
-          </div>
-        )}
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="frecuenciaId" className="block text-sm font-medium text-gray-700 mb-2">
-                Frecuencia *
-              </label>
-              <select
-                id="frecuenciaId"
-                name="frecuenciaId"
-                value={formData.frecuenciaId}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-              >
-                <option value="">Seleccionar frecuencia...</option>
-                {frecuencias.map((frecuencia) => (
-                  <option key={frecuencia.id} value={frecuencia.id}>
-                    {frecuencia.origen} - {frecuencia.destino} ({frecuencia.hora})
-                  </option>
-                ))}
-              </select>
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center gap-3">
+              <span className="text-xl">⚠️</span>
+              <span>{error}</span>
             </div>
+          )}
 
-            <div>
-              <label htmlFor="busId" className="block text-sm font-medium text-gray-700 mb-2">
-                Bus *
-              </label>
-              <select
-                id="busId"
-                name="busId"
-                value={formData.busId}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-              >
-                <option value="">Seleccionar bus...</option>
-                {buses.map((bus) => (
-                  <option key={bus.id} value={bus.id}>
-                    Bus {bus.numero} ({bus.placa}) - {bus.marca}
-                  </option>
-                ))}
-              </select>
+          {success && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 flex items-center gap-3">
+              <span className="text-xl">✅</span>
+              <span>{success}</span>
             </div>
+          )}
 
-            <div>
-              <label htmlFor="fecha" className="block text-sm font-medium text-gray-700 mb-2">
-                Fecha *
-              </label>
-              <input
-                type="date"
-                id="fecha"
-                name="fecha"
-                value={formData.fecha}
-                onChange={handleInputChange}
-                required
-                min={new Date().toISOString().split('T')[0]}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-              />
-            </div>
-
-            <div className="flex justify-end space-x-4">
-              <Link
-                href="/admin/rutas"
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
-              >
-                Cancelar
-              </Link>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-              >
-                {submitting ? 'Actualizando...' : 'Actualizar Ruta'}
-              </button>
-            </div>
-          </form>
-        </div>
-
-        {/* Información actual de la ruta */}
-        {ruta && (
-          <div className="mt-6 bg-gray-50 rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4">Información Actual</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white border border-gray-200 rounded-xl shadow p-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <p className="text-sm font-medium text-gray-700">Ruta Actual:</p>
-                <p className="text-gray-900">
-                  {ruta.frecuencia.origen} - {ruta.frecuencia.destino}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {ruta.frecuencia.hora} • {ruta.frecuencia.tipoViaje === 'DIRECTO' ? 'Directo' : 'Con Paradas'}
-                </p>
+                <label htmlFor="frecuenciaId" className="block text-sm font-semibold text-gray-700 mb-2">
+                  Frecuencia *
+                </label>
+                <select
+                  id="frecuenciaId"
+                  name="frecuenciaId"
+                  value={formData.frecuenciaId}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                >
+                  <option value="">Seleccionar frecuencia...</option>
+                  {frecuencias.map((frecuencia) => (
+                    <option key={frecuencia.id} value={frecuencia.id}>
+                      {frecuencia.origen} - {frecuencia.destino} ({frecuencia.hora})
+                    </option>
+                  ))}
+                </select>
               </div>
+
               <div>
-                <p className="text-sm font-medium text-gray-700">Bus Actual:</p>
-                <p className="text-gray-900">
-                  Bus {ruta.bus.numero}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {ruta.bus.placa} • {ruta.bus.marca}
-                </p>
+                <label htmlFor="busId" className="block text-sm font-semibold text-gray-700 mb-2">
+                  Bus *
+                </label>
+                <select
+                  id="busId"
+                  name="busId"
+                  value={formData.busId}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                >
+                  <option value="">Seleccionar bus...</option>
+                  {buses.map((bus) => (
+                    <option key={bus.id} value={bus.id}>
+                      Bus {bus.numero} ({bus.placa}) - {bus.marca}
+                    </option>
+                  ))}
+                </select>
               </div>
+
               <div>
-                <p className="text-sm font-medium text-gray-700">Fecha Actual:</p>
-                <p className="text-gray-900">
-                  {new Date(ruta.fecha).toLocaleDateString('es-ES', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric'
-                  })}
-                </p>
+                <label htmlFor="fecha" className="block text-sm font-semibold text-gray-700 mb-2">
+                  Fecha *
+                </label>
+                <input
+                  type="date"
+                  id="fecha"
+                  name="fecha"
+                  value={formData.fecha}
+                  onChange={handleInputChange}
+                  required
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                />
+              </div>
+
+              <div className="flex justify-end gap-4 pt-4">
+                <Link
+                  href="/admin/rutas"
+                  className="px-6 py-3 bg-gray-300 text-gray-700 rounded-xl hover:bg-gray-400 font-semibold"
+                >
+                  Cancelar
+                </Link>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 font-semibold shadow-md"
+                >
+                  {submitting ? 'Actualizando...' : '✏️ Actualizar Ruta'}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Información actual de la ruta */}
+          {ruta && (
+            <div className="mt-6 bg-white border border-gray-200 rounded-xl shadow p-6">
+              <h3 className="text-xl font-bold mb-4 text-gray-900 flex items-center gap-2">
+                <span className="text-2xl">ℹ️</span>
+                Información Actual
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm font-semibold text-gray-700 mb-1">Ruta Actual:</p>
+                  <p className="text-gray-900 font-bold">
+                    {ruta.frecuencia.origen} - {ruta.frecuencia.destino}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {ruta.frecuencia.hora} • {ruta.frecuencia.tipoViaje === 'DIRECTO' ? '🚀 Directo' : '🚌 Con Paradas'}
+                  </p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm font-semibold text-gray-700 mb-1">Bus Actual:</p>
+                  <p className="text-gray-900 font-bold">
+                    Bus {ruta.bus.numero}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {ruta.bus.placa} • {ruta.bus.marca}
+                  </p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm font-semibold text-gray-700 mb-1">Fecha Actual:</p>
+                  <p className="text-gray-900 font-bold">
+                    {new Date(ruta.fecha).toLocaleDateString('es-ES', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric'
+                    })}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
     </div>
   )
 }

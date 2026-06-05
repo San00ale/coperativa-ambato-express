@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import AdminHeader from '@/components/AdminHeader'
+import { StatsCardSkeleton, TableSkeleton } from '@/components/Skeleton'
 
 interface Boleto {
   id: string
@@ -144,204 +144,176 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
-      <AdminHeader title="Panel de Administrador" showBackButton={false} />
+    <div>
 
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Link
-          href="/admin/buses"
-          className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow border border-gray-200"
-        >
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Gestión de Buses</h3>
-              <p className="text-sm text-gray-600">Administrar flota de buses</p>
-            </div>
-          </div>
-        </Link>
-
-        <Link
-          href="/admin/frecuencias"
-          className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow border border-gray-200"
-        >
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-green-100 rounded-lg">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Gestión de Frecuencias</h3>
-              <p className="text-sm text-gray-600">Administrar horarios y rutas</p>
-            </div>
-          </div>
-        </Link>
-
-        <Link
-          href="/admin/rutas"
-          className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow border border-gray-200"
-        >
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-purple-100 rounded-lg">
-              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Gestión de Rutas</h3>
-              <p className="text-sm text-gray-600">Asignar buses a frecuencias</p>
-            </div>
-          </div>
-        </Link>
-
-        <Link
-          href="/admin/usuarios"
-          className="p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow border border-gray-200"
-        >
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-orange-100 rounded-lg">
-              <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Gestión de Usuarios</h3>
-              <p className="text-sm text-gray-600">Administrar choferes y oficinistas</p>
-            </div>
-          </div>
-        </Link>
-      </div>
-
-      <div className="bg-white rounded-lg shadow p-6 mt-8">
-        <h2 className="text-lg font-semibold mb-4 text-gray-900">Gestión del Sistema</h2>
-        <div className="space-y-4">
-          <div className="border-l-4 border-green-500 pl-4">
-            <h3 className="font-medium text-gray-900">Ventas de Hoy</h3>
-            <p className="text-gray-600 text-sm mt-1">Reportes y estadísticas del día</p>
-            <div className="mt-3 space-y-2">
-              {loadingEstadisticas ? (
-                <p className="text-gray-500 text-sm">Cargando estadísticas...</p>
-              ) : (
-                <>
-                  <p className="text-gray-900 font-semibold">
-                    Boletos vendidos hoy: {boletosHoy}
-                  </p>
-                  <p className="text-gray-900 font-semibold">
-                    Ingresos totales hoy: ${ingresosHoy.toFixed(2)}
-                  </p>
-                </>
-              )}
-            </div>
-          </div>
-          <div className="border-l-4 border-blue-500 pl-4">
-            <h3 className="font-medium text-gray-900">Ventas de la Semana</h3>
-            <p className="text-gray-600 text-sm mt-1">Últimos 7 días</p>
-            <div className="mt-3 space-y-2">
-              {loadingEstadisticas ? (
-                <p className="text-gray-500 text-sm">Cargando estadísticas...</p>
-              ) : (
-                <>
-                  <p className="text-gray-900 font-semibold">
-                    Total boletos (7 días): {totalBoletosSemana}
-                  </p>
-                  <p className="text-gray-900 font-semibold">
-                    Ingresos semanales: ${totalIngresosSemana.toFixed(2)}
-                  </p>
-                  <p className="text-gray-900 font-semibold">
-                    Promedio diario: {promedioDiario} boletos
-                  </p>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow p-6 mt-8">
-        <h2 className="text-lg font-semibold mb-4 text-gray-900">Estadísticas de los Últimos 7 Días</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         {loadingEstadisticas ? (
-          <p className="text-gray-500 text-sm">Cargando estadísticas...</p>
-        ) : estadisticas7Dias.every(dia => dia.cantidad === 0) ? (
-          <p className="text-gray-500 text-sm">No hay ventas en los últimos 7 días</p>
+          <>
+            <StatsCardSkeleton />
+            <StatsCardSkeleton />
+            <StatsCardSkeleton />
+            <StatsCardSkeleton />
+          </>
         ) : (
           <>
-            {mejorDia && mejorDia.ingresos > 0 && (
-              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center space-x-2 mb-2">
-                  <span className="text-2xl">📈</span>
-                  <h3 className="font-semibold text-gray-900">Mejor día</h3>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-900">{mejorDia.fecha}</span>
-                  <span className="text-sm font-semibold text-gray-900">${mejorDia.ingresos.toFixed(2)}</span>
-                </div>
+            <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-2xl">📊</span>
+                <h3 className="text-sm font-semibold text-green-800">Ventas de Hoy</h3>
               </div>
-            )}
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Boletos</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ingresos</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {estadisticas7Dias.map((dia, index) => (
-                    <tr key={index}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{dia.fecha}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{dia.cantidad}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${dia.ingresos.toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="space-y-1">
+                <p className="text-3xl font-bold text-green-900">{boletosHoy}</p>
+                <p className="text-sm text-green-700">boletos vendidos</p>
+                <p className="text-lg font-semibold text-green-900">${ingresosHoy.toFixed(2)}</p>
+                <p className="text-xs text-green-600">ingresos totales</p>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-2xl">📈</span>
+                <h3 className="text-sm font-semibold text-blue-800">Ventas Semanales</h3>
+              </div>
+              <div className="space-y-1">
+                <p className="text-3xl font-bold text-blue-900">{totalBoletosSemana}</p>
+                <p className="text-sm text-blue-700">boletos (7 días)</p>
+                <p className="text-lg font-semibold text-blue-900">${totalIngresosSemana.toFixed(2)}</p>
+                <p className="text-xs text-blue-600">ingresos semanales</p>
+              </div>
+            </div>
+
+            <div className="bg-purple-50 border border-purple-200 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-2xl">📉</span>
+                <h3 className="text-sm font-semibold text-purple-800">Promedio Diario</h3>
+              </div>
+              <div className="space-y-1">
+                <p className="text-3xl font-bold text-purple-900">{promedioDiario}</p>
+                <p className="text-sm text-purple-700">boletos por día</p>
+                <p className="text-xs text-purple-600">últimos 7 días</p>
+              </div>
+            </div>
+
+            <div className="bg-orange-50 border border-orange-200 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-2xl">🏆</span>
+                <h3 className="text-sm font-semibold text-orange-800">Mejor Día</h3>
+              </div>
+              {mejorDia && mejorDia.ingresos > 0 ? (
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-orange-900">{mejorDia.fecha}</p>
+                  <p className="text-xl font-bold text-orange-900">${mejorDia.ingresos.toFixed(2)}</p>
+                  <p className="text-xs text-orange-600">ingresos máximos</p>
+                </div>
+              ) : (
+                <p className="text-orange-600 text-sm">Sin datos</p>
+              )}
             </div>
           </>
         )}
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6 mt-8">
-        <h2 className="text-lg font-semibold mb-4 text-gray-900">Top 3 Rutas Más Vendidas</h2>
+      <div className="bg-white border border-gray-200 rounded-xl shadow p-4 sm:p-6 mt-8">
+        <h2 className="text-lg sm:text-xl font-bold mb-4 text-gray-900">Estadísticas de los Últimos 7 Días</h2>
         {loadingEstadisticas ? (
-          <p className="text-gray-500 text-sm">Cargando estadísticas...</p>
-        ) : topRutas.length === 0 ? (
-          <p className="text-gray-500 text-sm">No hay ventas en los últimos 7 días</p>
+          <TableSkeleton rows={7} />
+        ) : estadisticas7Dias.every(dia => dia.cantidad === 0) ? (
+          <div className="bg-gray-50 rounded-lg p-8 text-center">
+            <span className="text-4xl mb-2 block">📊</span>
+            <p className="text-gray-500 text-sm">No hay ventas en los últimos 7 días</p>
+          </div>
         ) : (
-          <>
-            {topRutas.length > 0 && (
-              <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <div className="flex items-center space-x-2 mb-2">
-                  <span className="text-2xl">🏆</span>
-                  <h3 className="font-semibold text-gray-900">Ruta más vendida</h3>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-900">
-                    {topRutas[0].origen} → {topRutas[0].destino}
-                  </span>
-                  <span className="text-sm font-semibold text-gray-900">{topRutas[0].cantidad} boletos</span>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Fecha</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Boletos</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Ingresos</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {estadisticas7Dias.map((dia, index) => (
+                  <tr key={index} className={mejorDia?.fecha === dia.fecha ? 'bg-yellow-50' : ''}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{dia.fecha}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{dia.cantidad}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">${dia.ingresos.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-xl shadow p-4 sm:p-6 mt-8">
+        <h2 className="text-lg sm:text-xl font-bold mb-4 text-gray-900">Top 3 Rutas Más Vendidas</h2>
+        {loadingEstadisticas ? (
+          <div className="space-y-3">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-gray-200 rounded-full" />
+                <div className="space-y-2">
+                  <div className="h-4 w-32 bg-gray-200 rounded" />
+                  <div className="h-3 w-24 bg-gray-200 rounded" />
                 </div>
               </div>
-            )}
-            <div className="space-y-3">
-              {topRutas.map((ruta, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-lg font-bold text-gray-700">#{index + 1}</span>
-                    <span className="text-sm text-gray-900">
-                      {ruta.origen} → {ruta.destino}
-                    </span>
-                  </div>
-                  <span className="text-sm font-semibold text-gray-900">{ruta.cantidad} boletos</span>
-                </div>
-              ))}
+              <div className="h-8 w-12 bg-gray-200 rounded" />
             </div>
-          </>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-gray-200 rounded-full" />
+                <div className="space-y-2">
+                  <div className="h-4 w-32 bg-gray-200 rounded" />
+                  <div className="h-3 w-24 bg-gray-200 rounded" />
+                </div>
+              </div>
+              <div className="h-8 w-12 bg-gray-200 rounded" />
+            </div>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-gray-200 rounded-full" />
+                <div className="space-y-2">
+                  <div className="h-4 w-32 bg-gray-200 rounded" />
+                  <div className="h-3 w-24 bg-gray-200 rounded" />
+                </div>
+              </div>
+              <div className="h-8 w-12 bg-gray-200 rounded" />
+            </div>
+          </div>
+        ) : topRutas.length === 0 ? (
+          <div className="bg-gray-50 rounded-lg p-8 text-center">
+            <span className="text-4xl mb-2 block">🏆</span>
+            <p className="text-gray-500 text-sm">No hay ventas en los últimos 7 días</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {topRutas.map((ruta, index) => (
+              <div key={index} className={`flex items-center justify-between p-4 rounded-lg border-2 transition ${
+                index === 0 ? 'bg-yellow-50 border-yellow-300' : 'bg-gray-50 border-gray-200'
+              }`}>
+                <div className="flex items-center gap-4">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${
+                    index === 0 ? 'bg-yellow-400 text-white' : index === 1 ? 'bg-gray-400 text-white' : 'bg-orange-400 text-white'
+                  }`}>
+                    {index + 1}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">
+                      {ruta.origen} → {ruta.destino}
+                    </p>
+                    {index === 0 && (
+                      <p className="text-xs text-yellow-700 font-medium mt-1">🏆 Más vendida</p>
+                    )}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-gray-900">{ruta.cantidad}</p>
+                  <p className="text-xs text-gray-500">boletos</p>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

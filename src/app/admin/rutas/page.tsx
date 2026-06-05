@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import AdminHeader from '@/components/AdminHeader'
+import { TableSkeleton } from '@/components/Skeleton'
+import Pagination from '@/components/Pagination'
 
 interface Frecuencia {
   id: string
@@ -47,11 +48,13 @@ export default function RutasPage() {
   const [rutas, setRutas] = useState<Ruta[]>([])
   const [frecuencias, setFrecuencias] = useState<Frecuencia[]>([])
   const [buses, setBuses] = useState<Bus[]>([])
-  const [choferes, setChoferes] = useState<Chofer[]>([])   // ← nuevo
+  const [choferes, setChoferes] = useState<Chofer[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   const obtenerFechaLocal = () => {
     const hoy = new Date()
@@ -172,39 +175,49 @@ export default function RutasPage() {
   }
 
   if (loading) {
-    return (
-      <div className="p-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">Cargando...</div>
-        </div>
-      </div>
-    )
+    return <TableSkeleton rows={5} />
   }
 
+  // Calculate pagination
+  const totalPages = Math.ceil(rutas.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedRutas = rutas.slice(startIndex, endIndex)
+
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
-      <div className="mb-6">
-        <AdminHeader title="Gestión de Rutas" />
-      </div>
+    <div>
 
-      {error && <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">{error}</div>}
-      {success && <div className="mb-4 p-4 bg-green-100 text-green-700 rounded">{success}</div>}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center gap-3">
+            <span className="text-xl">⚠️</span>
+            <span>{error}</span>
+          </div>
+        )}
+        {success && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 flex items-center gap-3">
+            <span className="text-xl">✅</span>
+            <span>{success}</span>
+          </div>
+        )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
         {/* Formulario de creación */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold mb-4">Crear Nueva Ruta</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="bg-white border border-gray-200 rounded-xl shadow p-6">
+            <h2 className="text-xl font-bold mb-6 text-gray-900 flex items-center gap-2">
+              <span className="text-2xl">➕</span>
+              Crear Nueva Ruta
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label htmlFor="frecuenciaId" className="block text-sm font-medium text-gray-700 mb-2">Frecuencia *</label>
+                <label htmlFor="frecuenciaId" className="block text-sm font-semibold text-gray-700 mb-2">Frecuencia *</label>
                 <select
                   id="frecuenciaId"
                   name="frecuenciaId"
                   value={formData.frecuenciaId}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                 >
                   <option value="">Seleccionar frecuencia...</option>
                   {frecuencias.map(f => (
@@ -214,14 +227,14 @@ export default function RutasPage() {
               </div>
 
               <div>
-                <label htmlFor="busId" className="block text-sm font-medium text-gray-700 mb-2">Bus *</label>
+                <label htmlFor="busId" className="block text-sm font-semibold text-gray-700 mb-2">Bus *</label>
                 <select
                   id="busId"
                   name="busId"
                   value={formData.busId}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                 >
                   <option value="">Seleccionar bus...</option>
                   {buses.map(b => (
@@ -231,7 +244,7 @@ export default function RutasPage() {
               </div>
 
               <div>
-                <label htmlFor="fecha" className="block text-sm font-medium text-gray-700 mb-2">Fecha *</label>
+                <label htmlFor="fecha" className="block text-sm font-semibold text-gray-700 mb-2">Fecha *</label>
                 <input
                   type="date"
                   id="fecha"
@@ -240,12 +253,12 @@ export default function RutasPage() {
                   onChange={handleInputChange}
                   required
                   min={fechaMinima}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 />
               </div>
 
               <div>
-                <label htmlFor="precio" className="block text-sm font-medium text-gray-700 mb-2">Precio ($) *</label>
+                <label htmlFor="precio" className="block text-sm font-semibold text-gray-700 mb-2">Precio ($) *</label>
                 <input
                   type="number"
                   id="precio"
@@ -255,20 +268,20 @@ export default function RutasPage() {
                   required
                   step="0.01"
                   min="0"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   placeholder="Ej: 5.00"
                 />
               </div>
 
               {/* Selector de chofer (opcional) */}
               <div>
-                <label htmlFor="choferId" className="block text-sm font-medium text-gray-700 mb-2">Chofer (opcional)</label>
+                <label htmlFor="choferId" className="block text-sm font-semibold text-gray-700 mb-2">Chofer (opcional)</label>
                 <select
                   id="choferId"
                   name="choferId"
                   value={formData.choferId}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                 >
                   <option value="">Seleccionar chofer...</option>
                   {choferes.map(chofer => (
@@ -280,9 +293,9 @@ export default function RutasPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                className="w-full px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 font-semibold shadow-md hover:shadow-lg transition"
               >
-                {submitting ? 'Creando...' : 'Crear Ruta'}
+                {submitting ? 'Creando...' : '🚀 Crear Ruta'}
               </button>
             </form>
           </div>
@@ -290,56 +303,79 @@ export default function RutasPage() {
 
         {/* Listado de rutas */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold">Rutas Creadas</h2>
+          <div className="bg-white border border-gray-200 rounded-xl shadow overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <span className="text-2xl">🛣️</span>
+                Rutas Creadas
+              </h2>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ruta</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bus</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chofer</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Ruta</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Bus</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Fecha</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Precio</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Chofer</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {rutas.map((ruta) => (
-                    <tr key={ruta.id}>
+                  {paginatedRutas.map((ruta) => (
+                    <tr key={ruta.id} className="hover:bg-gray-50 transition">
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <div className="font-medium text-gray-900">
+                        <div className="font-bold text-gray-900">
                           {ruta.frecuencia.origen} - {ruta.frecuencia.destino}
                         </div>
-                        <div className="text-gray-500">
-                          {ruta.frecuencia.hora} • {ruta.frecuencia.tipoViaje === 'DIRECTO' ? 'Directo' : 'Con Paradas'}
+                        <div className="text-gray-500 text-xs mt-1">
+                          {ruta.frecuencia.hora} • {ruta.frecuencia.tipoViaje === 'DIRECTO' ? '🚀 Directo' : '🚌 Con Paradas'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <div className="font-medium text-gray-900">Bus {ruta.bus.numero}</div>
-                        <div className="text-gray-500">{ruta.bus.placa} • {ruta.bus.marca}</div>
+                        <div className="font-semibold text-gray-900">Bus {ruta.bus.numero}</div>
+                        <div className="text-gray-500 text-xs">{ruta.bus.placa} • {ruta.bus.marca}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                         {new Date(ruta.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-700">
                         {ruta.precio ? `$${ruta.precio.toFixed(2)}` : '—'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                         {ruta.chofer?.nombre || '—'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <Link href={`/admin/rutas/editar/${ruta.id}`} className="text-indigo-600 hover:text-indigo-900 mr-4">Editar</Link>
-                        <button onClick={() => handleEliminar(ruta)} className="text-red-600 hover:text-red-900">Eliminar</button>
+                        <Link href={`/admin/rutas/editar/${ruta.id}`} className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-semibold mr-4">
+                          ✏️ Editar
+                        </Link>
+                        <button onClick={() => handleEliminar(ruta)} className="inline-flex items-center gap-1 text-red-600 hover:text-red-800 font-semibold">
+                          🗑️ Eliminar
+                        </button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {rutas.length === 0 && <div className="text-center py-8 text-gray-500">No hay rutas creadas</div>}
+              {rutas.length === 0 && (
+                <div className="text-center py-12">
+                  <span className="text-5xl mb-3 block">🛣️</span>
+                  <p className="text-gray-500 text-lg">No hay rutas creadas</p>
+                  <p className="text-gray-400 text-sm mt-1">Crea una nueva ruta para comenzar</p>
+                </div>
+              )}
             </div>
+
+            {rutas.length > 0 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                itemsPerPage={itemsPerPage}
+                totalItems={rutas.length}
+              />
+            )}
           </div>
         </div>
       </div>

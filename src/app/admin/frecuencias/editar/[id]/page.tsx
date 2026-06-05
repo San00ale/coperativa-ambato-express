@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { signOut } from 'next-auth/react'
 
 interface Parada {
   id: string
@@ -170,146 +169,140 @@ export default function EditarFrecuenciaPage() {
   }
 
   return (
-    <div className="p-8">
-      <div className="max-w-2xl mx-auto">
+    <div>
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center">
+          <div className="flex items-center gap-4">
             <Link
               href="/admin/frecuencias"
-              className="text-blue-600 hover:text-blue-800 mr-4"
+              className="text-blue-600 hover:text-blue-800 font-medium flex items-center"
             >
-              ← Volver
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Volver
             </Link>
-            <h1 className="text-2xl font-bold">Editar Frecuencia</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Editar Frecuencia</h1>
           </div>
-          <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition flex items-center space-x-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            <span>Cerrar Sesión</span>
-          </button>
         </div>
 
-        {error && (
-          <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">
-            {error}
-          </div>
-        )}
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="origen" className="block text-sm font-medium text-gray-700 mb-2">
-                  Origen *
-                </label>
-                <input
-                  type="text"
-                  id="origen"
-                  name="origen"
-                  value={formData.origen}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
-                  placeholder="Ej: Ambato"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="destino" className="block text-sm font-medium text-gray-700 mb-2">
-                  Destino *
-                </label>
-                <input
-                  type="text"
-                  id="destino"
-                  name="destino"
-                  value={formData.destino}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
-                  placeholder="Ej: Quito"
-                />
-              </div>
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center gap-3">
+              <span className="text-xl">⚠️</span>
+              <span>{error}</span>
             </div>
+          )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white border border-gray-200 rounded-xl shadow p-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="origen" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Origen *
+                  </label>
+                  <input
+                    type="text"
+                    id="origen"
+                    name="origen"
+                    value={formData.origen}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+                    placeholder="Ej: Ambato"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="destino" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Destino *
+                  </label>
+                  <input
+                    type="text"
+                    id="destino"
+                    name="destino"
+                    value={formData.destino}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+                    placeholder="Ej: Quito"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="hora" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Hora *
+                  </label>
+                  <input
+                    type="time"
+                    id="hora"
+                    name="hora"
+                    value={formData.hora}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="tipoViaje" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Tipo de Viaje
+                  </label>
+                  <select
+                    id="tipoViaje"
+                    name="tipoViaje"
+                    value={formData.tipoViaje}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+                  >
+                    <option value="DIRECTO">🚀 Directo</option>
+                    <option value="CON_PARADAS">🚌 Con Paradas</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Campo Duración (nuevo) */}
               <div>
-                <label htmlFor="hora" className="block text-sm font-medium text-gray-700 mb-2">
-                  Hora *
+                <label htmlFor="duracion" className="block text-sm font-semibold text-gray-700 mb-2">
+                  Duración (minutos, opcional)
                 </label>
                 <input
-                  type="time"
-                  id="hora"
-                  name="hora"
-                  value={formData.hora}
+                  type="number"
+                  id="duracion"
+                  name="duracion"
+                  min="0"
+                  step="1"
+                  value={formData.duracion}
                   onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+                  placeholder="Ej: 120"
                 />
               </div>
 
-              <div>
-                <label htmlFor="tipoViaje" className="block text-sm font-medium text-gray-700 mb-2">
-                  Tipo de Viaje
-                </label>
-                <select
-                  id="tipoViaje"
-                  name="tipoViaje"
-                  value={formData.tipoViaje}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl">
+                <p className="text-sm text-blue-800 flex items-start gap-2">
+                  <span className="text-lg">ℹ️</span>
+                  <span><strong>Nota:</strong> Para editar las paradas intermedias, elimina y vuelve a crear la frecuencia con las paradas actualizadas.</span>
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-4 pt-4">
+                <Link
+                  href="/admin/frecuencias"
+                  className="px-6 py-3 bg-gray-300 text-gray-700 rounded-xl hover:bg-gray-400 font-semibold"
                 >
-                  <option value="DIRECTO">Directo</option>
-                  <option value="CON_PARADAS">Con Paradas</option>
-                </select>
+                  Cancelar
+                </Link>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 font-semibold shadow-md"
+                >
+                  {submitting ? 'Actualizando...' : '✏️ Actualizar Frecuencia'}
+                </button>
               </div>
-            </div>
-
-            {/* Campo Duración (nuevo) */}
-            <div>
-              <label htmlFor="duracion" className="block text-sm font-medium text-gray-700 mb-2">
-                Duración (minutos, opcional)
-              </label>
-              <input
-                type="number"
-                id="duracion"
-                name="duracion"
-                min="0"
-                step="1"
-                value={formData.duracion}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
-                placeholder="Ej: 120"
-              />
-            </div>
-
-            <div className="bg-blue-50 p-4 rounded-md">
-              <p className="text-sm text-blue-800">
-                <strong>Nota:</strong> Para editar las paradas intermedias, elimina y vuelve a crear la frecuencia con las paradas actualizadas.
-              </p>
-            </div>
-
-            <div className="flex justify-end space-x-4">
-              <Link
-                href="/admin/frecuencias"
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
-              >
-                Cancelar
-              </Link>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-              >
-                {submitting ? 'Actualizando...' : 'Actualizar Frecuencia'}
-              </button>
-            </div>
-          </form>
+            </form>
         </div>
-      </div>
     </div>
   )
 }

@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import AdminHeader from '@/components/AdminHeader'
 import SeatSelector from '@/components/SeatSelector'
 
 interface Bus {
@@ -117,106 +116,108 @@ export default function EditarBusPage() {
 
   if (loading) {
     return (
-      <div>
-        <AdminHeader title="Editar Bus" />
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-          <p className="text-gray-500">Cargando...</p>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <p className="text-gray-500">Cargando...</p>
       </div>
     )
   }
 
   if (!bus) {
     return (
-      <div>
-        <AdminHeader title="Editar Bus" />
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-          <p className="text-red-500">Bus no encontrado</p>
-          <Link href="/admin/buses" className="text-blue-600 hover:underline">
-            Volver a la lista de buses
-          </Link>
-        </div>
+      <div className="flex flex-col items-center justify-center h-64">
+        <p className="text-red-500 mb-4">Bus no encontrado</p>
+        <Link href="/admin/buses" className="text-blue-600 hover:underline">
+          Volver a la lista de buses
+        </Link>
       </div>
     )
   }
 
   return (
     <div>
-      <AdminHeader title="Editar Bus" />
-      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <div className="mb-6">
-          <Link href="/admin/buses" className="text-blue-600 hover:underline">
-            ← Volver a la lista de buses
-          </Link>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Link
+              href="/admin/buses"
+              className="text-blue-600 hover:text-blue-800 font-medium flex items-center"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Volver
+            </Link>
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+              <span className="text-4xl">🚌</span>
+              Editar Bus {bus.numero}
+            </h1>
+          </div>
         </div>
 
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">
-          Editar Bus {bus.numero}
-        </h1>
-
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-red-800">
-            {error}
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center gap-3">
+            <span className="text-xl">⚠️</span>
+            <span>{error}</span>
           </div>
         )}
 
         {success && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-green-800">
-            {success}
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 flex items-center gap-3">
+            <span className="text-xl">✅</span>
+            <span>{success}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-white shadow rounded-lg p-6">
+        <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-xl shadow p-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Número *</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Número *</label>
               <input 
                 type="text" 
                 required 
                 value={formData.numero} 
                 onChange={(e) => setFormData({ ...formData, numero: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded text-gray-900"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Placa *</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Placa *</label>
               <input 
                 type="text" 
                 required 
                 value={formData.placa} 
                 onChange={(e) => setFormData({ ...formData, placa: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded text-gray-900"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Chasis</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Chasis</label>
               <input 
                 type="text" 
                 value={formData.chasis} 
                 onChange={(e) => setFormData({ ...formData, chasis: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded text-gray-900"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Carrocería</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Carrocería</label>
               <input 
                 type="text" 
                 value={formData.carroceria} 
                 onChange={(e) => setFormData({ ...formData, carroceria: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded text-gray-900"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Marca</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Marca</label>
               <input 
                 type="text" 
                 value={formData.marca} 
                 onChange={(e) => setFormData({ ...formData, marca: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded text-gray-900"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Capacidad *</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Capacidad *</label>
               <input 
                 type="number" 
                 required 
@@ -226,16 +227,16 @@ export default function EditarBusPage() {
                   setFormData({ ...formData, capacidad: e.target.value })
                   setSelectedVIPSeats([])
                 }} 
-                className="w-full px-3 py-2 border border-gray-300 rounded text-gray-900"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">URL de Foto</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">URL de Foto</label>
               <input 
                 type="text" 
                 value={formData.fotoUrl} 
                 onChange={(e) => setFormData({ ...formData, fotoUrl: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded text-gray-900"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="https://ejemplo.com/foto.jpg"
               />
             </div>
@@ -255,22 +256,21 @@ export default function EditarBusPage() {
             />
           )}
 
-          <div className="mt-6 flex justify-end gap-4">
+          <div className="mt-6 flex justify-end gap-4 pt-4">
             <Link
               href="/admin/buses"
-              className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
+              className="px-6 py-3 bg-gray-300 text-gray-700 rounded-xl hover:bg-gray-400 font-semibold"
             >
               Cancelar
             </Link>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-semibold shadow-md"
             >
-              Guardar Cambios
+              💾 Guardar Cambios
             </button>
           </div>
         </form>
-      </div>
     </div>
   )
 }
