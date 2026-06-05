@@ -47,6 +47,15 @@ export default function AgregarFrecuenciaPage() {
   }
 
   const agregarParada = () => {
+    // Si el array está vacío, agregar un input vacío
+    if (formData.paradas.length === 0) {
+      setFormData(prev => ({
+        ...prev,
+        paradas: ['']
+      }))
+      return
+    }
+
     const nuevaParada = formData.paradas[formData.paradas.length - 1]?.trim()
     
     // Validar que no esté vacía

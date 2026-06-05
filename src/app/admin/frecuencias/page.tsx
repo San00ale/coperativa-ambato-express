@@ -160,17 +160,24 @@ export default function FrecuenciasPage() {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <Link href={`/admin/frecuencias/editar/${frecuencia.id}`} className="text-indigo-600 hover:text-indigo-900 mr-2">Editar</Link>
-                  <button
-                    onClick={() => handleToggleEstado(frecuencia)}
-                    className={`${frecuencia.activa ? 'text-yellow-600 hover:text-yellow-900' : 'text-green-600 hover:text-green-900'} mr-2`}
-                  >
-                    {frecuencia.activa ? 'Desactivar' : 'Activar'}
-                  </button>
                   {frecuencia.activa ? (
-                    <button onClick={() => handleEliminar(frecuencia)} className="text-red-600 hover:text-red-900">Eliminar</button>
+                    <>
+                      <Link href={`/admin/frecuencias/editar/${frecuencia.id}`} className="text-indigo-600 hover:text-indigo-900 mr-2">Editar</Link>
+                      <button
+                        onClick={() => handleToggleEstado(frecuencia)}
+                        className="text-yellow-600 hover:text-yellow-900 mr-2"
+                      >
+                        Desactivar
+                      </button>
+                      <button onClick={() => handleEliminar(frecuencia)} className="text-red-600 hover:text-red-900">Eliminar</button>
+                    </>
                   ) : (
-                    <span className="text-gray-400">Inactiva</span>
+                    <button
+                      onClick={() => handleToggleEstado(frecuencia)}
+                      className="text-green-600 hover:text-green-900"
+                    >
+                      Activar
+                    </button>
                   )}
                 </td>
               </tr>
