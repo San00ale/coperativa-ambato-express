@@ -84,3 +84,37 @@ export function obtenerErrorFecha(fecha: string): string {
   if (!fecha) return 'La fecha es requerida';
   return validarFechaNoEsPasada(fecha) ? '' : 'No se pueden buscar rutas en fechas pasadas';
 }
+
+// ----- VALIDACIÓN DE EMAIL CORPORATIVO -----
+export function validarEmailCoperativa(email: string): boolean {
+  return /^[^\s@]+@coperativa\.com$/.test(email);
+}
+
+export function obtenerErrorEmailCoperativa(email: string): string {
+  if (!email) return 'El email es requerido';
+  if (!validarEmail(email)) return 'Email inválido';
+  if (!validarEmailCoperativa(email)) return 'El email debe ser del dominio @coperativa.com';
+  return '';
+}
+
+// ----- VALIDACIÓN DE CONTRASEÑA -----
+export function validarContrasena(password: string): boolean {
+  return password.length >= 6;
+}
+
+export function obtenerErrorContrasena(password: string): string {
+  if (!password) return 'La contraseña es requerida';
+  if (!validarContrasena(password)) return 'La contraseña debe tener al menos 6 caracteres';
+  return '';
+}
+
+export function validarConfirmacionContrasena(password: string, confirmacion: string): boolean {
+  return password === confirmacion && password.length >= 6;
+}
+
+export function obtenerErrorConfirmacionContrasena(password: string, confirmacion: string): string {
+  if (!confirmacion) return 'Debe confirmar la contraseña';
+  if (password !== confirmacion) return 'Las contraseñas no coinciden';
+  if (!validarContrasena(confirmacion)) return 'La contraseña debe tener al menos 6 caracteres';
+  return '';
+}

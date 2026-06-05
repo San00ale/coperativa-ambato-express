@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -22,6 +22,7 @@ export default function AgregarFrecuenciaPage() {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [validationError, setValidationError] = useState('')
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -59,7 +60,6 @@ export default function AgregarFrecuenciaPage() {
       opcionPrecio: opcion
     }))
 
-    // Si cambia a POR_TRAMO, inicializar preciosPorTramo
     if (opcion === 'POR_TRAMO') {
       const paradasValidas = formData.paradas.filter(p => p.trim() !== '')
       const numTramos = paradasValidas.length + 1
@@ -77,6 +77,7 @@ export default function AgregarFrecuenciaPage() {
       ...prev,
       preciosPorTramo: newPrecios
     }))
+    setValidationError('')
   }
 
   const handleParadaChange = (index: number, value: string) => {
@@ -88,28 +89,43 @@ export default function AgregarFrecuenciaPage() {
     }))
   }
 
+  // Lógica mejorada de agregarParada (con validaciones de duplicado)
   const agregarParada = () => {
-    setFormData(prev => {
-      const newParadas = [...prev.paradas, '']
-      // Si está en modo POR_TRAMO, agregar un precio adicional
-      const newPrecios = prev.opcionPrecio === 'POR_TRAMO' 
-        ? [...prev.preciosPorTramo, '']
-        : prev.preciosPorTramo
-      return {
+    if (formData.paradas.length === 0) {
+      setFormData(prev => ({
         ...prev,
-        paradas: newParadas,
-        preciosPorTramo: newPrecios
-      }
-    })
+        paradas: ['']
+      }))
+      return
+    }
+
+    const nuevaParada = formData.paradas[formData.paradas.length - 1]?.trim()
+    if (!nuevaParada) {
+      setValidationError('La parada no puede estar vacía')
+      return
+    }
+
+    const paradasSinUltima = formData.paradas.slice(0, -1)
+    const paradasNormalizadas = paradasSinUltima.map(p => p.trim().toLowerCase())
+    if (paradasNormalizadas.includes(nuevaParada.toLowerCase())) {
+      setValidationError('Esta ciudad ya está en la lista de paradas')
+      return
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      paradas: [...prev.paradas, '']
+    }))
+    setValidationError('')
   }
 
   const quitarParada = (index: number) => {
+    const newParadas = formData.paradas.filter((_, i) => i !== index)
     setFormData(prev => {
-      const newParadas = prev.paradas.filter((_, i) => i !== index)
-      // Si está en modo POR_TRAMO, quitar un precio
-      const newPrecios = prev.opcionPrecio === 'POR_TRAMO'
-        ? prev.preciosPorTramo.filter((_, i) => i !== index)
-        : prev.preciosPorTramo
+      let newPrecios = prev.preciosPorTramo
+      if (prev.opcionPrecio === 'POR_TRAMO') {
+        newPrecios = prev.preciosPorTramo.filter((_, i) => i !== index)
+      }
       return {
         ...prev,
         paradas: newParadas,
@@ -122,6 +138,22 @@ export default function AgregarFrecuenciaPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setValidationError('')
+
+    // Validación duración
+    const duracionNum = parseInt(formData.duracion)
+    if (!formData.duracion || isNaN(duracionNum) || duracionNum < 1 || duracionNum > 720) {
+      setValidationError('La duración debe ser un número entre 1 y 720 minutos')
+      setLoading(false)
+      return
+    }
+
+    // Validación origen != destino
+    if (formData.origen.trim().toLowerCase() === formData.destino.trim().toLowerCase()) {
+      setValidationError('El origen y el destino no pueden ser la misma ciudad')
+      setLoading(false)
+      return
+    }
 
     try {
       const payload: any = {
@@ -129,31 +161,36 @@ export default function AgregarFrecuenciaPage() {
         destino: formData.destino.trim(),
         hora: formData.hora,
         tipoViaje: formData.tipoViaje,
-        paradas: formData.tipoViaje === 'CON_PARADAS'
-          ? formData.paradas.filter(p => p.trim() !== '')
-          : [],
-        duracion: formData.duracion ? parseInt(formData.duracion) : undefined,
+        duracion: duracionNum,
         precioBase: formData.precioBase ? parseFloat(formData.precioBase) : undefined
       }
 
-      // Si es CON_PARADAS y opción es POR_TRAMO, agregar preciosPorTramo
+      // Si es CON_PARADAS y opción POR_TRAMO, agregar preciosPorTramo
       if (formData.tipoViaje === 'CON_PARADAS' && formData.opcionPrecio === 'POR_TRAMO') {
         const paradasValidas = formData.paradas.filter(p => p.trim() !== '')
-        const tramos = paradasValidas.map((parada, index) => {
-          if (index === 0) {
-            return { origen: formData.origen, destino: parada, precio: parseFloat(formData.preciosPorTramo[index]) || 0 }
-          } else if (index === paradasValidas.length - 1) {
-            return { origen: paradasValidas[index - 1], destino: formData.destino, precio: parseFloat(formData.preciosPorTramo[index]) || 0 }
-          } else {
-            return { origen: paradasValidas[index - 1], destino: parada, precio: parseFloat(formData.preciosPorTramo[index]) || 0 }
-          }
-        })
-        // Agregar último tramo: última parada → destino
+        const tramos = []
+        // Tramo 1: origen -> primera parada
         if (paradasValidas.length > 0) {
-          tramos.push({ 
-            origen: paradasValidas[paradasValidas.length - 1], 
-            destino: formData.destino, 
-            precio: parseFloat(formData.preciosPorTramo[formData.preciosPorTramo.length - 1]) || 0 
+          tramos.push({
+            origen: formData.origen,
+            destino: paradasValidas[0],
+            precio: parseFloat(formData.preciosPorTramo[0]) || 0
+          })
+        }
+        // Tramos intermedios: parada i-1 -> parada i
+        for (let i = 1; i < paradasValidas.length; i++) {
+          tramos.push({
+            origen: paradasValidas[i-1],
+            destino: paradasValidas[i],
+            precio: parseFloat(formData.preciosPorTramo[i]) || 0
+          })
+        }
+        // Tramo final: última parada -> destino
+        if (paradasValidas.length > 0) {
+          tramos.push({
+            origen: paradasValidas[paradasValidas.length - 1],
+            destino: formData.destino,
+            precio: parseFloat(formData.preciosPorTramo[formData.preciosPorTramo.length - 1]) || 0
           })
         }
         payload.preciosPorTramo = tramos
@@ -161,9 +198,7 @@ export default function AgregarFrecuenciaPage() {
 
       const response = await fetch('/api/frecuencias', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
 
@@ -180,8 +215,13 @@ export default function AgregarFrecuenciaPage() {
     }
   }
 
+  useEffect(() => {
+    if (session?.user?.role !== 'ADMIN') {
+      router.push('/login')
+    }
+  }, [session, router])
+
   if (session?.user?.role !== 'ADMIN') {
-    router.push('/login')
     return null
   }
 
@@ -190,10 +230,7 @@ export default function AgregarFrecuenciaPage() {
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
-            <Link
-              href="/admin/frecuencias"
-              className="text-blue-600 hover:text-blue-800 mr-4"
-            >
+            <Link href="/admin/frecuencias" className="text-blue-600 hover:text-blue-800 mr-4">
               ← Volver
             </Link>
             <h1 className="text-2xl font-bold">Agregar Frecuencia</h1>
@@ -209,43 +246,25 @@ export default function AgregarFrecuenciaPage() {
           </button>
         </div>
 
-        {error && (
-          <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">
-            {error}
-          </div>
-        )}
+        {error && <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">{error}</div>}
+        {validationError && <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">{validationError}</div>}
 
         <div className="bg-white rounded-lg shadow p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="origen" className="block text-sm font-medium text-gray-700 mb-2">
-                  Origen *
-                </label>
+                <label htmlFor="origen" className="block text-sm font-medium text-gray-700 mb-2">Origen *</label>
                 <input
-                  type="text"
-                  id="origen"
-                  name="origen"
-                  value={formData.origen}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+                  type="text" id="origen" name="origen" value={formData.origen} onChange={handleInputChange}
+                  required className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
                   placeholder="Ej: Ambato"
                 />
               </div>
-
               <div>
-                <label htmlFor="destino" className="block text-sm font-medium text-gray-700 mb-2">
-                  Destino *
-                </label>
+                <label htmlFor="destino" className="block text-sm font-medium text-gray-700 mb-2">Destino *</label>
                 <input
-                  type="text"
-                  id="destino"
-                  name="destino"
-                  value={formData.destino}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+                  type="text" id="destino" name="destino" value={formData.destino} onChange={handleInputChange}
+                  required className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
                   placeholder="Ej: Quito"
                 />
               </div>
@@ -253,29 +272,16 @@ export default function AgregarFrecuenciaPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="hora" className="block text-sm font-medium text-gray-700 mb-2">
-                  Hora *
-                </label>
+                <label htmlFor="hora" className="block text-sm font-medium text-gray-700 mb-2">Hora *</label>
                 <input
-                  type="time"
-                  id="hora"
-                  name="hora"
-                  value={formData.hora}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+                  type="time" id="hora" name="hora" value={formData.hora} onChange={handleInputChange}
+                  required className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
                 />
               </div>
-
               <div>
-                <label htmlFor="tipoViaje" className="block text-sm font-medium text-gray-700 mb-2">
-                  Tipo de Viaje
-                </label>
+                <label htmlFor="tipoViaje" className="block text-sm font-medium text-gray-700 mb-2">Tipo de Viaje</label>
                 <select
-                  id="tipoViaje"
-                  name="tipoViaje"
-                  value={formData.tipoViaje}
-                  onChange={handleInputChange}
+                  id="tipoViaje" name="tipoViaje" value={formData.tipoViaje} onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
                 >
                   <option value="DIRECTO">Directo</option>
@@ -284,37 +290,23 @@ export default function AgregarFrecuenciaPage() {
               </div>
             </div>
 
-            {/* Campo Duración (nuevo) */}
             <div>
-              <label htmlFor="duracion" className="block text-sm font-medium text-gray-700 mb-2">
-                Duración (minutos, opcional)
-              </label>
+              <label htmlFor="duracion" className="block text-sm font-medium text-gray-700 mb-2">Duración (minutos) *</label>
               <input
-                type="number"
-                id="duracion"
-                name="duracion"
-                min="0"
-                step="1"
-                value={formData.duracion}
-                onChange={handleInputChange}
+                type="number" id="duracion" name="duracion" min="1" max="720" step="5"
+                value={formData.duracion} onChange={handleInputChange} required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
                 placeholder="Ej: 120"
               />
             </div>
 
-            {/* Campo Precio Base */}
             <div>
               <label htmlFor="precioBase" className="block text-sm font-medium text-gray-700 mb-2">
                 Precio Base ($) {formData.tipoViaje === 'DIRECTO' ? '*' : '(opcional)'}
               </label>
               <input
-                type="number"
-                id="precioBase"
-                name="precioBase"
-                min="0"
-                step="0.01"
-                value={formData.precioBase}
-                onChange={handleInputChange}
+                type="number" id="precioBase" name="precioBase" min="0" step="0.01"
+                value={formData.precioBase} onChange={handleInputChange}
                 required={formData.tipoViaje === 'DIRECTO'}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
                 placeholder="Ej: 5.00"
@@ -324,18 +316,13 @@ export default function AgregarFrecuenciaPage() {
               )}
             </div>
 
-            {/* Opción de precio para viajes con paradas */}
             {formData.tipoViaje === 'CON_PARADAS' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Configuración de Precios
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Configuración de Precios</label>
                 <div className="space-y-2">
                   <label className="flex items-center space-x-2">
                     <input
-                      type="radio"
-                      name="opcionPrecio"
-                      value="MISMO"
+                      type="radio" name="opcionPrecio" value="MISMO"
                       checked={formData.opcionPrecio === 'MISMO'}
                       onChange={() => handleOpcionPrecioChange('MISMO')}
                       className="text-blue-600 focus:ring-blue-500"
@@ -344,9 +331,7 @@ export default function AgregarFrecuenciaPage() {
                   </label>
                   <label className="flex items-center space-x-2">
                     <input
-                      type="radio"
-                      name="opcionPrecio"
-                      value="POR_TRAMO"
+                      type="radio" name="opcionPrecio" value="POR_TRAMO"
                       checked={formData.opcionPrecio === 'POR_TRAMO'}
                       onChange={() => handleOpcionPrecioChange('POR_TRAMO')}
                       className="text-blue-600 focus:ring-blue-500"
@@ -357,12 +342,9 @@ export default function AgregarFrecuenciaPage() {
               </div>
             )}
 
-            {/* Precios por tramo */}
             {formData.tipoViaje === 'CON_PARADAS' && formData.opcionPrecio === 'POR_TRAMO' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Precios por Tramo
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Precios por Tramo</label>
                 <div className="space-y-2">
                   {formData.preciosPorTramo.map((precio, index) => {
                     const paradasValidas = formData.paradas.filter(p => p.trim() !== '')
@@ -370,19 +352,16 @@ export default function AgregarFrecuenciaPage() {
                     if (index === 0) {
                       tramoLabel = `${formData.origen} → ${paradasValidas[0] || 'primera parada'}`
                     } else if (index < paradasValidas.length) {
-                      tramoLabel = `${paradasValidas[index - 1]} → ${paradasValidas[index]}`
+                      tramoLabel = `${paradasValidas[index-1]} → ${paradasValidas[index]}`
                     } else {
-                      tramoLabel = `${paradasValidas[paradasValidas.length - 1]} → ${formData.destino}`
+                      tramoLabel = `${paradasValidas[paradasValidas.length-1]} → ${formData.destino}`
                     }
                     return (
                       <div key={index} className="flex gap-2 items-center">
                         <span className="text-sm text-gray-600 w-48">{tramoLabel}:</span>
                         <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={precio}
-                          onChange={(e) => handlePrecioTramoChange(index, e.target.value)}
+                          type="number" min="0" step="0.01"
+                          value={precio} onChange={(e) => handlePrecioTramoChange(index, e.target.value)}
                           className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
                           placeholder="0.00"
                         />
@@ -395,23 +374,37 @@ export default function AgregarFrecuenciaPage() {
 
             {formData.tipoViaje === 'CON_PARADAS' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Paradas Intermedias
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Paradas Intermedias</label>
+                {formData.paradas.filter(p => p.trim() !== '').length > 0 && (
+                  <div className="mb-4 p-4 bg-gray-50 rounded-md">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Paradas agregadas:</p>
+                    <ul className="space-y-1">
+                      {formData.paradas.filter(p => p.trim() !== '').map((parada, idx) => (
+                        <li key={idx} className="flex items-center justify-between text-sm text-gray-900">
+                          <span>{idx+1}. {parada}</span>
+                          <button
+                            type="button"
+                            onClick={() => quitarParada(formData.paradas.indexOf(parada))}
+                            className="text-red-600 hover:text-red-800 ml-2"
+                          >
+                            Eliminar
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 <div className="space-y-2">
-                  {formData.paradas.map((parada, index) => (
-                    <div key={index} className="flex gap-2">
+                  {formData.paradas.map((parada, idx) => (
+                    <div key={idx} className="flex gap-2">
                       <input
-                        type="text"
-                        value={parada}
-                        onChange={(e) => handleParadaChange(index, e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder={`Parada ${index + 1}`}
+                        type="text" value={parada} onChange={(e) => handleParadaChange(idx, e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+                        placeholder={`Parada ${idx+1}`}
                       />
                       {formData.paradas.length > 1 && (
                         <button
-                          type="button"
-                          onClick={() => quitarParada(index)}
+                          type="button" onClick={() => quitarParada(idx)}
                           className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
                         >
                           Quitar
@@ -420,8 +413,7 @@ export default function AgregarFrecuenciaPage() {
                     </div>
                   ))}
                   <button
-                    type="button"
-                    onClick={agregarParada}
+                    type="button" onClick={agregarParada}
                     className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
                   >
                     + Agregar Parada
@@ -431,17 +423,10 @@ export default function AgregarFrecuenciaPage() {
             )}
 
             <div className="flex justify-end space-x-4">
-              <Link
-                href="/admin/frecuencias"
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
-              >
+              <Link href="/admin/frecuencias" className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
                 Cancelar
               </Link>
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-              >
+              <button type="submit" disabled={loading} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
                 {loading ? 'Guardando...' : 'Guardar Frecuencia'}
               </button>
             </div>
