@@ -63,7 +63,6 @@ const end = new Date(Date.UTC(year, month-1, day + 1, 0, 0, 0, 0))
 }
 
 export async function POST(request: Request) {
-  // ... (sin cambios, igual que antes)
   try {
     const session = await getServerSession(authOptions)
     if (session?.user?.role !== 'ADMIN' && session?.user?.role !== 'OFICINISTA') {
@@ -73,9 +72,36 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { frecuenciaId, fecha, busId, precio, choferId } = body
 
-    if (!frecuenciaId || !fecha || !busId || precio === undefined) {
+    if (!frecuenciaId || !fecha || !busId) {
       return NextResponse.json(
-        { error: 'Faltan campos requeridos: frecuenciaId, fecha, busId, precio' },
+        { error: 'Faltan campos requeridos: frecuenciaId, fecha, busId' },
+        { status: 400 }
+      )
+    }
+
+    // Obtener frecuencia para heredar precioBase si es DIRECTO
+    const frecuencia = await prisma.frecuencia.findUnique({
+      where: { id: frecuenciaId }
+    })
+
+    if (!frecuencia) {
+      return NextResponse.json({ error: 'Frecuencia no encontrada' }, { status: 404 })
+    }
+
+    // Si es DIRECTO y no se proporciona precio, usar precioBase de la frecuencia
+    let precioFinal = precio
+    if (frecuencia.tipoViaje === 'DIRECTO') {
+      if (!precio && frecuencia.precioBase) {
+        precioFinal = frecuencia.precioBase
+      } else if (!precio) {
+        return NextResponse.json(
+          { error: 'La frecuencia directa no tiene precio base configurado' },
+          { status: 400 }
+        )
+      }
+    } else if (!precio) {
+      return NextResponse.json(
+        { error: 'El precio es requerido para viajes con paradas' },
         { status: 400 }
       )
     }
@@ -88,49 +114,50 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Chofer no válido' }, { status: 400 })
       }
     }
+
     // Validar duplicados
-const [year, month, day] = fecha.split('-').map(Number)
-const startDia = new Date(Date.UTC(year, month-1, day, 0, 0, 0, 0))
-const endDia = new Date(Date.UTC(year, month-1, day + 1, 0, 0, 0, 0))
+    const [year, month, day] = fecha.split('-').map(Number)
+    const startDia = new Date(Date.UTC(year, month-1, day, 0, 0, 0, 0))
+    const endDia = new Date(Date.UTC(year, month-1, day + 1, 0, 0, 0, 0))
 
-const rutaExistente = await prisma.ruta.findFirst({
-  where: {
-    frecuenciaId,
-    busId,
-    fecha: { gte: startDia, lt: endDia }
-  }
-})
+    const rutaExistente = await prisma.ruta.findFirst({
+      where: {
+        frecuenciaId,
+        busId,
+        fecha: { gte: startDia, lt: endDia }
+      }
+    })
 
-if (rutaExistente) {
-  return NextResponse.json(
-    { error: 'Ya existe una ruta asignada a este bus en la misma fecha y horario' },
-    { status: 400 }
-  )
-}
-// Validar disponibilidad del chofer
-if (choferId) {
-  const choferOcupado = await prisma.ruta.findFirst({
-    where: {
-      choferId,
-      frecuenciaId,
-      fecha: { gte: startDia, lt: endDia }
+    if (rutaExistente) {
+      return NextResponse.json(
+        { error: 'Ya existe una ruta asignada a este bus en la misma fecha y horario' },
+        { status: 400 }
+      )
     }
-  })
-  if (choferOcupado) {
-    return NextResponse.json(
-      { error: 'El chofer ya tiene una ruta asignada en esta fecha y horario' },
-      { status: 400 }
-    )
-  }
-}
 
+    // Validar disponibilidad del chofer
+    if (choferId) {
+      const choferOcupado = await prisma.ruta.findFirst({
+        where: {
+          choferId,
+          frecuenciaId,
+          fecha: { gte: startDia, lt: endDia }
+        }
+      })
+      if (choferOcupado) {
+        return NextResponse.json(
+          { error: 'El chofer ya tiene una ruta asignada en esta fecha y horario' },
+          { status: 400 }
+        )
+      }
+    }
 
     const ruta = await prisma.ruta.create({
       data: {
         frecuenciaId,
         fecha: new Date(fecha),
         busId,
-        precio: parseFloat(precio),
+        precio: parseFloat(precioFinal),
         choferId: choferId || null,
         completada: false
       },

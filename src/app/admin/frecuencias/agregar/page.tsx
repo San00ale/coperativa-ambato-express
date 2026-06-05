@@ -27,14 +27,24 @@ export default function AgregarFrecuenciaPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
+
     if (name === 'tipoViaje' && value === 'DIRECTO') {
-      setFormData(prev => ({ ...prev, paradas: [''], opcionPrecio: 'MISMO', preciosPorTramo: [] }))
+      setFormData(prev => ({
+        ...prev,
+        paradas: [''],
+        opcionPrecio: 'MISMO',
+        preciosPorTramo: []
+      }))
     }
+
     if (name === 'tipoViaje' && value === 'CON_PARADAS') {
       const paradasValidas = formData.paradas.filter(p => p.trim() !== '')
       if (paradasValidas.length > 0) {
         const numTramos = paradasValidas.length + 1
-        setFormData(prev => ({ ...prev, preciosPorTramo: Array(numTramos).fill('') }))
+        setFormData(prev => ({
+          ...prev,
+          preciosPorTramo: Array(numTramos).fill('')
+        }))
       }
     }
   }
@@ -44,7 +54,10 @@ export default function AgregarFrecuenciaPage() {
     if (opcion === 'POR_TRAMO') {
       const paradasValidas = formData.paradas.filter(p => p.trim() !== '')
       const numTramos = paradasValidas.length + 1
-      setFormData(prev => ({ ...prev, preciosPorTramo: Array(numTramos).fill('') }))
+      setFormData(prev => ({
+        ...prev,
+        preciosPorTramo: Array(numTramos).fill('')
+      }))
     }
   }
 
@@ -112,6 +125,7 @@ export default function AgregarFrecuenciaPage() {
     }
 
     try {
+      // Tipado explícito sin 'any'
       const payload: {
         origen: string
         destino: string
@@ -141,7 +155,7 @@ export default function AgregarFrecuenciaPage() {
         }
         for (let i = 1; i < paradasValidas.length; i++) {
           tramos.push({
-            origen: paradasValidas[i-1],
+            origen: paradasValidas[i - 1],
             destino: paradasValidas[i],
             precio: parseFloat(formData.preciosPorTramo[i]) || 0
           })
@@ -210,26 +224,36 @@ export default function AgregarFrecuenciaPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="origen" className="block text-sm font-medium text-gray-700 mb-2">Origen *</label>
-                <input type="text" id="origen" name="origen" value={formData.origen} onChange={handleInputChange} required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ej: Ambato" />
+                <input
+                  type="text" id="origen" name="origen" value={formData.origen} onChange={handleInputChange} required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Ej: Ambato"
+                />
               </div>
               <div>
                 <label htmlFor="destino" className="block text-sm font-medium text-gray-700 mb-2">Destino *</label>
-                <input type="text" id="destino" name="destino" value={formData.destino} onChange={handleInputChange} required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ej: Quito" />
+                <input
+                  type="text" id="destino" name="destino" value={formData.destino} onChange={handleInputChange} required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Ej: Quito"
+                />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="hora" className="block text-sm font-medium text-gray-700 mb-2">Hora *</label>
-                <input type="time" id="hora" name="hora" value={formData.hora} onChange={handleInputChange} required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input
+                  type="time" id="hora" name="hora" value={formData.hora} onChange={handleInputChange} required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
               </div>
               <div>
                 <label htmlFor="tipoViaje" className="block text-sm font-medium text-gray-700 mb-2">Tipo de Viaje</label>
-                <select id="tipoViaje" name="tipoViaje" value={formData.tipoViaje} onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select
+                  id="tipoViaje" name="tipoViaje" value={formData.tipoViaje} onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
                   <option value="DIRECTO">Directo</option>
                   <option value="CON_PARADAS">Con Paradas</option>
                 </select>
@@ -238,18 +262,28 @@ export default function AgregarFrecuenciaPage() {
 
             <div>
               <label htmlFor="duracion" className="block text-sm font-medium text-gray-700 mb-2">Duración (minutos) *</label>
-              <input type="number" id="duracion" name="duracion" min="1" max="720" step="5" value={formData.duracion} onChange={handleInputChange} required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ej: 120" />
+              <input
+                type="number" id="duracion" name="duracion" min="1" max="720" step="5"
+                value={formData.duracion} onChange={handleInputChange} required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Ej: 120"
+              />
             </div>
 
             <div>
               <label htmlFor="precioBase" className="block text-sm font-medium text-gray-700 mb-2">
                 Precio Base ($) {formData.tipoViaje === 'DIRECTO' ? '*' : '(opcional)'}
               </label>
-              <input type="number" id="precioBase" name="precioBase" min="0" step="0.01" value={formData.precioBase} onChange={handleInputChange}
+              <input
+                type="number" id="precioBase" name="precioBase" min="0" step="0.01"
+                value={formData.precioBase} onChange={handleInputChange}
                 required={formData.tipoViaje === 'DIRECTO'}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ej: 5.00" />
-              {formData.tipoViaje === 'DIRECTO' && <p className="mt-1 text-xs text-gray-500">Obligatorio para viajes directos</p>}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Ej: 5.00"
+              />
+              {formData.tipoViaje === 'DIRECTO' && (
+                <p className="mt-1 text-xs text-gray-500">Obligatorio para viajes directos</p>
+              )}
             </div>
 
             {formData.tipoViaje === 'CON_PARADAS' && (
@@ -257,11 +291,21 @@ export default function AgregarFrecuenciaPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Configuración de Precios</label>
                 <div className="space-y-2">
                   <label className="flex items-center space-x-2">
-                    <input type="radio" name="opcionPrecio" value="MISMO" checked={formData.opcionPrecio === 'MISMO'} onChange={() => handleOpcionPrecioChange('MISMO')} />
+                    <input
+                      type="radio" name="opcionPrecio" value="MISMO"
+                      checked={formData.opcionPrecio === 'MISMO'}
+                      onChange={() => handleOpcionPrecioChange('MISMO')}
+                      className="text-blue-600 focus:ring-blue-500"
+                    />
                     <span className="text-sm text-gray-700">Mismo precio para todo el recorrido</span>
                   </label>
                   <label className="flex items-center space-x-2">
-                    <input type="radio" name="opcionPrecio" value="POR_TRAMO" checked={formData.opcionPrecio === 'POR_TRAMO'} onChange={() => handleOpcionPrecioChange('POR_TRAMO')} />
+                    <input
+                      type="radio" name="opcionPrecio" value="POR_TRAMO"
+                      checked={formData.opcionPrecio === 'POR_TRAMO'}
+                      onChange={() => handleOpcionPrecioChange('POR_TRAMO')}
+                      className="text-blue-600 focus:ring-blue-500"
+                    />
                     <span className="text-sm text-gray-700">Precios por tramo</span>
                   </label>
                 </div>
@@ -276,13 +320,17 @@ export default function AgregarFrecuenciaPage() {
                     const paradasValidas = formData.paradas.filter(p => p.trim() !== '')
                     let tramoLabel = ''
                     if (idx === 0) tramoLabel = `${formData.origen} → ${paradasValidas[0] || 'primera parada'}`
-                    else if (idx < paradasValidas.length) tramoLabel = `${paradasValidas[idx-1]} → ${paradasValidas[idx]}`
-                    else tramoLabel = `${paradasValidas[paradasValidas.length-1]} → ${formData.destino}`
+                    else if (idx < paradasValidas.length) tramoLabel = `${paradasValidas[idx - 1]} → ${paradasValidas[idx]}`
+                    else tramoLabel = `${paradasValidas[paradasValidas.length - 1]} → ${formData.destino}`
                     return (
                       <div key={idx} className="flex gap-2 items-center">
                         <span className="text-sm text-gray-600 w-48">{tramoLabel}:</span>
-                        <input type="number" min="0" step="0.01" value={precio} onChange={(e) => handlePrecioTramoChange(idx, e.target.value)}
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0.00" />
+                        <input
+                          type="number" min="0" step="0.01"
+                          value={precio} onChange={(e) => handlePrecioTramoChange(idx, e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="0.00"
+                        />
                       </div>
                     )
                   })}
@@ -299,8 +347,14 @@ export default function AgregarFrecuenciaPage() {
                     <ul className="space-y-1">
                       {formData.paradas.filter(p => p.trim() !== '').map((parada, idx) => (
                         <li key={idx} className="flex items-center justify-between text-sm text-gray-900">
-                          <span>{idx+1}. {parada}</span>
-                          <button type="button" onClick={() => quitarParada(formData.paradas.indexOf(parada))} className="text-red-600 hover:text-red-800 ml-2">Eliminar</button>
+                          <span>{idx + 1}. {parada}</span>
+                          <button
+                            type="button"
+                            onClick={() => quitarParada(formData.paradas.indexOf(parada))}
+                            className="text-red-600 hover:text-red-800 ml-2"
+                          >
+                            Eliminar
+                          </button>
                         </li>
                       ))}
                     </ul>
@@ -309,21 +363,39 @@ export default function AgregarFrecuenciaPage() {
                 <div className="space-y-2">
                   {formData.paradas.map((parada, idx) => (
                     <div key={idx} className="flex gap-2">
-                      <input type="text" value={parada} onChange={(e) => handleParadaChange(idx, e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder={`Parada ${idx+1}`} />
+                      <input
+                        type="text" value={parada} onChange={(e) => handleParadaChange(idx, e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder={`Parada ${idx + 1}`}
+                      />
                       {formData.paradas.length > 1 && (
-                        <button type="button" onClick={() => quitarParada(idx)} className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Quitar</button>
+                        <button
+                          type="button" onClick={() => quitarParada(idx)}
+                          className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                        >
+                          Quitar
+                        </button>
                       )}
                     </div>
                   ))}
-                  <button type="button" onClick={agregarParada} className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">+ Agregar Parada</button>
+                  <button
+                    type="button" onClick={agregarParada}
+                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                  >
+                    + Agregar Parada
+                  </button>
                 </div>
               </div>
             )}
 
             <div className="flex justify-end space-x-4">
-              <Link href="/admin/frecuencias" className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">Cancelar</Link>
-              <button type="submit" disabled={loading} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
+              <Link href="/admin/frecuencias" className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+                Cancelar
+              </Link>
+              <button
+                type="submit" disabled={loading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              >
                 {loading ? 'Guardando...' : 'Guardar Frecuencia'}
               </button>
             </div>
