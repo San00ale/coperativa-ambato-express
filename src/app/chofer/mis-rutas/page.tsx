@@ -202,6 +202,37 @@ const calcularHoraLlegada = (horaSalida: string, duracionMinutos: number | null)
   const rutasCompletadas = rutas.filter(r => r.estado === 'completada').length
   const rutasPendientes = rutas.filter(r => r.estado === 'pendiente').length
 
+const [modalParada, setModalParada] = useState<string | null>(null) // rutaId activo
+const [paradaSeleccionada, setParadaSeleccionada] = useState<string>('')
+
+const handleParadaIntermedia = async (rutaId: string) => {
+  if (!paradaSeleccionada) return
+  try {
+    setActualizando(rutaId)
+    const response = await fetch(`/api/rutas/${rutaId}/parada-intermedia`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paradaId: paradaSeleccionada })
+    })
+    if (!response.ok) {
+      const err = await response.json()
+      throw new Error(err.error || 'Error al registrar parada')
+    }
+    const nuevoRegistro = await response.json()
+    // Actualizar estado local
+    setRutas(rutas.map(r =>
+      r.id === rutaId
+        ? { ...r, registrosParada: [...r.registrosParada, { ...nuevoRegistro, parada: r.frecuencia.paradas.find(p => p.id === paradaSeleccionada)! }] }
+        : r
+    ))
+    setModalParada(null)
+    setParadaSeleccionada('')
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'Error')
+  } finally {
+    setActualizando(null)
+  }
+}
   return (
     <div className="space-y-8">
       {/* Header */}
