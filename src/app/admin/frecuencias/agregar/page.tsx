@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -15,10 +15,11 @@ export default function AgregarFrecuenciaPage() {
     hora: '',
     tipoViaje: 'DIRECTO' as 'DIRECTO' | 'CON_PARADAS',
     paradas: [''],
-    duracion: ''          // ← nuevo campo
+    duracion: ''
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [validationError, setValidationError] = useState('')
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -46,10 +47,36 @@ export default function AgregarFrecuenciaPage() {
   }
 
   const agregarParada = () => {
+    // Si el array está vacío, agregar un input vacío
+    if (formData.paradas.length === 0) {
+      setFormData(prev => ({
+        ...prev,
+        paradas: ['']
+      }))
+      return
+    }
+
+    const nuevaParada = formData.paradas[formData.paradas.length - 1]?.trim()
+    
+    // Validar que no esté vacía
+    if (!nuevaParada) {
+      setValidationError('La parada no puede estar vacía')
+      return
+    }
+
+    // Validar que no sea duplicado (excluir la última que se está editando)
+    const paradasSinUltima = formData.paradas.slice(0, -1)
+    const paradasNormalizadas = paradasSinUltima.map(p => p.trim().toLowerCase())
+    if (paradasNormalizadas.includes(nuevaParada.toLowerCase())) {
+      setValidationError('Esta ciudad ya está en la lista de paradas')
+      return
+    }
+
     setFormData(prev => ({
       ...prev,
       paradas: [...prev.paradas, '']
     }))
+    setValidationError('')
   }
 
   const quitarParada = (index: number) => {
@@ -64,6 +91,22 @@ export default function AgregarFrecuenciaPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setValidationError('')
+
+    // Validación de duración
+    const duracionNum = parseInt(formData.duracion)
+    if (!formData.duracion || isNaN(duracionNum) || duracionNum < 1 || duracionNum > 720) {
+      setValidationError('La duración debe ser un número entre 1 y 720 minutos')
+      setLoading(false)
+      return
+    }
+
+    // Validación origen != destino
+    if (formData.origen.trim().toLowerCase() === formData.destino.trim().toLowerCase()) {
+      setValidationError('El origen y el destino no pueden ser la misma ciudad')
+      setLoading(false)
+      return
+    }
 
     try {
       const payload = {
@@ -74,7 +117,7 @@ export default function AgregarFrecuenciaPage() {
         paradas: formData.tipoViaje === 'CON_PARADAS' 
           ? formData.paradas.filter(p => p.trim() !== '')
           : [],
-        duracion: formData.duracion ? parseInt(formData.duracion) : undefined
+        duracion: duracionNum
       }
 
       const response = await fetch('/api/frecuencias', {
@@ -98,8 +141,13 @@ export default function AgregarFrecuenciaPage() {
     }
   }
 
+  useEffect(() => {
+    if (session?.user?.role !== 'ADMIN') {
+      router.push('/login')
+    }
+  }, [session, router])
+
   if (session?.user?.role !== 'ADMIN') {
-    router.push('/login')
     return null
   }
 
@@ -130,6 +178,12 @@ export default function AgregarFrecuenciaPage() {
         {error && (
           <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">
             {error}
+          </div>
+        )}
+
+        {validationError && (
+          <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">
+            {validationError}
           </div>
         )}
 
@@ -202,19 +256,21 @@ export default function AgregarFrecuenciaPage() {
               </div>
             </div>
 
-            {/* Campo Duración (nuevo) */}
+            {/* Campo Duración */}
             <div>
               <label htmlFor="duracion" className="block text-sm font-medium text-gray-700 mb-2">
-                Duración (minutos, opcional)
+                Duración (minutos) *
               </label>
               <input
                 type="number"
                 id="duracion"
                 name="duracion"
-                min="0"
-                step="1"
+                min="1"
+                max="720"
+                step="5"
                 value={formData.duracion}
                 onChange={handleInputChange}
+                required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
                 placeholder="Ej: 120"
               />
@@ -225,6 +281,28 @@ export default function AgregarFrecuenciaPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Paradas Intermedias
                 </label>
+                
+                {/* Lista visible de paradas agregadas */}
+                {formData.paradas.filter(p => p.trim() !== '').length > 0 && (
+                  <div className="mb-4 p-4 bg-gray-50 rounded-md">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Paradas agregadas:</p>
+                    <ul className="space-y-1">
+                      {formData.paradas.filter(p => p.trim() !== '').map((parada, index) => (
+                        <li key={index} className="flex items-center justify-between text-sm text-gray-900">
+                          <span>{index + 1}. {parada}</span>
+                          <button
+                            type="button"
+                            onClick={() => quitarParada(formData.paradas.indexOf(parada))}
+                            className="text-red-600 hover:text-red-800 ml-2"
+                          >
+                            Eliminar
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   {formData.paradas.map((parada, index) => (
                     <div key={index} className="flex gap-2">
@@ -232,7 +310,7 @@ export default function AgregarFrecuenciaPage() {
                         type="text"
                         value={parada}
                         onChange={(e) => handleParadaChange(index, e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
                         placeholder={`Parada ${index + 1}`}
                       />
                       {formData.paradas.length > 1 && (
