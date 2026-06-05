@@ -1,7 +1,7 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Clock, MapPin, Bus, CheckCircle2, Circle, AlertCircle, Loader } from 'lucide-react'
 
 interface Ruta {
@@ -58,7 +58,7 @@ export default function MisRutasPage() {
   // ─────────────────────────────────────────────
   // FETCH RUTAS
   // ─────────────────────────────────────────────
-  const fetchRutas = async () => {
+const fetchRutas = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -75,11 +75,11 @@ export default function MisRutasPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [fechaSeleccionada])
 
   useEffect(() => {
     fetchRutas()
-  }, [fechaSeleccionada])
+  }, [fetchRutas])
 
   // ─────────────────────────────────────────────
   // INICIAR VIAJE — re-fetch para traer datos frescos
