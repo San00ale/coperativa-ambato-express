@@ -27,8 +27,8 @@ export default function AdminLayout({
 
   // Cerrar menú móvil al cambiar de ruta
   useEffect(() => {
-    setIsMobileMenuOpen(false)
-  }, [pathname, setIsMobileMenuOpen])
+    setIsMobileMenuOpen(false) // eslint-disable-line react-hooks/set-state-in-effect
+  }, [pathname])
 
   if (status === 'loading') {
     return (

@@ -24,7 +24,7 @@ export default function LoginPage() {
     })
 
     if (result?.error) {
-      setError('Credenciales incorrectas')
+      setError('❌ Correo o contraseña incorrectos. Intenta de nuevo.')
       setLoading(false)
     } else {
       router.push('/dashboard')
@@ -75,6 +75,12 @@ export default function LoginPage() {
             {loading ? 'Ingresando...' : 'Ingresar'}
           </button>
         </form>
+
+        <div className="text-center mt-4">
+          <Link href="/recuperar-contrasena" className="text-blue-600 hover:underline text-sm">
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </div>
         
         <p className="text-center text-gray-900 text-sm mt-4">
           Credenciales de prueba:<br />
