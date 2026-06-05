@@ -73,6 +73,27 @@ export default function FrecuenciasPage() {
     }
   }
 
+  const handleToggleEstado = async (frecuencia: Frecuencia) => {
+    const nuevoEstado = !frecuencia.activa
+    const accion = nuevoEstado ? 'activar' : 'desactivar'
+    if (!confirm(`¿Estás seguro de ${accion} la frecuencia ${frecuencia.origen}-${frecuencia.destino} ${frecuencia.hora}?`)) return
+    try {
+      const response = await fetch(`/api/frecuencias/${frecuencia.id}/estado`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activa: nuevoEstado })
+      })
+      if (response.ok) {
+        await cargarFrecuencias()
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || `Error al ${accion} la frecuencia`)
+      }
+    } catch (error) {
+      setError('Error de conexión')
+    }
+  }
+
   if (loading) {
     return (
       <div className="p-8">
@@ -139,7 +160,13 @@ export default function FrecuenciasPage() {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <Link href={`/admin/frecuencias/editar/${frecuencia.id}`} className="text-indigo-600 hover:text-indigo-900 mr-4">Editar</Link>
+                  <Link href={`/admin/frecuencias/editar/${frecuencia.id}`} className="text-indigo-600 hover:text-indigo-900 mr-2">Editar</Link>
+                  <button
+                    onClick={() => handleToggleEstado(frecuencia)}
+                    className={`${frecuencia.activa ? 'text-yellow-600 hover:text-yellow-900' : 'text-green-600 hover:text-green-900'} mr-2`}
+                  >
+                    {frecuencia.activa ? 'Desactivar' : 'Activar'}
+                  </button>
                   {frecuencia.activa ? (
                     <button onClick={() => handleEliminar(frecuencia)} className="text-red-600 hover:text-red-900">Eliminar</button>
                   ) : (

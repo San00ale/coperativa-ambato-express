@@ -33,6 +33,25 @@ export async function POST(request: Request) {
         { status: 400 }
       )
     }
+
+    // Validación origen != destino
+    if (origen.trim().toLowerCase() === destino.trim().toLowerCase()) {
+      return NextResponse.json(
+        { error: 'El origen y el destino no pueden ser la misma ciudad' },
+        { status: 400 }
+      )
+    }
+
+    // Validación duración
+    if (duracion !== undefined && duracion !== null) {
+      const duracionNum = parseInt(duracion)
+      if (isNaN(duracionNum) || duracionNum < 1 || duracionNum > 720) {
+        return NextResponse.json(
+          { error: 'La duración debe ser un número entre 1 y 720 minutos' },
+          { status: 400 }
+        )
+      }
+    }
     
     const frecuencia = await prisma.frecuencia.create({
       data: {
