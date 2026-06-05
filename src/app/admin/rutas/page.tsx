@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import AdminHeader from '@/components/AdminHeader'
+import TableSkeleton from '@/components/TableSkeleton'
+import Pagination from '@/components/Pagination'
 
 interface Frecuencia {
   id: string
@@ -13,6 +14,7 @@ interface Frecuencia {
   hora: string
   tipoViaje: 'DIRECTO' | 'CON_PARADAS'
   activa: boolean
+  precioBase?: number | null
 }
 
 interface Bus {
@@ -54,6 +56,8 @@ export default function RutasPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [filtroFecha, setFiltroFecha] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   const obtenerFechaLocal = () => {
     const hoy = new Date()
@@ -133,6 +137,16 @@ export default function RutasPage() {
     setSuccess('')
 
     try {
+      const frecuenciaSeleccionada = frecuencias.find(f => f.id === formData.frecuenciaId)
+      const esDirecto = frecuenciaSeleccionada?.tipoViaje === 'DIRECTO'
+      const tienePrecioBase = frecuenciaSeleccionada?.precioBase && frecuenciaSeleccionada.precioBase > 0
+
+      // Para viajes directos con precioBase, no enviar precio (el API lo usará automáticamente)
+      // Para viajes con paradas o sin precioBase, enviar el precio manual
+      const precioFinal = (!esDirecto || !tienePrecioBase) && formData.precio
+        ? parseFloat(formData.precio)
+        : undefined
+
       const response = await fetch('/api/rutas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -140,14 +154,14 @@ export default function RutasPage() {
           frecuenciaId: formData.frecuenciaId,
           busId: formData.busId,
           fecha: formData.fecha,
-          precio: parseFloat(formData.precio),
-          choferId: formData.choferId || null   // ← enviar choferId
+          precio: precioFinal,
+          choferId: formData.choferId || null
         }),
       })
 
       if (response.ok) {
         setSuccess('Ruta creada correctamente')
-        setFormData({ frecuenciaId: '', busId: '', fecha: '', precio: '', choferId: '' })
+        setFormData({ frecuenciaId: '', busId: '', fecha: fechaMinima, precio: '', choferId: '' })
         setFiltroFecha('') // Limpiar filtro para mostrar la nueva ruta
         await cargarDatos()
       } else {
@@ -179,20 +193,31 @@ export default function RutasPage() {
     }
   }
 
+  // Calcular rutas paginadas
+  const totalPages = Math.ceil(rutas.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedRutas = rutas.slice(startIndex, endIndex)
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+
   if (loading) {
     return (
-      <div className="p-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">Cargando...</div>
+      <div className="p-8 bg-gray-50 min-h-screen">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Gestión de Rutas</h1>
         </div>
+        <TableSkeleton rows={5} columns={7} />
       </div>
     )
   }
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
-      <div className="mb-6">
-        <AdminHeader title="Gestión de Rutas" />
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Gestión de Rutas</h1>
       </div>
 
       {error && <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">{error}</div>}
@@ -253,19 +278,26 @@ export default function RutasPage() {
               </div>
 
               <div>
-                <label htmlFor="precio" className="block text-sm font-medium text-gray-700 mb-2">Precio ($) *</label>
+                <label htmlFor="precio" className="block text-sm font-medium text-gray-700 mb-2">
+                  Precio ($) {formData.frecuenciaId && frecuencias.find(f => f.id === formData.frecuenciaId)?.tipoViaje === 'DIRECTO' ? '(opcional)' : '*'}
+                </label>
                 <input
                   type="number"
                   id="precio"
                   name="precio"
                   value={formData.precio}
                   onChange={handleInputChange}
-                  required
+                  required={!(formData.frecuenciaId && frecuencias.find(f => f.id === formData.frecuenciaId)?.tipoViaje === 'DIRECTO')}
                   step="0.01"
                   min="0"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   placeholder="Ej: 5.00"
                 />
+                {formData.frecuenciaId && frecuencias.find(f => f.id === formData.frecuenciaId)?.tipoViaje === 'DIRECTO' && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    Se usará el precio base de la frecuencia: ${frecuencias.find(f => f.id === formData.frecuenciaId)?.precioBase?.toFixed(2) || 'N/A'}
+                  </p>
+                )}
               </div>
 
               {/* Selector de chofer (opcional) */}
@@ -326,29 +358,29 @@ export default function RutasPage() {
               <table className="min-w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ruta</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bus</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chofer</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Ruta</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Bus</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Fecha</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Precio</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Chofer</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Estado</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {rutas.map((ruta) => (
+                  {paginatedRutas.map((ruta) => (
                     <tr key={ruta.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <div className="font-medium text-gray-900">
                           {ruta.frecuencia.origen} - {ruta.frecuencia.destino}
                         </div>
-                        <div className="text-gray-500">
+                        <div className="text-gray-900">
                           {ruta.frecuencia.hora} • {ruta.frecuencia.tipoViaje === 'DIRECTO' ? 'Directo' : 'Con Paradas'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <div className="font-medium text-gray-900">Bus {ruta.bus.numero}</div>
-                        <div className="text-gray-500">{ruta.bus.placa} • {ruta.bus.marca}</div>
+                        <div className="text-gray-900">{ruta.bus.placa} • {ruta.bus.marca}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {new Date(ruta.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
@@ -373,8 +405,20 @@ export default function RutasPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <Link href={`/admin/rutas/editar/${ruta.id}`} className="text-indigo-600 hover:text-indigo-900 mr-4">Editar</Link>
-                        <button onClick={() => handleEliminar(ruta)} className="text-red-600 hover:text-red-900">Eliminar</button>
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/admin/rutas/editar/${ruta.id}`}
+                            className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 transition text-sm font-medium"
+                          >
+                            Editar
+                          </Link>
+                          <button
+                            onClick={() => handleEliminar(ruta)}
+                            className="px-3 py-1.5 bg-red-50 text-red-700 rounded-md hover:bg-red-100 transition text-sm font-medium"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -383,6 +427,16 @@ export default function RutasPage() {
               {rutas.length === 0 && <div className="text-center py-8 text-gray-500">No hay rutas creadas</div>}
             </div>
           </div>
+
+          {rutas.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              itemsPerPage={itemsPerPage}
+              totalItems={rutas.length}
+            />
+          )}
         </div>
       </div>
     </div>

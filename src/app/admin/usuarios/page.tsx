@@ -5,6 +5,8 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { obtenerErrorCedula, obtenerErrorEmailCoperativa, obtenerErrorContrasena, obtenerErrorConfirmacionContrasena, validarEmail } from '@/lib/validations'
+import TableSkeleton from '@/components/TableSkeleton'
+import Pagination from '@/components/Pagination'
 
 interface Usuario {
   id: string
@@ -24,6 +26,8 @@ export default function UsuariosPage() {
   const [loadingClientes, setLoadingClientes] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   // Modal agregar usuario
   const [showAgregarModal, setShowAgregarModal] = useState(false)
@@ -308,13 +312,24 @@ export default function UsuariosPage() {
     }
   }
 
+  // Calcular usuarios paginados
+  const totalPages = Math.ceil(usuarios.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedUsuarios = usuarios.slice(startIndex, endIndex)
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+
   // ---------- Renderizado condicional de carga ----------
   if (loading) {
     return (
-      <div className="p-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">Cargando...</div>
+      <div className="p-8 bg-gray-50 min-h-screen">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Gestión de Usuarios</h1>
         </div>
+        <TableSkeleton rows={5} columns={6} />
       </div>
     )
   }
@@ -322,23 +337,13 @@ export default function UsuariosPage() {
   // ---------- JSX principal ----------
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-4">
-          <Link
-            href="/admin"
-            className="text-gray-600 hover:text-gray-800 flex items-center"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Volver al Dashboard
-          </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Gestión de Usuarios</h1>
-        </div>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Gestión de Usuarios</h1>
         <button
           onClick={handleAgregar}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+          className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-semibold shadow-md hover:shadow-lg w-full sm:w-auto justify-center"
         >
+          <span className="text-xl">+</span>
           Agregar Usuario
         </button>
       </div>
@@ -355,72 +360,79 @@ export default function UsuariosPage() {
         </div>
       )}
 
-      {/* Tabla de Usuarios (Choferes y Oficinistas) */}
-      <div className="bg-white rounded-lg shadow">
-        <table className="min-w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cédula</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {usuarios.map((usuario) => (
-              <tr key={usuario.id} className={!usuario.activo ? 'opacity-50' : ''}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {usuario.nombre}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {usuario.email}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {usuario.cedula}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    usuario.rol === 'CHOFER' 
-                      ? 'bg-blue-100 text-blue-800' 
-                      : 'bg-purple-100 text-purple-800'
-                  }`}>
-                    {usuario.rol === 'CHOFER' ? 'Chofer' : 'Oficinista'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    usuario.activo 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {usuario.activo ? 'Activo' : 'Inactivo'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button
-                    onClick={() => handleCambiarEstado(usuario)}
-                    className={`${
-                      usuario.activo 
-                        ? 'text-red-600 hover:text-red-900' 
-                        : 'text-green-600 hover:text-green-900'
-                    }`}
-                  >
-                    {usuario.activo ? 'Suspender' : 'Activar'}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {usuarios.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            No hay usuarios registrados
+      {/* Grid de Usuarios (Choferes y Oficinistas) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {paginatedUsuarios.map((usuario) => (
+          <div key={usuario.id} className={`bg-white rounded-lg shadow p-6 border border-gray-200 ${!usuario.activo ? 'opacity-50' : ''}`}>
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <div className={`p-3 rounded-full ${
+                  usuario.rol === 'CHOFER' ? 'bg-blue-100' : 'bg-purple-100'
+                }`}>
+                  <svg className={`w-6 h-6 ${
+                    usuario.rol === 'CHOFER' ? 'text-blue-600' : 'text-purple-600'
+                  }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">{usuario.nombre}</h3>
+                  <p className="text-sm text-gray-500">{usuario.email}</p>
+                </div>
+              </div>
+              <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                usuario.activo 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                {usuario.activo ? 'Activo' : 'Inactivo'}
+              </span>
+            </div>
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-500">Cédula:</span>
+                <span className="text-gray-900 font-medium">{usuario.cedula}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-500">Rol:</span>
+                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                  usuario.rol === 'CHOFER' 
+                    ? 'bg-blue-100 text-blue-800' 
+                    : 'bg-purple-100 text-purple-800'
+                }`}>
+                  {usuario.rol === 'CHOFER' ? 'Chofer' : 'Oficinista'}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => handleCambiarEstado(usuario)}
+              className={`w-full px-4 py-2 rounded-md text-sm font-medium transition ${
+                usuario.activo 
+                  ? 'bg-red-50 text-red-700 hover:bg-red-100' 
+                  : 'bg-green-50 text-green-700 hover:bg-green-100'
+              }`}
+            >
+              {usuario.activo ? 'Suspender' : 'Activar'}
+            </button>
           </div>
-        )}
+        ))}
       </div>
+
+      {usuarios.length === 0 && (
+        <div className="text-center py-8 text-gray-500">
+          No hay usuarios registrados
+        </div>
+      )}
+
+      {usuarios.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          itemsPerPage={itemsPerPage}
+          totalItems={usuarios.length}
+        />
+      )}
 
       {/* Sección de Clientes */}
       <div className="bg-white rounded-lg shadow mt-8">
@@ -438,59 +450,54 @@ export default function UsuariosPage() {
           <div className="text-center py-8 text-gray-500">Cargando clientes...</div>
         ) : (
           <>
-            <table className="min-w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cédula</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {clientes.map((cliente) => (
-                  <tr key={cliente.id} className={!cliente.activo ? 'opacity-50' : ''}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {cliente.nombre}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {cliente.email}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {cliente.cedula}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {clientes.map((cliente) => (
+                <div key={cliente.id} className={`bg-white rounded-lg shadow p-6 border border-gray-200 ${!cliente.activo ? 'opacity-50' : ''}`}>
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-3 rounded-full bg-green-100">
+                        <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{cliente.nombre}</h3>
+                        <p className="text-sm text-gray-500">{cliente.email}</p>
+                      </div>
+                    </div>
+                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      cliente.activo
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {cliente.activo ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </div>
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">Cédula:</span>
+                      <span className="text-gray-900 font-medium">{cliente.cedula}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">Rol:</span>
                       <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
                         Cliente
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        cliente.activo
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {cliente.activo ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => handleCambiarEstadoCliente(cliente)}
-                        className={`${
-                          cliente.activo
-                            ? 'text-red-600 hover:text-red-900'
-                            : 'text-green-600 hover:text-green-900'
-                        }`}
-                      >
-                        {cliente.activo ? 'Suspender' : 'Activar'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleCambiarEstadoCliente(cliente)}
+                    className={`w-full px-4 py-2 rounded-md text-sm font-medium transition ${
+                      cliente.activo
+                        ? 'bg-red-50 text-red-700 hover:bg-red-100'
+                        : 'bg-green-50 text-green-700 hover:bg-green-100'
+                    }`}
+                  >
+                    {cliente.activo ? 'Suspender' : 'Activar'}
+                  </button>
+                </div>
+              ))}
+            </div>
             {clientes.length === 0 && (
               <div className="text-center py-8 text-gray-500">
                 No hay clientes registrados
