@@ -118,8 +118,9 @@ export default function EditarFrecuenciaPage() {
       return
     }
 
-    // Validar que no sea duplicado
-    const paradasNormalizadas = formData.paradas.map(p => p.trim().toLowerCase())
+    // Validar que no sea duplicado (excluir la última que se está editando)
+    const paradasSinUltima = formData.paradas.slice(0, -1)
+    const paradasNormalizadas = paradasSinUltima.map(p => p.trim().toLowerCase())
     if (paradasNormalizadas.includes(nuevaParada.toLowerCase())) {
       setValidationError('Esta ciudad ya está en la lista de paradas')
       return
