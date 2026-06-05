@@ -7,7 +7,7 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
-      - ./prisma/dev.db:/app/prisma/dev.db   # ← línea añadida
+      - coperativa-dev-db:/app/prisma
     ports:
       - "3000:3000"
     env_file:
@@ -16,3 +16,6 @@ services:
       - WATCHPACK_POLLING=true
     stdin_open: true
     tty: true
+
+volumes:
+  coperativa-dev-db:
