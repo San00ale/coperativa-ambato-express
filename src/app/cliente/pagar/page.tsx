@@ -25,11 +25,18 @@ interface Frecuencia {
   hora: string;
 }
 
+interface Bus {
+  capacidad: number;
+  asientosVIP: number;
+  asientosVIPNumeros?: string;
+}
+
 interface Ruta {
   id: string;
   fecha: string;
   precio: number;
   frecuencia: Frecuencia;
+  bus?: Bus;
 }
 
 function PagarContent() {
@@ -37,9 +44,11 @@ function PagarContent() {
   const searchParams = useSearchParams();
   const rutaId = searchParams.get("rutaId");
   const asiento = searchParams.get("asiento");
+  const asientos = searchParams.get("asientos");
   const precioParam = searchParams.get("precio");
 
   const precioBase = precioParam ? parseFloat(precioParam) : 0;
+  const listaAsientos = asientos ? asientos.split(',').map(a => parseInt(a.trim())) : (asiento ? [parseInt(asiento)] : []);
 
   const [nombre, setNombre] = useState("");
   const [cedula, setCedula] = useState("");
@@ -124,7 +133,7 @@ function PagarContent() {
   };
 
   const confirmarHabilitado =
-    !!asiento &&
+    listaAsientos.length > 0 &&
     nombre.trim().length >= 3 &&
     !errorNombre &&
     cedula.length === 10 &&
@@ -157,7 +166,7 @@ function PagarContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           rutaId,
-          asiento,
+          asientos: listaAsientos,
           precio: precioFinal,
           tipoPasajero,
           metodoPago: "TRANSFERENCIA",
@@ -202,15 +211,22 @@ function PagarContent() {
               <p className="font-semibold text-gray-800">
                 {ruta.frecuencia.origen} → {ruta.frecuencia.destino}
               </p>
-              {precioBase > ruta.precio && (
+              {listaAsientos.some((num: number) => {
+                const vipSeatsNumeros = ruta.bus?.asientosVIPNumeros;
+                if (vipSeatsNumeros) {
+                  const vipSeatsArray = vipSeatsNumeros.split(',').map((s: string) => parseInt(s.trim())).filter((n: number) => !isNaN(n));
+                  return vipSeatsArray.includes(num);
+                }
+                return false;
+              }) && (
                 <span className="text-xs font-medium px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 border border-yellow-300">
-                  ⭐ Asiento VIP
+                  ⭐ Incluye VIP
                 </span>
               )}
             </div>
             <p className="text-sm text-gray-500 mt-1">
               🕐 {ruta.frecuencia.hora} &nbsp;|&nbsp;
-              💺 Asiento {asiento} &nbsp;|&nbsp;
+              💺 Asientos: {listaAsientos.sort((a, b) => a - b).join(', ')} &nbsp;|&nbsp;
               📅 {new Date(ruta.fecha).toLocaleDateString("es-EC")}
             </p>
           </div>
