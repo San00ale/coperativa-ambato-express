@@ -268,43 +268,6 @@ export default function EditarRutaPage() {
             </div>
           </form>
         </div>
-
-        {/* Información actual de la ruta */}
-        {ruta && (
-          <div className="mt-6 bg-gray-50 rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4">Información Actual</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm font-medium text-gray-700">Ruta Actual:</p>
-                <p className="text-gray-900">
-                  {ruta.frecuencia.origen} - {ruta.frecuencia.destino}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {ruta.frecuencia.hora} • {ruta.frecuencia.tipoViaje === 'DIRECTO' ? 'Directo' : 'Con Paradas'}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-700">Bus Actual:</p>
-                <p className="text-gray-900">
-                  Bus {ruta.bus.numero}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {ruta.bus.placa} • {ruta.bus.marca}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-700">Fecha Actual:</p>
-                <p className="text-gray-900">
-                  {new Date(ruta.fecha).toLocaleDateString('es-ES', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric'
-                  })}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )
