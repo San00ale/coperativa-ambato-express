@@ -148,6 +148,7 @@ export default function RutasPage() {
       if (response.ok) {
         setSuccess('Ruta creada correctamente')
         setFormData({ frecuenciaId: '', busId: '', fecha: '', precio: '', choferId: '' })
+        setFiltroFecha('') // Limpiar filtro para mostrar la nueva ruta
         await cargarDatos()
       } else {
         const errorData = await response.json()
