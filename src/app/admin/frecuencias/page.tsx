@@ -20,6 +20,8 @@ interface Frecuencia {
   tipoViaje: 'DIRECTO' | 'CON_PARADAS'
   activa: boolean
   paradas: Parada[]
+  duracion?: number | null
+  precioBase?: number | null
 }
 
 export default function FrecuenciasPage() {
@@ -132,6 +134,8 @@ export default function FrecuenciasPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Origen</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destino</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hora</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duración</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio Base</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo de Viaje</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paradas</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
@@ -144,6 +148,12 @@ export default function FrecuenciasPage() {
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{frecuencia.origen}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{frecuencia.destino}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{frecuencia.hora}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {frecuencia.duracion ? `${frecuencia.duracion} min` : '-'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {frecuencia.precioBase ? `$${frecuencia.precioBase.toFixed(2)}` : '-'}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${frecuencia.tipoViaje === 'DIRECTO' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
                     {frecuencia.tipoViaje === 'DIRECTO' ? 'Directo' : 'Con Paradas'}

@@ -22,6 +22,7 @@ interface Frecuencia {
   paradas: Parada[]
   duracion?: number | null
   precioBase?: number | null
+  preciosPorTramo?: string | null
 }
 
 export default function EditarFrecuenciaPage() {
@@ -37,7 +38,9 @@ export default function EditarFrecuenciaPage() {
     tipoViaje: 'DIRECTO' as 'DIRECTO' | 'CON_PARADAS',
     paradas: [''],
     duracion: '',
-    precioBase: ''
+    precioBase: '',
+    opcionPrecio: 'MISMO' as 'MISMO' | 'POR_TRAMO',
+    preciosPorTramo: [] as string[]
   })
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -57,6 +60,17 @@ export default function EditarFrecuenciaPage() {
           const frecuencias = await response.json()
           const frecuencia = frecuencias.find((f: Frecuencia) => f.id === id)
           if (frecuencia) {
+            // Parse preciosPorTramo si existe
+            let preciosPorTramoParsed: string[] = []
+            if (frecuencia.preciosPorTramo) {
+              try {
+                const parsed = JSON.parse(frecuencia.preciosPorTramo)
+                preciosPorTramoParsed = parsed.map((p: any) => p.precio?.toString() || '')
+              } catch {
+                preciosPorTramoParsed = []
+              }
+            }
+
             setFormData({
               origen: frecuencia.origen,
               destino: frecuencia.destino,
@@ -66,7 +80,9 @@ export default function EditarFrecuenciaPage() {
                 ? frecuencia.paradas.map((p: Parada) => p.ciudad)
                 : [''],
               duracion: frecuencia.duracion?.toString() || '',
-              precioBase: frecuencia.precioBase?.toString() || ''
+              precioBase: frecuencia.precioBase?.toString() || '',
+              opcionPrecio: preciosPorTramoParsed.length > 0 ? 'POR_TRAMO' : 'MISMO',
+              preciosPorTramo: preciosPorTramoParsed
             })
           } else {
             setError('Frecuencia no encontrada')
@@ -86,9 +102,45 @@ export default function EditarFrecuenciaPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
+
     if (name === 'tipoViaje' && value === 'DIRECTO') {
-      setFormData(prev => ({ ...prev, paradas: [''] }))
+      setFormData(prev => ({
+        ...prev,
+        paradas: [''],
+        opcionPrecio: 'MISMO',
+        preciosPorTramo: []
+      }))
     }
+
+    if (name === 'tipoViaje' && value === 'CON_PARADAS') {
+      const paradasValidas = formData.paradas.filter(p => p.trim() !== '')
+      if (paradasValidas.length > 0) {
+        const numTramos = paradasValidas.length + 1
+        setFormData(prev => ({
+          ...prev,
+          preciosPorTramo: Array(numTramos).fill('')
+        }))
+      }
+    }
+  }
+
+  const handleOpcionPrecioChange = (opcion: 'MISMO' | 'POR_TRAMO') => {
+    setFormData(prev => ({ ...prev, opcionPrecio: opcion }))
+    if (opcion === 'POR_TRAMO') {
+      const paradasValidas = formData.paradas.filter(p => p.trim() !== '')
+      const numTramos = paradasValidas.length + 1
+      setFormData(prev => ({
+        ...prev,
+        preciosPorTramo: Array(numTramos).fill('')
+      }))
+    }
+  }
+
+  const handlePrecioTramoChange = (index: number, value: string) => {
+    const newPrecios = [...formData.preciosPorTramo]
+    newPrecios[index] = value
+    setFormData(prev => ({ ...prev, preciosPorTramo: newPrecios }))
+    setValidationError('')
   }
 
   const handleParadaChange = (index: number, value: string) => {
@@ -144,7 +196,16 @@ export default function EditarFrecuenciaPage() {
     }
 
     try {
-      const payload = {
+      const payload: {
+        origen: string
+        destino: string
+        hora: string
+        tipoViaje: string
+        activa: boolean
+        duracion: number
+        precioBase?: number
+        preciosPorTramo?: Array<{ origen: string; destino: string; precio: number }>
+      } = {
         origen: formData.origen.trim(),
         destino: formData.destino.trim(),
         hora: formData.hora,
@@ -152,6 +213,33 @@ export default function EditarFrecuenciaPage() {
         activa: true,
         duracion: duracionNum,
         precioBase: formData.precioBase ? parseFloat(formData.precioBase) : undefined
+      }
+
+      if (formData.tipoViaje === 'CON_PARADAS' && formData.opcionPrecio === 'POR_TRAMO') {
+        const paradasValidas = formData.paradas.filter(p => p.trim() !== '')
+        const tramos: Array<{ origen: string; destino: string; precio: number }> = []
+        if (paradasValidas.length > 0) {
+          tramos.push({
+            origen: formData.origen,
+            destino: paradasValidas[0],
+            precio: parseFloat(formData.preciosPorTramo[0]) || 0
+          })
+        }
+        for (let i = 1; i < paradasValidas.length; i++) {
+          tramos.push({
+            origen: paradasValidas[i - 1],
+            destino: paradasValidas[i],
+            precio: parseFloat(formData.preciosPorTramo[i]) || 0
+          })
+        }
+        if (paradasValidas.length > 0) {
+          tramos.push({
+            origen: paradasValidas[paradasValidas.length - 1],
+            destino: formData.destino,
+            precio: parseFloat(formData.preciosPorTramo[formData.preciosPorTramo.length - 1]) || 0
+          })
+        }
+        payload.preciosPorTramo = tramos
       }
 
       const response = await fetch(`/api/frecuencias/${id}`, {
@@ -273,6 +361,58 @@ export default function EditarFrecuenciaPage() {
                 <p className="mt-1 text-xs text-gray-500">Obligatorio para viajes directos</p>
               )}
             </div>
+
+            {formData.tipoViaje === 'CON_PARADAS' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Configuración de Precios</label>
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="radio" name="opcionPrecio" value="MISMO"
+                      checked={formData.opcionPrecio === 'MISMO'}
+                      onChange={() => handleOpcionPrecioChange('MISMO')}
+                      className="text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">Mismo precio para todo el recorrido</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="radio" name="opcionPrecio" value="POR_TRAMO"
+                      checked={formData.opcionPrecio === 'POR_TRAMO'}
+                      onChange={() => handleOpcionPrecioChange('POR_TRAMO')}
+                      className="text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">Precios por tramo</span>
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {formData.tipoViaje === 'CON_PARADAS' && formData.opcionPrecio === 'POR_TRAMO' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Precios por Tramo</label>
+                <div className="space-y-2">
+                  {formData.preciosPorTramo.map((precio, idx) => {
+                    const paradasValidas = formData.paradas.filter(p => p.trim() !== '')
+                    let tramoLabel = ''
+                    if (idx === 0) tramoLabel = `${formData.origen} → ${paradasValidas[0] || 'primera parada'}`
+                    else if (idx < paradasValidas.length) tramoLabel = `${paradasValidas[idx - 1]} → ${paradasValidas[idx]}`
+                    else tramoLabel = `${paradasValidas[paradasValidas.length - 1]} → ${formData.destino}`
+                    return (
+                      <div key={idx} className="flex gap-2 items-center">
+                        <span className="text-sm text-gray-600 w-48">{tramoLabel}:</span>
+                        <input
+                          type="number" min="0" step="0.01"
+                          value={precio} onChange={(e) => handlePrecioTramoChange(idx, e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className="bg-blue-50 p-4 rounded-md">
               <p className="text-sm text-blue-800">
