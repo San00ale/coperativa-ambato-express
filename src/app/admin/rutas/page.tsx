@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import AdminHeader from '@/components/AdminHeader'
+import TableSkeleton from '@/components/TableSkeleton'
 
 interface Frecuencia {
   id: string
@@ -192,10 +193,11 @@ export default function RutasPage() {
 
   if (loading) {
     return (
-      <div className="p-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">Cargando...</div>
+      <div className="p-8 bg-gray-50 min-h-screen">
+        <div className="mb-6">
+          <AdminHeader title="Gestión de Rutas" />
         </div>
+        <TableSkeleton rows={5} columns={7} />
       </div>
     )
   }
