@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Loader, CheckCircle, AlertCircle } from 'lucide-react'
@@ -13,16 +13,9 @@ function RestablecerContrasenaContent() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(!token ? 'Token no proporcionado. Solicita un nuevo enlace de restablecimiento.' : null)
   const [success, setSuccess] = useState(false)
-  const [tokenValid, setTokenValid] = useState(true)
-
-  useEffect(() => {
-    if (!token) {
-      setTokenValid(false)
-      setError('Token no proporcionado. Solicita un nuevo enlace de restablecimiento.')
-    }
-  }, [token])
+  const tokenValid = !!token
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
