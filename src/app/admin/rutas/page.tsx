@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import AdminHeader from '@/components/AdminHeader'
 import TableSkeleton from '@/components/TableSkeleton'
+import Pagination from '@/components/Pagination'
 
 interface Frecuencia {
   id: string
@@ -56,6 +57,8 @@ export default function RutasPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [filtroFecha, setFiltroFecha] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   const obtenerFechaLocal = () => {
     const hoy = new Date()
@@ -189,6 +192,16 @@ export default function RutasPage() {
     } catch (error) {
       setError('Error de conexión')
     }
+  }
+
+  // Calcular rutas paginadas
+  const totalPages = Math.ceil(rutas.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedRutas = rutas.slice(startIndex, endIndex)
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
   }
 
   if (loading) {
@@ -356,7 +369,7 @@ export default function RutasPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {rutas.map((ruta) => (
+                  {paginatedRutas.map((ruta) => (
                     <tr key={ruta.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <div className="font-medium text-gray-900">
@@ -403,6 +416,16 @@ export default function RutasPage() {
               {rutas.length === 0 && <div className="text-center py-8 text-gray-500">No hay rutas creadas</div>}
             </div>
           </div>
+
+          {rutas.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              itemsPerPage={itemsPerPage}
+              totalItems={rutas.length}
+            />
+          )}
         </div>
       </div>
     </div>

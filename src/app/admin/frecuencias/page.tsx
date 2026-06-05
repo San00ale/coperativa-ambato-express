@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import AdminHeader from '@/components/AdminHeader'
 import TableSkeleton from '@/components/TableSkeleton'
+import Pagination from '@/components/Pagination'
 
 interface Parada {
   id: string
@@ -31,6 +32,8 @@ export default function FrecuenciasPage() {
   const [frecuencias, setFrecuencias] = useState<Frecuencia[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   const cargarFrecuencias = useCallback(async () => {
     try {
@@ -97,6 +100,16 @@ export default function FrecuenciasPage() {
     }
   }
 
+  // Calcular frecuencias paginadas
+  const totalPages = Math.ceil(frecuencias.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedFrecuencias = frecuencias.slice(startIndex, endIndex)
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+
   if (loading) {
     return (
       <div className="p-8 bg-gray-50 min-h-screen">
@@ -145,7 +158,7 @@ export default function FrecuenciasPage() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {frecuencias.map((frecuencia) => (
+            {paginatedFrecuencias.map((frecuencia) => (
               <tr key={frecuencia.id} className={!frecuencia.activa ? 'opacity-50' : ''}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{frecuencia.origen}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{frecuencia.destino}</td>
@@ -198,6 +211,16 @@ export default function FrecuenciasPage() {
         </table>
         {frecuencias.length === 0 && <div className="text-center py-8 text-gray-500">No hay frecuencias registradas</div>}
       </div>
+
+      {frecuencias.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          itemsPerPage={itemsPerPage}
+          totalItems={frecuencias.length}
+        />
+      )}
     </div>
   )
 }

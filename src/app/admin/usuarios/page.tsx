@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { obtenerErrorCedula, obtenerErrorEmailCoperativa, obtenerErrorContrasena, obtenerErrorConfirmacionContrasena, validarEmail } from '@/lib/validations'
 import TableSkeleton from '@/components/TableSkeleton'
+import Pagination from '@/components/Pagination'
 
 interface Usuario {
   id: string
@@ -25,6 +26,8 @@ export default function UsuariosPage() {
   const [loadingClientes, setLoadingClientes] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   // Modal agregar usuario
   const [showAgregarModal, setShowAgregarModal] = useState(false)
@@ -309,6 +312,16 @@ export default function UsuariosPage() {
     }
   }
 
+  // Calcular usuarios paginados
+  const totalPages = Math.ceil(usuarios.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedUsuarios = usuarios.slice(startIndex, endIndex)
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+
   // ---------- Renderizado condicional de carga ----------
   if (loading) {
     return (
@@ -382,7 +395,7 @@ export default function UsuariosPage() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {usuarios.map((usuario) => (
+            {paginatedUsuarios.map((usuario) => (
               <tr key={usuario.id} className={!usuario.activo ? 'opacity-50' : ''}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {usuario.nombre}
@@ -434,6 +447,16 @@ export default function UsuariosPage() {
           </div>
         )}
       </div>
+
+      {usuarios.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          itemsPerPage={itemsPerPage}
+          totalItems={usuarios.length}
+        />
+      )}
 
       {/* Sección de Clientes */}
       <div className="bg-white rounded-lg shadow mt-8">
