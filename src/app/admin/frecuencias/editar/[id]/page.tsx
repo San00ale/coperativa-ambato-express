@@ -11,6 +11,11 @@ interface Parada {
   orden: number
 }
 
+// Interfaz para el precio por tramo
+interface PrecioTramo {
+  precio?: number | string
+}
+
 interface Frecuencia {
   id: string
   origen: string
@@ -64,7 +69,10 @@ export default function EditarFrecuenciaPage() {
             if (frecuencia.preciosPorTramo) {
               try {
                 const parsed = JSON.parse(frecuencia.preciosPorTramo)
-                preciosPorTramoParsed = parsed.map((p: any) => p.precio?.toString() || '')
+                if (Array.isArray(parsed)) {
+                  // CORRECCIÓN: usar la interfaz PrecioTramo en lugar de any
+                  preciosPorTramoParsed = parsed.map((p: PrecioTramo) => p.precio?.toString() || '')
+                }
               } catch {
                 preciosPorTramoParsed = []
               }
