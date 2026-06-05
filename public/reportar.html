@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Reportar un problema o sugerencia</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', 'DM Sans', sans-serif;
+            background: #0B1220;
+            color: #E2E8F0;
+            padding: 1.5rem;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card {
+            max-width: 700px;
+            width: 100%;
+            background: #111C2E;
+            border-radius: 28px;
+            border: 1px solid #253354;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0D1B2A, #1B3460);
+            padding: 1.5rem 2rem;
+            border-bottom: 2px solid #3B82F6;
+        }
+
+        .header h1 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .header p {
+            color: #8898B0;
+            margin-top: 0.4rem;
+            font-size: 0.9rem;
+        }
+
+        .form-container {
+            padding: 2rem;
+        }
+
+        .field {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #CBD5E1;
+            margin-bottom: 0.4rem;
+            letter-spacing: 0.3px;
+        }
+
+        .required::after {
+            content: " *";
+            color: #F59E0B;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            background: #182236;
+            border: 1.5px solid #253354;
+            border-radius: 14px;
+            padding: 0.75rem 1rem;
+            color: #E2E8F0;
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3B82F6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+        }
+
+        input[readonly] {
+            background: #0F172A;
+            cursor: default;
+            opacity: 0.9;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 110px;
+        }
+
+        .row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .row .field {
+            flex: 1;
+            min-width: 140px;
+        }
+
+        .file-area {
+            background: #0F172A;
+            border-radius: 16px;
+            border: 1px dashed #3B82F6;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .file-area:hover {
+            background: #1E293B;
+        }
+
+        .file-area input {
+            display: none;
+        }
+
+        .file-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: #8898B0;
+            cursor: pointer;
+        }
+
+        .file-label span:first-child {
+            font-size: 1.8rem;
+        }
+
+        .btn-submit {
+            background: #3B82F6;
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 0.9rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+            margin-top: 0.5rem;
+            box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+        }
+
+        .btn-submit:hover {
+            background: #2563EB;
+            transform: scale(0.98);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #10B981;
+            color: white;
+            padding: 0.8rem 1.8rem;
+            border-radius: 60px;
+            font-weight: 500;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        small {
+            color: #8898B0;
+            font-size: 0.7rem;
+            display: block;
+            margin-top: 0.3rem;
+        }
+
+        hr {
+            border-color: #253354;
+            margin: 1rem 0;
+        }
+        
+        .loader {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .btn-submit.loading {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="header">
+        <h1>
+            <span>🐞</span> Reportar un problema o sugerencia
+        </h1>
+        <p>Cuéntanos qué ocurre o qué te gustaría mejorar. Sin tecnicismos, solo lo que ves.</p>
+    </div>
+
+    <div class="form-container">
+        <form id="simpleIssueForm">
+            <!-- 📅 Fecha visible para el usuario -->
+            <div class="field">
+                <label>📅 Fecha del reporte</label>
+                <input type="text" id="fechaReporte" readonly>
+            </div>
+
+            <div class="field">
+                <label class="required">¿Qué pasa? (título breve)</label>
+                <input type="text" id="titulo" placeholder="Ej: No puedo iniciar sesión, el botón no responde..." required>
+            </div>
+
+            <div class="field">
+                <label class="required">Descripción (paso a paso si es un error)</label>
+                <textarea id="descripcion" placeholder="1. Entré a la página 'Z'...
+2. Hice clic en 'xxxx'
+3. Apareció un mensaje raro o no pasó nada.
+   También puedes decir qué esperabas que pasara." required></textarea>
+            </div>
+
+            <div class="row">
+                <div class="field">
+                    <label class="required">Tipo</label>
+                    <select id="tipo" required>
+                        <option value="bug">🐛 Error / Algo no funciona</option>
+                        <option value="mejora">✨ Sugerencia de mejora</option>
+                        <option value="pregunta">❓ Pregunta / Ayuda</option>
+                        <option value="otro">📌 Otro</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>¿Qué tan urgente es para ti?</label>
+                    <select id="prioridad">
+                        <option value="baja">😌 Baja (sin apuro)</option>
+                        <option value="media">😐 Media (molesta pero se puede seguir)</option>
+                        <option value="alta">🚨 Alta (me bloquea, necesito solución pronto)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="field">
+                    <label class="required">Tu nombre o alias</label>
+                    <input type="text" id="nombre" placeholder="Ej: Ana López" required>
+                </div>
+                <div class="field">
+                    <label class="required">Correo electrónico</label>
+                    <input type="email" id="email" placeholder="tucorreo@ejemplo.com" required>
+                    <small>Te responderemos aquí</small>
+                </div>
+            </div>
+
+            <div class="field">
+                <label>Adjuntar captura de pantalla o archivo (opcional)</label>
+                <div class="file-area" onclick="document.getElementById('archivo').click()">
+                    <div class="file-label">
+                        <span>📎</span>
+                        <span>Haz clic para seleccionar una imagen o documento</span>
+                    </div>
+                    <input type="file" id="archivo" accept="image/*, application/pdf, .txt">
+                </div>
+                <small>No es obligatorio, pero ayuda a entender mejor el problema.</small>
+            </div>
+
+            <hr>
+
+            <button type="button" class="btn-submit" onclick="enviarReporte()">📬 Enviar reporte</button>
+        </form>
+    </div>
+</div>
+
+<div id="toast" class="toast">✅ ¡Gracias! Tu reporte fue enviado.</div>
+
+<script>
+    // 📅 Asignar la fecha actual automáticamente y mostrarla en el campo visible
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('fechaReporte').value = today;
+
+    // Mostrar nombre del archivo seleccionado
+    const fileInput = document.getElementById('archivo');
+    fileInput.addEventListener('change', function() {
+        const labelSpan = document.querySelector('.file-label span:last-child');
+        if (this.files.length > 0) {
+            labelSpan.textContent = `📄 ${this.files[0].name}`;
+        } else {
+            labelSpan.textContent = 'Haz clic para seleccionar una imagen o documento';
+        }
+    });
+
+    async function enviarReporte() {
+        // --- Validaciones ---
+        const titulo = document.getElementById('titulo').value.trim();
+        const desc = document.getElementById('descripcion').value.trim();
+        const nombre = document.getElementById('nombre').value.trim();
+        const email = document.getElementById('email').value.trim();
+
+        if (!titulo || !desc || !nombre || !email) {
+            alert('Por favor, completa los campos marcados con * (título, descripción, nombre y correo).');
+            return;
+        }
+
+        if (!email.includes('@')) {
+            alert('Escribe un correo válido (debe contener @).');
+            return;
+        }
+
+        // --- Preparar datos ---
+        const tipo = document.getElementById('tipo').value;
+        const prioridad = document.getElementById('prioridad').value;
+        const fecha = document.getElementById('fechaReporte').value;
+        
+        // Cuerpo del issue en Markdown
+        const issueBody = `
+## 👤 **Información del usuario**
+- **Nombre:** ${nombre}
+- **Correo:** ${email}
+- **Fecha del reporte:** ${fecha}
+
+## 📝 **Detalles del reporte**
+**${titulo}**
+
+**Descripción:**
+${desc}
+
+## 🏷️ **Metadatos**
+- **Tipo:** ${tipo}
+- **Prioridad:** ${prioridad}
+        `;
+
+        const submitBtn = document.querySelector('.btn-submit');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = 'Enviando... ⏳';
+        submitBtn.disabled = true;
+        submitBtn.classList.add('loading');
+
+        try {
+            // ⚠️ CAMBIA AQUÍ: PON TU USUARIO Y REPOSITORIO DE GITHUB
+            const GITHUB_OWNER = 'San00ale';
+            const GITHUB_REPO = 'coperativa-ambato-express';
+            
+            // Llama a tu función serverless (en Vercel, Netlify, etc.)
+            // Si aún no la tienes, esto fallará. Para pruebas locales, comenta el fetch y usa el console.log
+            const response = await fetch(`/api/create-issue`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    owner: GITHUB_OWNER,
+                    repo: GITHUB_REPO,
+                    title: `${tipo === 'bug' ? '🐛' : (tipo === 'mejora' ? '✨' : '📌')} ${titulo}`,
+                    body: issueBody,
+                    labels: [tipo, prioridad]
+                })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Error desconocido');
+            }
+
+            // Éxito
+            const toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 4000);
+
+            // Limpiar formulario (opcional)
+            document.getElementById('titulo').value = '';
+            document.getElementById('descripcion').value = '';
+            document.getElementById('nombre').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('archivo').value = '';
+            document.querySelector('.file-label span:last-child').textContent = 'Haz clic para seleccionar una imagen o documento';
+            document.getElementById('tipo').value = 'bug';
+            document.getElementById('prioridad').value = 'media';
+            // La fecha se mantiene con el día actual (no se limpia)
+
+        } catch (error) {
+            console.error('Error:', error);
+            alert(`Hubo un problema: ${error.message}. Si no has configurado la función serverless, esto es normal.`);
+        } finally {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('loading');
+        }
+    }
+</script>
+</body>
+</html>
