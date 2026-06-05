@@ -55,6 +55,7 @@ model ParadaFrecuencia {
   ciudad       String
   orden        Int
   frecuencia   Frecuencia @relation(fields: [frecuenciaId], references: [id])
+  registros RegistroParada[]
 }
 
 model Ruta {
@@ -71,7 +72,7 @@ model Ruta {
   boletos     Boleto[]
   choferId      String?
   chofer        Usuario?   @relation("ChofersRutas", fields: [choferId], references: [id])
-
+  registrosParada RegistroParada[]
   @@index([choferId])
 }
 
@@ -93,4 +94,13 @@ model Boleto {
   ruta              Ruta     @relation(fields: [rutaId], references: [id])
   pasajero          Usuario  @relation(fields: [pasajeroId], references: [id])
   vendidoPorChofer  Usuario? @relation("VendidoPorChofer", fields: [vendidoPorChoferId], references: [id])
+}
+
+model RegistroParada {
+  id           String   @id @default(cuid())
+  rutaId       String
+  paradaId     String
+  llegada      DateTime @default(now())
+  ruta         Ruta     @relation(fields: [rutaId], references: [id])
+  parada       ParadaFrecuencia @relation(fields: [paradaId], references: [id])
 }
