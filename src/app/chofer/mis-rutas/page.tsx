@@ -21,6 +21,13 @@ interface Ruta {
       ciudad: string
       orden: number
     }>
+    registrosParada: Array<{
+    id: string
+    paradaId: string
+    llegada: string
+    parada: { id: string; ciudad: string; orden: number }
+  }>
+
   }
   bus: {
     id: string
