@@ -2,7 +2,7 @@
 
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Menu, X, LogOut, LayoutDashboard, Clock, Map, Bus, Users } from 'lucide-react'
 
@@ -25,14 +25,10 @@ export default function AdminLayout({
     }
   }, [status, session, router])
 
-  // Memoizar la función para cerrar el menú móvil
-  const closeMobileMenu = useCallback(() => {
-    setIsMobileMenuOpen(false)
-  }, [])
-
+  // Cerrar menú móvil al cambiar de ruta
   useEffect(() => {
-    closeMobileMenu()
-  }, [pathname, closeMobileMenu])
+    setIsMobileMenuOpen(false)
+  }, [pathname, setIsMobileMenuOpen])
 
   if (status === 'loading') {
     return (
