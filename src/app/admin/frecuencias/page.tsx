@@ -146,27 +146,27 @@ export default function FrecuenciasPage() {
         <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Origen</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destino</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hora</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duración</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio Base</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo de Viaje</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paradas</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Origen</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Destino</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Hora</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Duración</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Precio Base</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Tipo de Viaje</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Paradas</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Estado</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Acciones</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {paginatedFrecuencias.map((frecuencia) => (
               <tr key={frecuencia.id} className={!frecuencia.activa ? 'opacity-50' : ''}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{frecuencia.origen}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{frecuencia.destino}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{frecuencia.hora}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{frecuencia.destino}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{frecuencia.hora}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {frecuencia.duracion ? `${frecuencia.duracion} min` : '-'}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {frecuencia.precioBase ? `$${frecuencia.precioBase.toFixed(2)}` : '-'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -174,7 +174,7 @@ export default function FrecuenciasPage() {
                     {frecuencia.tipoViaje === 'DIRECTO' ? 'Directo' : 'Con Paradas'}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {frecuencia.tipoViaje === 'CON_PARADAS' && frecuencia.paradas && frecuencia.paradas.length > 0
                     ? frecuencia.paradas.map(p => p.ciudad).join(', ')
                     : '-'}
@@ -186,20 +186,30 @@ export default function FrecuenciasPage() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   {frecuencia.activa ? (
-                    <>
-                      <Link href={`/admin/frecuencias/editar/${frecuencia.id}`} className="text-indigo-600 hover:text-indigo-900 mr-2">Editar</Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/admin/frecuencias/editar/${frecuencia.id}`}
+                        className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 transition text-sm font-medium"
+                      >
+                        Editar
+                      </Link>
                       <button
                         onClick={() => handleToggleEstado(frecuencia)}
-                        className="text-yellow-600 hover:text-yellow-900 mr-2"
+                        className="px-3 py-1.5 bg-yellow-50 text-yellow-700 rounded-md hover:bg-yellow-100 transition text-sm font-medium"
                       >
                         Desactivar
                       </button>
-                      <button onClick={() => handleEliminar(frecuencia)} className="text-red-600 hover:text-red-900">Eliminar</button>
-                    </>
+                      <button
+                        onClick={() => handleEliminar(frecuencia)}
+                        className="px-3 py-1.5 bg-red-50 text-red-700 rounded-md hover:bg-red-100 transition text-sm font-medium"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
                   ) : (
                     <button
                       onClick={() => handleToggleEstado(frecuencia)}
-                      className="text-green-600 hover:text-green-900"
+                      className="px-3 py-1.5 bg-green-50 text-green-700 rounded-md hover:bg-green-100 transition text-sm font-medium"
                     >
                       Activar
                     </button>
