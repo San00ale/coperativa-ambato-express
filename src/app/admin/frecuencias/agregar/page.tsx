@@ -15,7 +15,10 @@ export default function AgregarFrecuenciaPage() {
     hora: '',
     tipoViaje: 'DIRECTO' as 'DIRECTO' | 'CON_PARADAS',
     paradas: [''],
-    duracion: ''          // ← nuevo campo
+    duracion: '',
+    precioBase: '',
+    opcionPrecio: 'MISMO' as 'MISMO' | 'POR_TRAMO',
+    preciosPorTramo: [] as string[]
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -27,13 +30,53 @@ export default function AgregarFrecuenciaPage() {
       [name]: value
     }))
 
-    // Si cambia a DIRECTO, limpiar paradas
+    // Si cambia a DIRECTO, limpiar paradas y precios
     if (name === 'tipoViaje' && value === 'DIRECTO') {
       setFormData(prev => ({
         ...prev,
-        paradas: ['']
+        paradas: [''],
+        opcionPrecio: 'MISMO',
+        preciosPorTramo: []
       }))
     }
+
+    // Si cambia a CON_PARADAS, inicializar preciosPorTramo si hay paradas
+    if (name === 'tipoViaje' && value === 'CON_PARADAS') {
+      const paradasValidas = formData.paradas.filter(p => p.trim() !== '')
+      if (paradasValidas.length > 0) {
+        const numTramos = paradasValidas.length + 1
+        setFormData(prev => ({
+          ...prev,
+          preciosPorTramo: Array(numTramos).fill('')
+        }))
+      }
+    }
+  }
+
+  const handleOpcionPrecioChange = (opcion: 'MISMO' | 'POR_TRAMO') => {
+    setFormData(prev => ({
+      ...prev,
+      opcionPrecio: opcion
+    }))
+
+    // Si cambia a POR_TRAMO, inicializar preciosPorTramo
+    if (opcion === 'POR_TRAMO') {
+      const paradasValidas = formData.paradas.filter(p => p.trim() !== '')
+      const numTramos = paradasValidas.length + 1
+      setFormData(prev => ({
+        ...prev,
+        preciosPorTramo: Array(numTramos).fill('')
+      }))
+    }
+  }
+
+  const handlePrecioTramoChange = (index: number, value: string) => {
+    const newPrecios = [...formData.preciosPorTramo]
+    newPrecios[index] = value
+    setFormData(prev => ({
+      ...prev,
+      preciosPorTramo: newPrecios
+    }))
   }
 
   const handleParadaChange = (index: number, value: string) => {
@@ -46,18 +89,33 @@ export default function AgregarFrecuenciaPage() {
   }
 
   const agregarParada = () => {
-    setFormData(prev => ({
-      ...prev,
-      paradas: [...prev.paradas, '']
-    }))
+    setFormData(prev => {
+      const newParadas = [...prev.paradas, '']
+      // Si está en modo POR_TRAMO, agregar un precio adicional
+      const newPrecios = prev.opcionPrecio === 'POR_TRAMO' 
+        ? [...prev.preciosPorTramo, '']
+        : prev.preciosPorTramo
+      return {
+        ...prev,
+        paradas: newParadas,
+        preciosPorTramo: newPrecios
+      }
+    })
   }
 
   const quitarParada = (index: number) => {
-    const newParadas = formData.paradas.filter((_, i) => i !== index)
-    setFormData(prev => ({
-      ...prev,
-      paradas: newParadas
-    }))
+    setFormData(prev => {
+      const newParadas = prev.paradas.filter((_, i) => i !== index)
+      // Si está en modo POR_TRAMO, quitar un precio
+      const newPrecios = prev.opcionPrecio === 'POR_TRAMO'
+        ? prev.preciosPorTramo.filter((_, i) => i !== index)
+        : prev.preciosPorTramo
+      return {
+        ...prev,
+        paradas: newParadas,
+        preciosPorTramo: newPrecios
+      }
+    })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,15 +124,39 @@ export default function AgregarFrecuenciaPage() {
     setError('')
 
     try {
-      const payload = {
+      const payload: any = {
         origen: formData.origen.trim(),
         destino: formData.destino.trim(),
         hora: formData.hora,
         tipoViaje: formData.tipoViaje,
-        paradas: formData.tipoViaje === 'CON_PARADAS' 
+        paradas: formData.tipoViaje === 'CON_PARADAS'
           ? formData.paradas.filter(p => p.trim() !== '')
           : [],
-        duracion: formData.duracion ? parseInt(formData.duracion) : undefined
+        duracion: formData.duracion ? parseInt(formData.duracion) : undefined,
+        precioBase: formData.precioBase ? parseFloat(formData.precioBase) : undefined
+      }
+
+      // Si es CON_PARADAS y opción es POR_TRAMO, agregar preciosPorTramo
+      if (formData.tipoViaje === 'CON_PARADAS' && formData.opcionPrecio === 'POR_TRAMO') {
+        const paradasValidas = formData.paradas.filter(p => p.trim() !== '')
+        const tramos = paradasValidas.map((parada, index) => {
+          if (index === 0) {
+            return { origen: formData.origen, destino: parada, precio: parseFloat(formData.preciosPorTramo[index]) || 0 }
+          } else if (index === paradasValidas.length - 1) {
+            return { origen: paradasValidas[index - 1], destino: formData.destino, precio: parseFloat(formData.preciosPorTramo[index]) || 0 }
+          } else {
+            return { origen: paradasValidas[index - 1], destino: parada, precio: parseFloat(formData.preciosPorTramo[index]) || 0 }
+          }
+        })
+        // Agregar último tramo: última parada → destino
+        if (paradasValidas.length > 0) {
+          tramos.push({ 
+            origen: paradasValidas[paradasValidas.length - 1], 
+            destino: formData.destino, 
+            precio: parseFloat(formData.preciosPorTramo[formData.preciosPorTramo.length - 1]) || 0 
+          })
+        }
+        payload.preciosPorTramo = tramos
       }
 
       const response = await fetch('/api/frecuencias', {
@@ -219,6 +301,97 @@ export default function AgregarFrecuenciaPage() {
                 placeholder="Ej: 120"
               />
             </div>
+
+            {/* Campo Precio Base */}
+            <div>
+              <label htmlFor="precioBase" className="block text-sm font-medium text-gray-700 mb-2">
+                Precio Base ($) {formData.tipoViaje === 'DIRECTO' ? '*' : '(opcional)'}
+              </label>
+              <input
+                type="number"
+                id="precioBase"
+                name="precioBase"
+                min="0"
+                step="0.01"
+                value={formData.precioBase}
+                onChange={handleInputChange}
+                required={formData.tipoViaje === 'DIRECTO'}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+                placeholder="Ej: 5.00"
+              />
+              {formData.tipoViaje === 'DIRECTO' && (
+                <p className="mt-1 text-xs text-gray-500">Obligatorio para viajes directos</p>
+              )}
+            </div>
+
+            {/* Opción de precio para viajes con paradas */}
+            {formData.tipoViaje === 'CON_PARADAS' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Configuración de Precios
+                </label>
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      name="opcionPrecio"
+                      value="MISMO"
+                      checked={formData.opcionPrecio === 'MISMO'}
+                      onChange={() => handleOpcionPrecioChange('MISMO')}
+                      className="text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">Mismo precio para todo el recorrido</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      name="opcionPrecio"
+                      value="POR_TRAMO"
+                      checked={formData.opcionPrecio === 'POR_TRAMO'}
+                      onChange={() => handleOpcionPrecioChange('POR_TRAMO')}
+                      className="text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">Precios por tramo</span>
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* Precios por tramo */}
+            {formData.tipoViaje === 'CON_PARADAS' && formData.opcionPrecio === 'POR_TRAMO' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Precios por Tramo
+                </label>
+                <div className="space-y-2">
+                  {formData.preciosPorTramo.map((precio, index) => {
+                    const paradasValidas = formData.paradas.filter(p => p.trim() !== '')
+                    let tramoLabel = ''
+                    if (index === 0) {
+                      tramoLabel = `${formData.origen} → ${paradasValidas[0] || 'primera parada'}`
+                    } else if (index < paradasValidas.length) {
+                      tramoLabel = `${paradasValidas[index - 1]} → ${paradasValidas[index]}`
+                    } else {
+                      tramoLabel = `${paradasValidas[paradasValidas.length - 1]} → ${formData.destino}`
+                    }
+                    return (
+                      <div key={index} className="flex gap-2 items-center">
+                        <span className="text-sm text-gray-600 w-48">{tramoLabel}:</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={precio}
+                          onChange={(e) => handlePrecioTramoChange(index, e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {formData.tipoViaje === 'CON_PARADAS' && (
               <div>

@@ -37,16 +37,18 @@ model Bus {
 }
 
 model Frecuencia {
-  id         String   @id @default(cuid())
-  origen     String
-  destino    String
-  hora       String
-  tipoViaje  String
-  activa     Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  duracion   Int?
-  paradas    ParadaFrecuencia[]
-  rutas      Ruta[]
+  id             String   @id @default(cuid())
+  origen         String
+  destino        String
+  hora           String
+  tipoViaje      String
+  activa         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  duracion       Int?
+  precioBase     Float?
+  preciosPorTramo String?
+  paradas        ParadaFrecuencia[]
+  rutas          Ruta[]
 }
 
 model ParadaFrecuencia {

@@ -16,11 +16,20 @@ export async function PUT(
 
     const { id } = await params
     const body = await request.json()
-    const { origen, destino, hora, tipoViaje, activa, duracion } = body
+    const { origen, destino, hora, tipoViaje, activa, duracion, precioBase, preciosPorTramo } = body
 
     if (!origen || !destino || !hora) {
       return NextResponse.json(
         { error: 'Faltan campos requeridos: origen, destino, hora' },
+        { status: 400 }
+      )
+    }
+
+    // Validar precioBase para viajes directos
+    const tipoViajeFinal = tipoViaje || 'DIRECTO'
+    if (tipoViajeFinal === 'DIRECTO' && (!precioBase || precioBase <= 0)) {
+      return NextResponse.json(
+        { error: 'El precio base es obligatorio para viajes directos y debe ser mayor a 0' },
         { status: 400 }
       )
     }
@@ -31,9 +40,11 @@ export async function PUT(
         origen,
         destino,
         hora,
-        tipoViaje: tipoViaje || 'DIRECTO',
+        tipoViaje: tipoViajeFinal,
         activa: activa !== undefined ? activa : true,
-        duracion: duracion ? parseInt(duracion) : null
+        duracion: duracion ? parseInt(duracion) : null,
+        precioBase: precioBase ? parseFloat(precioBase) : null,
+        preciosPorTramo: preciosPorTramo ? JSON.stringify(preciosPorTramo) : null
       }
     })
 

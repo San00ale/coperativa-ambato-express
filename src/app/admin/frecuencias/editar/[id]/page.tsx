@@ -20,7 +20,8 @@ interface Frecuencia {
   tipoViaje: 'DIRECTO' | 'CON_PARADAS'
   activa: boolean
   paradas: Parada[]
-  duracion?: number | null   // ← nuevo campo
+  duracion?: number | null
+  precioBase?: number | null
 }
 
 export default function EditarFrecuenciaPage() {
@@ -35,7 +36,8 @@ export default function EditarFrecuenciaPage() {
     hora: '',
     tipoViaje: 'DIRECTO' as 'DIRECTO' | 'CON_PARADAS',
     paradas: [''],
-    duracion: ''          // ← nuevo campo
+    duracion: '',
+    precioBase: ''
   })
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -60,10 +62,11 @@ export default function EditarFrecuenciaPage() {
               destino: frecuencia.destino,
               hora: frecuencia.hora,
               tipoViaje: frecuencia.tipoViaje,
-              paradas: frecuencia.paradas && frecuencia.paradas.length > 0 
+              paradas: frecuencia.paradas && frecuencia.paradas.length > 0
                 ? frecuencia.paradas.map((p: Parada) => p.ciudad)
                 : [''],
-              duracion: frecuencia.duracion?.toString() || ''   
+              duracion: frecuencia.duracion?.toString() || '',
+              precioBase: frecuencia.precioBase?.toString() || ''
             })
           } else {
             setError('Frecuencia no encontrada')
@@ -135,7 +138,8 @@ export default function EditarFrecuenciaPage() {
         hora: formData.hora,
         tipoViaje: formData.tipoViaje,
         activa: true,
-        duracion: formData.duracion ? parseInt(formData.duracion) : undefined
+        duracion: formData.duracion ? parseInt(formData.duracion) : undefined,
+        precioBase: formData.precioBase ? parseFloat(formData.precioBase) : undefined
       }
 
       const response = await fetch(`/api/frecuencias/${id}`, {
@@ -284,6 +288,28 @@ export default function EditarFrecuenciaPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
                 placeholder="Ej: 120"
               />
+            </div>
+
+            {/* Campo Precio Base */}
+            <div>
+              <label htmlFor="precioBase" className="block text-sm font-medium text-gray-700 mb-2">
+                Precio Base ($) {formData.tipoViaje === 'DIRECTO' ? '*' : '(opcional)'}
+              </label>
+              <input
+                type="number"
+                id="precioBase"
+                name="precioBase"
+                min="0"
+                step="0.01"
+                value={formData.precioBase}
+                onChange={handleInputChange}
+                required={formData.tipoViaje === 'DIRECTO'}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder:text-gray-400"
+                placeholder="Ej: 5.00"
+              />
+              {formData.tipoViaje === 'DIRECTO' && (
+                <p className="mt-1 text-xs text-gray-500">Obligatorio para viajes directos</p>
+              )}
             </div>
 
             <div className="bg-blue-50 p-4 rounded-md">

@@ -25,11 +25,20 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { origen, destino, hora, tipoViaje, paradas, duracion } = body
+    const { origen, destino, hora, tipoViaje, paradas, duracion, precioBase, preciosPorTramo } = body
     
     if (!origen || !destino || !hora) {
       return NextResponse.json(
         { error: 'Faltan campos requeridos: origen, destino, hora' },
+        { status: 400 }
+      )
+    }
+
+    // Validar precioBase para viajes directos
+    const tipoViajeFinal = tipoViaje || 'DIRECTO'
+    if (tipoViajeFinal === 'DIRECTO' && (!precioBase || precioBase <= 0)) {
+      return NextResponse.json(
+        { error: 'El precio base es obligatorio para viajes directos y debe ser mayor a 0' },
         { status: 400 }
       )
     }
@@ -40,8 +49,10 @@ export async function POST(request: Request) {
         destino,
         hora,
         duracion: duracion ? parseInt(duracion) : null,
-        tipoViaje: tipoViaje || 'DIRECTO',
+        tipoViaje: tipoViajeFinal,
         activa: true,
+        precioBase: precioBase ? parseFloat(precioBase) : null,
+        preciosPorTramo: preciosPorTramo ? JSON.stringify(preciosPorTramo) : null,
         paradas: paradas && paradas.length > 0 ? {
           create: paradas.map((ciudad: string, index: number) => ({
             ciudad,
