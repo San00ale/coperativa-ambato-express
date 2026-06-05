@@ -122,7 +122,7 @@ export default function AdminPage() {
           // 4. Totales semanales y promedio
           setTotalBoletosSemana(boletos7Dias.length)
           setTotalIngresosSemana(boletos7Dias.reduce((total, boleto) => total + boleto.precio, 0))
-          setPromedioDiario(Math.round(boletos7Dias.length / 7))
+          setPromedioDiario(parseFloat((boletos7Dias.length / 7).toFixed(1)))
 
           // 5. Mejor día (mayor ingreso)
           const diaConMasIngresos = estadisticasPorDia.reduce((max, dia) =>
@@ -276,9 +276,19 @@ export default function AdminPage() {
                   <span className="text-2xl">📈</span>
                   <h3 className="font-semibold text-gray-900">Mejor día</h3>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-900">{mejorDia.fecha}</span>
-                  <span className="text-sm font-semibold text-gray-900">${mejorDia.ingresos.toFixed(2)}</span>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-900">Fecha:</span>
+                    <span className="text-sm font-semibold text-gray-900">{mejorDia.fecha}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-900">Boletos:</span>
+                    <span className="text-sm font-semibold text-gray-900">{mejorDia.cantidad}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-900">Ingresos:</span>
+                    <span className="text-sm font-semibold text-gray-900">${mejorDia.ingresos.toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
             )}
@@ -293,7 +303,7 @@ export default function AdminPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {estadisticas7Dias.map((dia, index) => (
-                    <tr key={index}>
+                    <tr key={index} className={mejorDia?.fecha === dia.fecha ? 'bg-yellow-50' : ''}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{dia.fecha}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{dia.cantidad}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${dia.ingresos.toFixed(2)}</td>
