@@ -13,6 +13,7 @@ interface Frecuencia {
   hora: string
   tipoViaje: 'DIRECTO' | 'CON_PARADAS'
   activa: boolean
+  precioBase?: number | null
 }
 
 interface Bus {
@@ -133,6 +134,16 @@ export default function RutasPage() {
     setSuccess('')
 
     try {
+      const frecuenciaSeleccionada = frecuencias.find(f => f.id === formData.frecuenciaId)
+      const esDirecto = frecuenciaSeleccionada?.tipoViaje === 'DIRECTO'
+      const tienePrecioBase = frecuenciaSeleccionada?.precioBase && frecuenciaSeleccionada.precioBase > 0
+
+      // Para viajes directos con precioBase, no enviar precio (el API lo usará automáticamente)
+      // Para viajes con paradas o sin precioBase, enviar el precio manual
+      const precioFinal = (!esDirecto || !tienePrecioBase) && formData.precio
+        ? parseFloat(formData.precio)
+        : undefined
+
       const response = await fetch('/api/rutas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -140,14 +151,14 @@ export default function RutasPage() {
           frecuenciaId: formData.frecuenciaId,
           busId: formData.busId,
           fecha: formData.fecha,
-          precio: parseFloat(formData.precio),
-          choferId: formData.choferId || null   // ← enviar choferId
+          precio: precioFinal,
+          choferId: formData.choferId || null
         }),
       })
 
       if (response.ok) {
         setSuccess('Ruta creada correctamente')
-        setFormData({ frecuenciaId: '', busId: '', fecha: '', precio: '', choferId: '' })
+        setFormData({ frecuenciaId: '', busId: '', fecha: fechaMinima, precio: '', choferId: '' })
         setFiltroFecha('') // Limpiar filtro para mostrar la nueva ruta
         await cargarDatos()
       } else {
@@ -253,19 +264,26 @@ export default function RutasPage() {
               </div>
 
               <div>
-                <label htmlFor="precio" className="block text-sm font-medium text-gray-700 mb-2">Precio ($) *</label>
+                <label htmlFor="precio" className="block text-sm font-medium text-gray-700 mb-2">
+                  Precio ($) {formData.frecuenciaId && frecuencias.find(f => f.id === formData.frecuenciaId)?.tipoViaje === 'DIRECTO' ? '(opcional)' : '*'}
+                </label>
                 <input
                   type="number"
                   id="precio"
                   name="precio"
                   value={formData.precio}
                   onChange={handleInputChange}
-                  required
+                  required={!(formData.frecuenciaId && frecuencias.find(f => f.id === formData.frecuenciaId)?.tipoViaje === 'DIRECTO')}
                   step="0.01"
                   min="0"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   placeholder="Ej: 5.00"
                 />
+                {formData.frecuenciaId && frecuencias.find(f => f.id === formData.frecuenciaId)?.tipoViaje === 'DIRECTO' && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    Se usará el precio base de la frecuencia: ${frecuencias.find(f => f.id === formData.frecuenciaId)?.precioBase?.toFixed(2) || 'N/A'}
+                  </p>
+                )}
               </div>
 
               {/* Selector de chofer (opcional) */}
