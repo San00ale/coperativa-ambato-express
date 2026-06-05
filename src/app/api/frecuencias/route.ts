@@ -4,7 +4,6 @@ import { prisma } from '@/lib/prisma'
 export async function GET() {
   try {
     const frecuencias = await prisma.frecuencia.findMany({
-      where: { activa: true },
       include: {
         paradas: {
           orderBy: { orden: 'asc' }
