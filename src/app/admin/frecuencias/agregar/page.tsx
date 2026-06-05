@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { signOut } from 'next-auth/react'
 
 export default function AgregarFrecuenciaPage() {
   const { data: session } = useSession()
