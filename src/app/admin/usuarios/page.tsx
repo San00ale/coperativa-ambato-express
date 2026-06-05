@@ -326,19 +326,8 @@ export default function UsuariosPage() {
   if (loading) {
     return (
       <div className="p-8 bg-gray-50 min-h-screen">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <Link
-              href="/admin"
-              className="text-gray-600 hover:text-gray-800 flex items-center"
-            >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Volver al Dashboard
-            </Link>
-            <h1 className="text-3xl font-bold text-gray-900">Gestión de Usuarios</h1>
-          </div>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Gestión de Usuarios</h1>
         </div>
         <TableSkeleton rows={5} columns={6} />
       </div>
@@ -348,23 +337,13 @@ export default function UsuariosPage() {
   // ---------- JSX principal ----------
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-4">
-          <Link
-            href="/admin"
-            className="text-gray-600 hover:text-gray-800 flex items-center"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Volver al Dashboard
-          </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Gestión de Usuarios</h1>
-        </div>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Gestión de Usuarios</h1>
         <button
           onClick={handleAgregar}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+          className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-semibold shadow-md hover:shadow-lg w-full sm:w-auto justify-center"
         >
+          <span className="text-xl">+</span>
           Agregar Usuario
         </button>
       </div>

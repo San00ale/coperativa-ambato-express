@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import AdminHeader from '@/components/AdminHeader'
 import TableSkeleton from '@/components/TableSkeleton'
 import Pagination from '@/components/Pagination'
 
@@ -207,8 +206,8 @@ export default function RutasPage() {
   if (loading) {
     return (
       <div className="p-8 bg-gray-50 min-h-screen">
-        <div className="mb-6">
-          <AdminHeader title="Gestión de Rutas" />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Gestión de Rutas</h1>
         </div>
         <TableSkeleton rows={5} columns={7} />
       </div>
@@ -217,8 +216,15 @@ export default function RutasPage() {
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
-      <div className="mb-6">
-        <AdminHeader title="Gestión de Rutas" />
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Gestión de Rutas</h1>
+        <button
+          onClick={handleAgregar}
+          className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-semibold shadow-md hover:shadow-lg w-full sm:w-auto justify-center"
+        >
+          <span className="text-xl">+</span>
+          Agregar Ruta
+        </button>
       </div>
 
       {error && <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">{error}</div>}

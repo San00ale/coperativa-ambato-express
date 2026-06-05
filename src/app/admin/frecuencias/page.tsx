@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import AdminHeader from '@/components/AdminHeader'
 import TableSkeleton from '@/components/TableSkeleton'
 import Pagination from '@/components/Pagination'
 
@@ -113,8 +112,8 @@ export default function FrecuenciasPage() {
   if (loading) {
     return (
       <div className="p-8 bg-gray-50 min-h-screen">
-        <div className="mb-6">
-          <AdminHeader title="Gestión de Frecuencias" />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Gestión de Frecuencias</h1>
         </div>
         <TableSkeleton rows={5} columns={9} />
       </div>
@@ -123,15 +122,13 @@ export default function FrecuenciasPage() {
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
-      <div className="mb-6">
-        <AdminHeader title="Gestión de Frecuencias" />
-      </div>
-
-      <div className="mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Gestión de Frecuencias</h1>
         <Link
           href="/admin/frecuencias/agregar"
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+          className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-semibold shadow-md hover:shadow-lg w-full sm:w-auto justify-center"
         >
+          <span className="text-xl">+</span>
           Agregar Frecuencia
         </Link>
       </div>
