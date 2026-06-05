@@ -3,6 +3,14 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import {
+  validarCedulaEcuatoriana,
+  obtenerErrorCedula,
+  obtenerErrorNombre,
+  validarEmail,
+  obtenerErrorContrasena,
+  obtenerErrorConfirmacionContrasena
+} from '@/lib/validations'
 
 export default function RegistroPage() {
   const router = useRouter()
@@ -14,16 +22,50 @@ export default function RegistroPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  // Validaciones en vivo
+  const [touched, setTouched] = useState({
+    nombre: false,
+    email: false,
+    cedula: false,
+    password: false,
+    confirmPassword: false
+  })
+
+  const getErrorNombre = () => touched.nombre ? obtenerErrorNombre(nombre) : ''
+  const getErrorEmail = () => touched.email ? (validarEmail(email) ? '' : 'Email inválido') : ''
+  const getErrorCedula = () => touched.cedula ? obtenerErrorCedula(cedula) : ''
+  const getErrorPassword = () => touched.password ? obtenerErrorContrasena(password) : ''
+  const getErrorConfirmPassword = () => touched.confirmPassword ? obtenerErrorConfirmacionContrasena(password, confirmPassword) : ''
+
+  const isFormValid = () => {
+    return (
+      obtenerErrorNombre(nombre) === '' &&
+      validarEmail(email) &&
+      obtenerErrorCedula(cedula) === '' &&
+      obtenerErrorContrasena(password) === '' &&
+      obtenerErrorConfirmacionContrasena(password, confirmPassword) === ''
+    )
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    setLoading(true)
 
-    if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden')
-      setLoading(false)
+    // Marcar todos los campos como touched
+    setTouched({
+      nombre: true,
+      email: true,
+      cedula: true,
+      password: true,
+      confirmPassword: true
+    })
+
+    if (!isFormValid()) {
+      setError('Por favor, corrige los errores antes de continuar')
       return
     }
+
+    setLoading(true)
 
     try {
       const res = await fetch('/api/auth/register', {
@@ -47,71 +89,127 @@ export default function RegistroPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-md w-96">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
         <h1 className="text-2xl font-bold text-gray-900 mb-6 text-center">Crear Cuenta</h1>
-        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-gray-900 mb-1">Nombre completo</label>
+        
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <p className="text-red-700 text-sm">{error}</p>
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="nombre" className="block text-gray-900 mb-1 font-medium">Nombre completo</label>
             <input
+              id="nombre"
               type="text"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded text-gray-900 placeholder:text-gray-400"
+              onBlur={() => setTouched({ ...touched, nombre: true })}
+              placeholder="Tu nombre completo"
+              className={`w-full px-3 py-2 border rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                getErrorNombre() ? 'border-red-500' : 'border-gray-300'
+              }`}
               required
             />
+            {getErrorNombre() && (
+              <p className="text-red-600 text-xs mt-1">{getErrorNombre()}</p>
+            )}
           </div>
-          <div className="mb-4">
-            <label className="block text-gray-900 mb-1">Correo electrónico</label>
+
+          <div>
+            <label htmlFor="email" className="block text-gray-900 mb-1 font-medium">Correo electrónico</label>
             <input
+              id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded text-gray-900 placeholder:text-gray-400"
+              onBlur={() => setTouched({ ...touched, email: true })}
+              placeholder="tu@correo.com"
+              className={`w-full px-3 py-2 border rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                getErrorEmail() ? 'border-red-500' : 'border-gray-300'
+              }`}
               required
             />
+            {getErrorEmail() && (
+              <p className="text-red-600 text-xs mt-1">{getErrorEmail()}</p>
+            )}
           </div>
-          <div className="mb-4">
-            <label className="block text-gray-900 mb-1">Cédula</label>
+
+          <div>
+            <label htmlFor="cedula" className="block text-gray-900 mb-1 font-medium">Cédula</label>
             <input
+              id="cedula"
               type="text"
               value={cedula}
-              onChange={(e) => setCedula(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded text-gray-900 placeholder:text-gray-400"
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '')
+                setCedula(value)
+              }}
+              onBlur={() => setTouched({ ...touched, cedula: true })}
+              placeholder="10 dígitos"
+              maxLength={10}
+              className={`w-full px-3 py-2 border rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                getErrorCedula() ? 'border-red-500' : 'border-gray-300'
+              }`}
               required
             />
+            {getErrorCedula() && (
+              <p className="text-red-600 text-xs mt-1">{getErrorCedula()}</p>
+            )}
           </div>
-          <div className="mb-4">
-            <label className="block text-gray-900 mb-1">Contraseña</label>
+
+          <div>
+            <label htmlFor="password" className="block text-gray-900 mb-1 font-medium">Contraseña</label>
             <input
+              id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded text-gray-900"
+              onBlur={() => setTouched({ ...touched, password: true })}
+              placeholder="Mínimo 6 caracteres"
+              className={`w-full px-3 py-2 border rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                getErrorPassword() ? 'border-red-500' : 'border-gray-300'
+              }`}
               required
             />
+            {getErrorPassword() && (
+              <p className="text-red-600 text-xs mt-1">{getErrorPassword()}</p>
+            )}
           </div>
-          <div className="mb-6">
-            <label className="block text-gray-900 mb-1">Confirmar contraseña</label>
+
+          <div>
+            <label htmlFor="confirmPassword" className="block text-gray-900 mb-1 font-medium">Confirmar contraseña</label>
             <input
+              id="confirmPassword"
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded text-gray-900"
+              onBlur={() => setTouched({ ...touched, confirmPassword: true })}
+              placeholder="Repite tu contraseña"
+              className={`w-full px-3 py-2 border rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                getErrorConfirmPassword() ? 'border-red-500' : 'border-gray-300'
+              }`}
               required
             />
+            {getErrorConfirmPassword() && (
+              <p className="text-red-600 text-xs mt-1">{getErrorConfirmPassword()}</p>
+            )}
           </div>
+
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+            disabled={loading || !isFormValid()}
+            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium"
           >
             {loading ? 'Registrando...' : 'Registrarse'}
           </button>
         </form>
+
         <p className="text-center text-sm text-gray-600 mt-4">
-          ¿Ya tienes cuenta? <Link href="/login" className="text-blue-600 hover:underline">Inicia sesión</Link>
+          ¿Ya tienes cuenta? <Link href="/login" className="text-blue-600 hover:underline font-medium">Inicia sesión</Link>
         </p>
       </div>
     </div>
