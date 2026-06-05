@@ -112,7 +112,6 @@ export default function AgregarFrecuenciaPage() {
     }
 
     try {
-      // 📌 Aquí está el cambio: tipado explícito, sin `any`
       const payload: {
         origen: string
         destino: string
