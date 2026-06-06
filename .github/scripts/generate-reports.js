@@ -32,17 +32,16 @@ async function fetchAll(endpoint) {
 }
 
 async function generateReports() {
-  // Obtener todos los issues cerrados (incluye PRs, pero luego filtramos)
   const issues = await fetchAll('issues?state=closed&sort=updated&direction=desc');
-  // Obtener todos los PRs fusionados
   const pulls = await fetchAll('pulls?state=closed&sort=updated&direction=desc');
   const mergedPulls = pulls.filter(pr => pr.merged_at);
-  // Obtener todos los tags
   const tags = await fetchAll('tags');
 
   const now = new Date().toLocaleString('es-EC', { timeZone: 'America/Guayaquil' });
 
-  let md = `# Reportes Automáticos\n\n`;
+  // Construcción del contenido Markdown
+  let md = '# Reportes Automáticos\n\n';
+  md += '_Estos reportes se actualizan automáticamente con cada despliegue._\n\n';
   md += `_Generado el ${now} (hora de Ecuador)_\n\n`;
 
   md += `## Issues cerrados (últimos 50)\n\n`;
