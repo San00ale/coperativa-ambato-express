@@ -166,7 +166,7 @@ Los reportes se convierten automáticamente en Issues de GitHub para su seguimie
 
 - [Plan de Gestión de Configuración](configuracion.md) - Políticas y procedimientos ITIL
 - [Reportes Automáticos](reportes.md) - Métricas y estadísticas del proyecto
-- [README del Proyecto](../README.md) - Información general del proyecto
+- [Ver README en GitHub](https://github.com/San00ale/coperativa-ambato-express/blob/main/README.md) - Información general del proyecto
 
 ---
 
